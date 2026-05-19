@@ -258,7 +258,41 @@ async function analyzeSermon() {
     sermonTitle = ytData.title || 'Untitled Sermon';
   } catch(e) { sermonTitle = 'Untitled Sermon'; }
 
-  const transcript = manualTranscript || '[No transcript provided — please paste the YouTube transcript for best results.]';
+  let transcript = manualTranscript;
+  if (!transcript) {
+    setStatus('Attempting to fetch transcript from YouTube...');
+    try {
+      const proxyUrl = 'https://corsproxy.io/?url=' + encodeURIComponent('https://www.youtube.com/watch?v=' + videoId);
+      const pageRes = await fetch(proxyUrl);
+      const html = await pageRes.text();
+      const captionMatch = html.match(/"captionTracks":\[({.+?})\]/);
+      if (captionMatch) {
+        const urlMatch = captionMatch[1].match(/"baseUrl":"([^"]+)"/);
+        if (urlMatch) {
+          const captionUrl = urlMatch[1].replace(/\\u0026/g, '&');
+          const captionRes = await fetch('https://corsproxy.io/?url=' + encodeURIComponent(captionUrl));
+          const xml = await captionRes.text();
+          const entries = [...xml.matchAll(/<text start="([^"]+)"[^>]*>([^<]*)<\/text>/g)];
+          if (entries.length > 0) {
+            let built = '';
+            entries.forEach(([, start, text]) => {
+              const s = parseFloat(start);
+              const mins = Math.floor(s / 60);
+              const secs = Math.floor(s % 60);
+              const decoded = text.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#39;/g,"'").replace(/&quot;/g,'"');
+              built += mins + ':' + secs.toString().padStart(2,'0') + ' ' + decoded + '\n';
+            });
+            transcript = built.trim();
+            setStatus('Transcript fetched successfully. Analyzing sermon...');
+          }
+        }
+      }
+    } catch(fetchErr) { /* silent fail */ }
+    if (!transcript) {
+      setStatus('Auto-fetch unavailable. Paste transcript manually for best results.');
+      transcript = '[No transcript available. For best results, paste the YouTube transcript manually using the toggle above.]';
+    }
+  }
 
   setStatus('Claude is analyzing the sermon — about 30 seconds...');
 
@@ -270,7 +304,7 @@ YouTube: ${url}
 
 Transcript:
 ---
-${transcript.substring(0, 14000)}
+${transcript.substring(0, 50000)}
 ---
 
 Produce TWO outputs:
@@ -279,7 +313,7 @@ OUTPUT 1 — SEEKER QUESTIONS
 Identify the TOP ${questionCount} culturally resonant questions this sermon answers. Real questions people in 2026 are genuinely asking — about suffering, identity, purpose, faith, doubt, relationships, meaning, or who Jesus is. No churchy language.
 
 For each question format EXACTLY as one line:
-Q|[sharp culturally relevant question]|[timestamp MM:SS]|[2-3 sentence social media caption that intrigues a skeptic — not preachy]
+Q|[sharp culturally relevant question]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence social media caption that intrigues a skeptic — not preachy]
 
 OUTPUT 2 — SERMON NOTES SLIDES
 Produce exactly ${slideCount} content slides for a mature Christian taking notes.
@@ -340,7 +374,7 @@ Separate the two outputs with exactly this line on its own: ---SLIDES---`;
     const parts = rawText.split('---SLIDES---');
     currentQuestions = parts[0].trim().split('\n').filter(l => l.startsWith('Q')).map(line => {
       const p = line.split('|');
-      return { question: p[1]||'', timestamp: p[2]||'', caption: p[3]||'' };
+      return { question: p[1]||'', timestamp: p[2]||'', caption: p[3]||'' }; // timestamp format: MM:SS-MM:SS
     });
     currentSlides = parseSlidesFromRaw(parts[1] || '');
     renderResults(currentQuestions, currentSlides);
@@ -385,7 +419,7 @@ function renderResults(questions, slides) {
     card.innerHTML = `
       <div class="q-meta">
         <span class="q-number">Question ${i+1}</span>
-        <span class="q-timestamp">${q.timestamp}</span>
+        <span class="q-timestamp">&#9201; ${q.timestamp}</span>
       </div>
       <div class="q-question">${q.question}</div>
       <div class="q-caption-label">Social media caption</div>
