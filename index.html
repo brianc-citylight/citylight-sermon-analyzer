@@ -730,10 +730,25 @@ async function sendToOpus(i, btn) {
 
     const captionNote = document.createElement('div');
     captionNote.style.cssText = 'font-size:12px; color:#aaa; margin-top:10px; padding:10px 12px; background:#0a0a0a; border:1px solid #333; border-radius:6px; line-height:1.6;';
-    captionNote.innerHTML =
-      '<div style="color:var(--gold); font-weight:700; margin-bottom:4px;">Caption — copy before posting:</div>' +
-      '<div style="color:#ddd;">' + q.caption + '</div>' +
-      '<button class="btn btn-sm" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy Caption',1500);" style="margin-top:8px; font-size:11px;">Copy Caption</button>';
+    const captionLabel = document.createElement('div');
+    captionLabel.style.cssText = 'color:var(--gold); font-weight:700; margin-bottom:4px;';
+    captionLabel.textContent = 'Caption — copy before posting:';
+    const captionText = document.createElement('div');
+    captionText.style.color = '#ddd';
+    captionText.textContent = q.caption;
+    const captionCopyBtn = document.createElement('button');
+    captionCopyBtn.className = 'btn btn-sm';
+    captionCopyBtn.style.cssText = 'margin-top:8px; font-size:11px;';
+    captionCopyBtn.textContent = 'Copy Caption';
+    captionCopyBtn.onclick = function() {
+      navigator.clipboard.writeText(q.caption).then(() => {
+        captionCopyBtn.textContent = 'Copied!';
+        setTimeout(() => { captionCopyBtn.textContent = 'Copy Caption'; }, 1500);
+      }).catch(() => {});
+    };
+    captionNote.appendChild(captionLabel);
+    captionNote.appendChild(captionText);
+    captionNote.appendChild(captionCopyBtn);
     card.appendChild(captionNote);
 
   } catch(e) {
