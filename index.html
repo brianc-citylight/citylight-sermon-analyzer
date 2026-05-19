@@ -95,6 +95,19 @@
     .summary-body p { margin-bottom: 1rem; }
     .summary-body strong { font-size: 15px; color: var(--black); display: block; margin-top: 1.25rem; margin-bottom: 0.25rem; }
     .summary-body p:first-child strong { margin-top: 0; }
+    .opus-banner { background: #0a0a0a; border: 1px solid #333; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .opus-banner p { font-size: 13px; color: #aaa; margin-bottom: 0.5rem; }
+    .opus-status { font-size: 12px; padding: 4px 10px; border-radius: 6px; display: inline-block; margin-top: 4px; }
+    .opus-status.queued { background: #2a2a00; color: #cccc00; }
+    .opus-status.processing { background: #002a1a; color: #00cc88; }
+    .opus-status.done { background: #001a2a; color: #00aaff; }
+    .opus-status.error { background: #2a0000; color: #ff6666; }
+    .opus-clip-card { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
+    .opus-clip-q { font-size: 14px; font-weight: 700; color: var(--black); margin-bottom: 6px; }
+    .opus-clip-ts { font-size: 12px; color: var(--gray); background: var(--light); padding: 3px 8px; border-radius: 6px; display: inline-block; margin-bottom: 10px; }
+    .opus-clip-status { font-size: 13px; color: var(--gray); margin-top: 8px; }
+    .btn-opus { background: #0a0a0a; color: var(--gold); border-color: var(--gold); }
+    .btn-opus:hover:not(:disabled) { background: #1a1a1a; }
   </style>
 </head>
 <body>
@@ -127,13 +140,6 @@
       </div>
       <div class="options-row">
         <div class="option-group">
-          <label>Seeker Questions</label>
-          <select id="questionCount">
-            <option value="5">Top 5</option>
-            <option value="10" selected>Top 10</option>
-          </select>
-        </div>
-        <div class="option-group">
           <label>Sermon Notes Slides</label>
           <select id="slideCount">
             <option value="3">3 slides</option>
@@ -153,8 +159,19 @@
         <label>Anthropic API Key</label>
         <input type="password" id="apiKeyInput" placeholder="sk-ant-..." />
       </div>
+      <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border);">
+        <div class="card-label" style="margin-bottom:0.75rem;">Opus Clip Integration (optional)</div>
+        <div class="input-group" style="margin-bottom:0.75rem;">
+          <label>Opus Clip API Key</label>
+          <input type="password" id="opusKeyInput" placeholder="Opus Clip API key..." />
+        </div>
+        <div class="input-group" style="margin-bottom:0;">
+          <label>Opus Clip Organization ID</label>
+          <input type="text" id="opusOrgInput" placeholder="org_..." />
+        </div>
+      </div>
       <button class="btn btn-gold" id="analyzeBtn" onclick="analyzeSermon()" style="margin-top:1.25rem;">Analyze Sermon</button>
-      <div class="api-note">Both outputs ready in approximately 30 to 45 seconds</div>
+      <div class="api-note">All outputs ready in approximately 30 to 45 seconds</div>
     </div>
 
     <div class="error-card" id="errorCard"></div>
@@ -172,6 +189,7 @@
         <button class="tab-btn active" onclick="switchTab('seekers')">Seeker Questions</button>
         <button class="tab-btn" onclick="switchTab('notes')">Sermon Notes Slides</button>
         <button class="tab-btn" onclick="switchTab('summary')">Sermon Summary</button>
+        <button class="tab-btn" onclick="switchTab('opus')">Opus Clip</button>
       </div>
       <div class="tab-content active" id="tab-seekers">
         <div id="questionsContainer"></div>
@@ -200,6 +218,15 @@
           <button class="btn btn-sm" onclick="copyAllSummary()">&#10697; Copy Summary</button>
         </div>
       </div>
+      <div class="tab-content" id="tab-opus">
+        <div class="opus-banner">
+          <p style="color:#fff; font-weight:700; margin-bottom:4px;">Send Clips to Opus Clip</p>
+          <p>Each seeker question clip will be sent to Opus Clip using the exact timestamps identified. Make sure your Opus Clip API key and Org ID are entered above before sending.</p>
+        </div>
+        <div id="opusContainer">
+          <div style="font-size:13px; color:var(--gray); padding:1rem 0;">Run an analysis above to see clip options.</div>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -225,11 +252,13 @@ document.getElementById('passwordInput').addEventListener('keydown', e => { if (
 
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
-    b.classList.toggle('active', (i===0&&tab==='seekers')||(i===1&&tab==='notes')||(i===2&&tab==='summary'));
+    b.classList.toggle('active',
+      (i===0&&tab==='seekers')||(i===1&&tab==='notes')||
+      (i===2&&tab==='summary')||(i===3&&tab==='opus'));
   });
-  document.getElementById('tab-seekers').classList.toggle('active', tab==='seekers');
-  document.getElementById('tab-notes').classList.toggle('active', tab==='notes');
-  document.getElementById('tab-summary').classList.toggle('active', tab==='summary');
+  ['seekers','notes','summary','opus'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+  });
 }
 
 function toggleTranscript() {
@@ -257,7 +286,7 @@ async function analyzeSermon() {
   hideError();
   const url = document.getElementById('youtubeUrl').value.trim();
   const manualTranscript = document.getElementById('transcriptInput').value.trim();
-  const questionCount = document.getElementById('questionCount').value;
+  const questionCount = 5;
   const slideCount = document.getElementById('slideCount').value;
   const apiKey = document.getElementById('apiKeyInput').value.trim();
 
@@ -328,7 +357,7 @@ ${transcript.substring(0, 50000)}
 Produce THREE outputs. Do NOT use em dashes anywhere in your response. Use plain alternatives like "and", "to", or a comma instead.
 
 OUTPUT 1 - SEEKER QUESTIONS
-Identify the TOP ${questionCount} culturally resonant questions this sermon answers. Real questions people in 2026 are genuinely asking about suffering, identity, purpose, faith, doubt, relationships, meaning, or who Jesus is. No churchy language.
+Identify the TOP 5 culturally resonant questions this sermon answers. Real questions people in 2026 are genuinely asking about suffering, identity, purpose, faith, doubt, relationships, meaning, or who Jesus is. No churchy language.
 
 For each question format EXACTLY as one line:
 Q|[sharp culturally relevant question]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence social media caption that intrigues a skeptic, not preachy]
@@ -497,7 +526,42 @@ function renderResults(questions, slides, summary) {
     summaryActions.style.display = 'none';
   }
 
+  // Render Opus Clip tab
+  renderOpusTab(questions);
+
   document.getElementById('resultsSection').classList.add('visible');
+}
+
+function renderOpusTab(questions) {
+  const container = document.getElementById('opusContainer');
+  container.innerHTML = '';
+  const opusKey = document.getElementById('opusKeyInput').value.trim();
+  const hasKeys = !!opusKey;
+
+  if (!hasKeys) {
+    container.innerHTML = '<div style="font-size:13px; color:var(--gray); padding:0.75rem 0;">Enter your Opus Clip API key and Org ID in the input section above to enable sending clips.</div>';
+  }
+
+  questions.forEach((q, i) => {
+    const card = document.createElement('div');
+    card.className = 'opus-clip-card';
+    card.id = 'opus-card-' + i;
+    card.innerHTML = `
+      <div class="q-number">Clip ${i+1}</div>
+      <div class="opus-clip-q">${q.question}</div>
+      <div class="opus-clip-ts">${q.timestamp}</div>
+      <div class="opus-clip-status" id="opus-status-${i}"></div>
+      ${hasKeys ? '<button class="btn btn-sm btn-opus" onclick="sendToOpus(' + i + ', this)" style="margin-top:8px;">Send to Opus Clip</button>' : ''}
+    `;
+    container.appendChild(card);
+  });
+
+  if (hasKeys && questions.length > 0) {
+    const sendAll = document.createElement('div');
+    sendAll.style.cssText = 'margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border); display:flex; gap:0.75rem;';
+    sendAll.innerHTML = '<button class="btn btn-opus" onclick="sendAllToOpus()" style="flex:1;">Send All 5 Clips to Opus Clip</button>';
+    container.appendChild(sendAll);
+  }
 }
 
 function copySingleQ(i, btn) {
@@ -573,6 +637,88 @@ function downloadSlides() {
     text += '\n';
   });
   download(text, `${slugify(sermonTitle)}_slides.txt`);
+}
+
+// ── OPUS CLIP INTEGRATION ────────────────────────────────────────────────
+
+function timestampToSeconds(ts) {
+  // handles "MM:SS" or "MM:SS-MM:SS" — returns [startSec, endSec]
+  const parts = ts.split('-').map(s => s.trim());
+  const toSec = t => {
+    const [m, s] = t.split(':').map(Number);
+    return (m || 0) * 60 + (s || 0);
+  };
+  const start = toSec(parts[0]);
+  const end = parts[1] ? toSec(parts[1]) : start + 120; // default 2 min if no end
+  return [start, end];
+}
+
+async function sendToOpus(i, btn) {
+  const q = currentQuestions[i];
+  const opusKey = document.getElementById('opusKeyInput').value.trim();
+  const opusOrg = document.getElementById('opusOrgInput').value.trim();
+  const youtubeUrl = document.getElementById('youtubeUrl').value.trim();
+  const statusEl = document.getElementById('opus-status-' + i);
+
+  if (!opusKey) { statusEl.textContent = 'Enter your Opus Clip API key above.'; return; }
+  if (!youtubeUrl) { statusEl.textContent = 'No YouTube URL found.'; return; }
+
+  btn.disabled = true;
+  statusEl.innerHTML = '<span class="opus-status queued">Sending to Opus Clip...</span>';
+
+  const [startSec, endSec] = timestampToSeconds(q.timestamp);
+  const clipDuration = endSec - startSec;
+
+  const body = {
+    videoUrl: youtubeUrl,
+    curationPref: {
+      range: { startSec, endSec },
+      clipDurations: [[Math.max(15, clipDuration - 10), clipDuration + 30]],
+      topicKeywords: [q.question.substring(0, 60)],
+      genre: 'Auto',
+      skipCurate: false
+    },
+    importPref: { sourceLang: 'en' }
+  };
+
+  const headers = {
+    'Authorization': 'Bearer ' + opusKey,
+    'Content-Type': 'application/json'
+  };
+  if (opusOrg) headers['x-opus-org-id'] = opusOrg;
+
+  try {
+    const res = await fetch('https://api.opus.pro/api/clip-projects', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      statusEl.innerHTML = '<span class="opus-status error">Error: ' + (data.message || data.error || 'Unknown error') + '</span>';
+      btn.disabled = false;
+      return;
+    }
+    const projectId = data.id || data.projectId || '';
+    statusEl.innerHTML = '<span class="opus-status processing">Queued in Opus Clip' + (projectId ? ' (ID: ' + projectId + ')' : '') + '. Processing takes a few minutes.</span>';
+    btn.textContent = 'Sent';
+    btn.classList.add('copied');
+  } catch(e) {
+    statusEl.innerHTML = '<span class="opus-status error">Network error: ' + e.message + '</span>';
+    btn.disabled = false;
+  }
+}
+
+async function sendAllToOpus() {
+  for (let i = 0; i < currentQuestions.length; i++) {
+    const card = document.getElementById('opus-card-' + i);
+    if (!card) continue;
+    const btn = card.querySelector('button');
+    if (btn && !btn.disabled) {
+      await sendToOpus(i, btn);
+      await new Promise(r => setTimeout(r, 1200)); // stagger requests
+    }
+  }
 }
 </script>
 </body>
