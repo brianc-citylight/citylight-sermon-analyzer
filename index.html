@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>City Light Sermon Analyzer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold: #C9A84C;
+      --black: #111111;
+      --gray: #555555;
+      --light: #F5F5F5;
+      --border: #E0E0E0;
+      --white: #FFFFFF;
+    }
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #F8F8F6; color: var(--black); min-height: 100vh; }
+    .gold-bar { height: 4px; background: var(--gold); }
+    .header { background: var(--white); border-bottom: 1px solid var(--border); padding: 1.25rem 2rem; }
+    .church-name { font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); }
+    .app-name { font-size: 20px; font-weight: 700; color: var(--black); letter-spacing: -0.02em; }
+    .container { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .login-wrapper { display: flex; justify-content: center; align-items: center; min-height: 70vh; }
+    .login-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 2.5rem; width: 100%; max-width: 400px; text-align: center; }
+    .login-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 0.5rem; }
+    .login-card p { font-size: 14px; color: var(--gray); margin-bottom: 1.5rem; }
+    .login-error { font-size: 13px; color: #c0392b; margin-bottom: 0.75rem; min-height: 20px; }
+    .main { display: none; }
+    .main.visible { display: block; }
+    .card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .card-label { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 1rem; }
+    .input-group { margin-bottom: 1rem; }
+    .input-group label { display: block; font-size: 13px; font-weight: 600; color: var(--gray); margin-bottom: 6px; }
+    .input-group input[type="text"],
+    .input-group input[type="password"],
+    .input-group textarea {
+      width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px;
+      font-size: 14px; outline: none; font-family: inherit; color: var(--black); background: var(--white);
+    }
+    .input-group input:focus, .input-group textarea:focus { border-color: var(--gold); }
+    .input-group textarea { height: 130px; resize: vertical; font-size: 13px; }
+    .options-row { display: flex; gap: 1.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+    .option-group label { display: block; font-size: 12px; font-weight: 700; color: var(--gray); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .option-group select { padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--white); color: var(--black); outline: none; }
+    .option-group select:focus { border-color: var(--gold); }
+    .transcript-toggle { font-size: 12px; color: var(--gold); cursor: pointer; text-decoration: underline; margin-bottom: 0.75rem; display: inline-block; }
+    .transcript-box { display: none; margin-bottom: 1rem; }
+    .transcript-box.visible { display: block; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 20px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; border: 1px solid var(--border); transition: opacity 0.15s, transform 0.1s; background: var(--white); color: var(--black); font-family: inherit; }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-gold { background: var(--gold); color: var(--white); border-color: var(--gold); width: 100%; font-size: 15px; padding: 13px; }
+    .btn-gold:hover:not(:disabled) { background: #b8923f; border-color: #b8923f; }
+    .btn-sm { font-size: 12px; padding: 6px 12px; }
+    .btn:hover:not(:disabled):not(.btn-gold) { background: var(--light); }
+    .api-note { font-size: 12px; color: var(--gray); text-align: center; margin-top: 0.75rem; }
+    .status-bar { background: var(--light); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--gray); margin-bottom: 1.5rem; display: none; align-items: center; gap: 10px; }
+    .status-bar.visible { display: flex; }
+    .spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-card { background: #fdf2f2; border: 1px solid #f5c6cb; border-radius: 8px; padding: 1rem; font-size: 14px; color: #c0392b; margin-bottom: 1rem; display: none; }
+    .error-card.visible { display: block; }
+    .results-section { display: none; }
+    .results-section.visible { display: block; }
+    .sermon-bar { background: var(--black); color: var(--white); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+    .sermon-bar .stitle { font-size: 15px; font-weight: 700; }
+    .sermon-bar .sdate { font-size: 12px; color: var(--gold); }
+    .tab-row { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 1.5rem; }
+    .tab-btn { padding: 10px 20px; font-size: 14px; font-weight: 700; border: none; background: none; color: var(--gray); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; font-family: inherit; }
+    .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .question-card { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
+    .q-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .q-number { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
+    .q-timestamp { font-size: 12px; color: var(--gray); background: var(--light); padding: 3px 8px; border-radius: 6px; }
+    .q-question { font-size: 15px; font-weight: 700; color: var(--black); margin-bottom: 10px; line-height: 1.4; }
+    .q-caption-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray); margin-bottom: 5px; }
+    .q-caption { font-size: 13px; color: var(--gray); line-height: 1.6; padding: 10px 12px; background: var(--light); border-radius: 8px; border-left: 3px solid var(--gold); margin-bottom: 8px; }
+    .slide-card { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
+    .slide-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
+    .slide-label-text { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); }
+    .slide-field { margin-bottom: 10px; }
+    .slide-field-key { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray); margin-bottom: 4px; }
+    .slide-field-val { font-size: 14px; color: var(--black); line-height: 1.5; padding: 8px 12px; background: var(--light); border-radius: 7px; }
+    .canva-banner { background: var(--black); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .canva-banner p { font-size: 13px; color: #ccc; line-height: 1.5; }
+    .canva-banner p strong { color: var(--white); }
+    .canva-banner a { display: inline-flex; align-items: center; gap: 6px; background: var(--gold); color: var(--white); padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+    .canva-banner a:hover { background: #b8923f; }
+    .action-row { display: flex; gap: 0.75rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+    .action-row .btn { flex: 1; }
+    .copied { color: var(--gold) !important; border-color: var(--gold) !important; }
+  </style>
+</head>
+<body>
+<div class="gold-bar"></div>
+<div class="header">
+  <div class="church-name">City Light Church &middot; Vicksburg, MS</div>
+  <div class="app-name">Sermon Analyzer</div>
+</div>
+<div class="container">
+
+  <div class="login-wrapper" id="loginWrapper">
+    <div class="login-card">
+      <h2>Staff Access</h2>
+      <p>Enter your City Light staff password to continue.</p>
+      <div class="input-group">
+        <input type="password" id="passwordInput" placeholder="Password" />
+      </div>
+      <div class="login-error" id="loginError"></div>
+      <button class="btn btn-gold" onclick="handleLogin()">Sign In</button>
+    </div>
+  </div>
+
+  <div class="main" id="mainSection">
+
+    <div class="card">
+      <div class="card-label">New Sermon Analysis</div>
+      <div class="input-group">
+        <label>YouTube Sermon Link</label>
+        <input type="text" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." />
+      </div>
+      <div class="options-row">
+        <div class="option-group">
+          <label>Seeker Questions</label>
+          <select id="questionCount">
+            <option value="5">Top 5</option>
+            <option value="10" selected>Top 10</option>
+          </select>
+        </div>
+        <div class="option-group">
+          <label>Sermon Notes Slides</label>
+          <select id="slideCount">
+            <option value="3">3 slides</option>
+            <option value="4">4 slides</option>
+            <option value="5" selected>5 slides</option>
+          </select>
+        </div>
+      </div>
+      <span class="transcript-toggle" onclick="toggleTranscript()">+ Paste transcript manually (recommended for accuracy)</span>
+      <div class="transcript-box" id="transcriptBox">
+        <div class="input-group" style="margin-top:0.75rem; margin-bottom:0;">
+          <label>Sermon Transcript</label>
+          <textarea id="transcriptInput" placeholder="Go to the YouTube video → click '...' → Show transcript → copy and paste here."></textarea>
+        </div>
+      </div>
+      <div class="input-group" style="margin-top:1rem; margin-bottom:0;">
+        <label>Anthropic API Key</label>
+        <input type="password" id="apiKeyInput" placeholder="sk-ant-..." />
+      </div>
+      <button class="btn btn-gold" id="analyzeBtn" onclick="analyzeSermon()" style="margin-top:1.25rem;">Analyze Sermon</button>
+      <div class="api-note">Both outputs ready in approximately 30&ndash;45 seconds</div>
+    </div>
+
+    <div class="error-card" id="errorCard"></div>
+    <div class="status-bar" id="statusBar">
+      <div class="spinner"></div>
+      <span id="statusText">Analyzing...</span>
+    </div>
+
+    <div class="results-section" id="resultsSection">
+      <div class="sermon-bar">
+        <span class="stitle" id="sermonTitleDisplay"></span>
+        <span class="sdate" id="sermonDateDisplay"></span>
+      </div>
+      <div class="tab-row">
+        <button class="tab-btn active" onclick="switchTab('seekers')">Seeker Questions</button>
+        <button class="tab-btn" onclick="switchTab('notes')">Sermon Notes Slides</button>
+      </div>
+      <div class="tab-content active" id="tab-seekers">
+        <div id="questionsContainer"></div>
+        <div class="action-row">
+          <button class="btn btn-sm" onclick="downloadQuestions()">&#8595; Download .txt</button>
+          <button class="btn btn-sm" onclick="copyAllQuestions()">&#10697; Copy All</button>
+        </div>
+      </div>
+      <div class="tab-content" id="tab-notes">
+        <div class="canva-banner">
+          <p><strong>Ready to build your slides.</strong><br>Copy each slide below into your Canva template.</p>
+          <a href="https://www.canva.com/design?create=true&template=EAHKE92RscA" target="_blank">Open Canva &#8599;</a>
+        </div>
+        <div id="slidesContainer"></div>
+        <div class="action-row">
+          <button class="btn btn-sm" onclick="downloadSlides()">&#8595; Download .txt</button>
+          <button class="btn btn-sm" onclick="copyAllSlides()">&#10697; Copy All</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+<script>
+const CORRECT_PASSWORD = 'citylight2026';
+let currentQuestions = null;
+let currentSlides = null;
+let sermonTitle = '';
+const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+function handleLogin() {
+  const pw = document.getElementById('passwordInput').value;
+  if (pw === CORRECT_PASSWORD) {
+    document.getElementById('loginWrapper').style.display = 'none';
+    document.getElementById('mainSection').classList.add('visible');
+  } else {
+    document.getElementById('loginError').textContent = 'Incorrect password. Please try again.';
+  }
+}
+document.getElementById('passwordInput').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (i===0&&tab==='seekers')||(i===1&&tab==='notes')));
+  document.getElementById('tab-seekers').classList.toggle('active', tab==='seekers');
+  document.getElementById('tab-notes').classList.toggle('active', tab==='notes');
+}
+
+function toggleTranscript() {
+  document.getElementById('transcriptBox').classList.toggle('visible');
+}
+
+function extractVideoId(url) {
+  const patterns = [/(?:youtube\.com\/watch\?v=)([^&\n?#]+)/,/(?:youtu\.be\/)([^&\n?#]+)/,/(?:youtube\.com\/embed\/)([^&\n?#]+)/];
+  for (const p of patterns) { const m = url.match(p); if (m) return m[1]; }
+  return null;
+}
+
+function setStatus(msg) {
+  document.getElementById('statusText').textContent = msg;
+  document.getElementById('statusBar').classList.add('visible');
+}
+function showError(msg) {
+  const c = document.getElementById('errorCard');
+  c.textContent = msg; c.classList.add('visible');
+  document.getElementById('statusBar').classList.remove('visible');
+}
+function hideError() { document.getElementById('errorCard').classList.remove('visible'); }
+
+async function analyzeSermon() {
+  hideError();
+  const url = document.getElementById('youtubeUrl').value.trim();
+  const manualTranscript = document.getElementById('transcriptInput').value.trim();
+  const questionCount = document.getElementById('questionCount').value;
+  const slideCount = document.getElementById('slideCount').value;
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+
+  if (!url) { showError('Please enter a YouTube link.'); return; }
+  if (!apiKey) { showError('Please enter your Anthropic API key.'); return; }
+  const videoId = extractVideoId(url);
+  if (!videoId) { showError('Could not parse a YouTube video ID. Please check the URL.'); return; }
+
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('resultsSection').classList.remove('visible');
+
+  setStatus('Fetching sermon title from YouTube...');
+  try {
+    const ytRes = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+    const ytData = await ytRes.json();
+    sermonTitle = ytData.title || 'Untitled Sermon';
+  } catch(e) { sermonTitle = 'Untitled Sermon'; }
+
+  const transcript = manualTranscript || '[No transcript provided — please paste the YouTube transcript for best results.]';
+
+  setStatus('Claude is analyzing the sermon — about 30 seconds...');
+
+  const prompt = `You are analyzing a sermon for City Light Church in Vicksburg, MS. The pastor preaches expository, Christ-centered sermons for both believers and seekers.
+
+Sermon title: "${sermonTitle}"
+Date: ${today}
+YouTube: ${url}
+
+Transcript:
+---
+${transcript.substring(0, 14000)}
+---
+
+Produce TWO outputs:
+
+OUTPUT 1 — SEEKER QUESTIONS
+Identify the TOP ${questionCount} culturally resonant questions this sermon answers. Real questions people in 2026 are genuinely asking — about suffering, identity, purpose, faith, doubt, relationships, meaning, or who Jesus is. No churchy language.
+
+For each question format EXACTLY as one line:
+Q|[sharp culturally relevant question]|[timestamp MM:SS]|[2-3 sentence social media caption that intrigues a skeptic — not preachy]
+
+OUTPUT 2 — SERMON NOTES SLIDES
+Produce exactly ${slideCount} content slides for a mature Christian taking notes.
+
+Format EXACTLY as:
+
+TITLE_SLIDE
+Sermon Title: ${sermonTitle}
+Sermon Date: ${today}
+
+INTRO_SLIDE
+Scripture: [key passage reference and 1-2 line excerpt]
+Key Point: [the single big idea in one punchy memorable sentence]
+
+SLIDE_1
+Subpoint: [first major subpoint — one clear declarative sentence]
+Key Takeaway: [the core insight a note-taker would underline]
+Key Reflection: [one personal application question]
+Scripture: [optional key verse reference]
+
+SLIDE_2
+Subpoint: [second major subpoint]
+Key Takeaway: [core insight]
+Key Reflection: [personal application question]
+Scripture: [optional key verse reference]
+
+SLIDE_3
+Subpoint: [third major subpoint]
+Key Takeaway: [core insight]
+Key Reflection: [personal application question]
+Scripture: [optional key verse reference]
+
+${parseInt(slideCount) > 3 ? 'SLIDE_4\nSubpoint: [fourth subpoint]\nKey Takeaway: [core insight]\nKey Reflection: [personal application question]\nScripture: [optional key verse reference]' : ''}
+${parseInt(slideCount) > 4 ? 'SLIDE_5\nSubpoint: [fifth subpoint]\nKey Takeaway: [core insight]\nKey Reflection: [personal application question]\nScripture: [optional key verse reference]' : ''}
+
+Separate the two outputs with exactly this line on its own: ---SLIDES---`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2500,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) { showError('Claude API error: ' + (data.error?.message || 'Unknown error')); document.getElementById('analyzeBtn').disabled = false; return; }
+
+    const rawText = data.content.map(b => b.text || '').join('');
+    const parts = rawText.split('---SLIDES---');
+    currentQuestions = parts[0].trim().split('\n').filter(l => l.startsWith('Q')).map(line => {
+      const p = line.split('|');
+      return { question: p[1]||'', timestamp: p[2]||'', caption: p[3]||'' };
+    });
+    currentSlides = parseSlidesFromRaw(parts[1] || '');
+    renderResults(currentQuestions, currentSlides);
+
+  } catch(e) {
+    showError('Error: ' + e.message + '. Check your API key and try again.');
+  }
+
+  document.getElementById('analyzeBtn').disabled = false;
+  document.getElementById('statusBar').classList.remove('visible');
+}
+
+function parseSlidesFromRaw(raw) {
+  const slides = [];
+  const sections = raw.split(/\n(?=TITLE_SLIDE|INTRO_SLIDE|SLIDE_\d)/);
+  sections.forEach(section => {
+    const lines = section.trim().split('\n');
+    const header = lines[0].trim();
+    const fields = {};
+    lines.slice(1).forEach(l => {
+      const colon = l.indexOf(':');
+      if (colon > -1) {
+        const key = l.substring(0, colon).trim();
+        const val = l.substring(colon + 1).trim();
+        if (key && val) fields[key] = val;
+      }
+    });
+    if (header && Object.keys(fields).length > 0) slides.push({ header, fields });
+  });
+  return slides;
+}
+
+function renderResults(questions, slides) {
+  document.getElementById('sermonTitleDisplay').textContent = sermonTitle;
+  document.getElementById('sermonDateDisplay').textContent = today;
+
+  const qContainer = document.getElementById('questionsContainer');
+  qContainer.innerHTML = '';
+  questions.forEach((q, i) => {
+    const card = document.createElement('div');
+    card.className = 'question-card';
+    card.innerHTML = `
+      <div class="q-meta">
+        <span class="q-number">Question ${i+1}</span>
+        <span class="q-timestamp">${q.timestamp}</span>
+      </div>
+      <div class="q-question">${q.question}</div>
+      <div class="q-caption-label">Social media caption</div>
+      <div class="q-caption">${q.caption}</div>
+      <button class="btn btn-sm" onclick="copySingleQ(${i}, this)" style="margin-top:8px;">Copy Caption</button>
+    `;
+    qContainer.appendChild(card);
+  });
+
+  const sContainer = document.getElementById('slidesContainer');
+  sContainer.innerHTML = '';
+  const labelMap = { 'TITLE_SLIDE': 'Title Slide', 'INTRO_SLIDE': 'Intro Slide — Scripture & Key Point' };
+  slides.forEach((slide, idx) => {
+    const num = slide.header.match(/\d+/);
+    const label = labelMap[slide.header] || `Takeaway Slide ${num ? num[0] : ''}`;
+    const fieldsHtml = Object.entries(slide.fields).map(([k,v]) => `
+      <div class="slide-field">
+        <div class="slide-field-key">${k}</div>
+        <div class="slide-field-val">${v}</div>
+      </div>`).join('');
+    const card = document.createElement('div');
+    card.className = 'slide-card';
+    card.innerHTML = `
+      <div class="slide-header">
+        <span class="slide-label-text">${label}</span>
+        <button class="btn btn-sm" onclick="copySingleSlide(${idx}, this)">Copy Slide</button>
+      </div>
+      ${fieldsHtml}
+    `;
+    sContainer.appendChild(card);
+  });
+
+  document.getElementById('resultsSection').classList.add('visible');
+}
+
+function copySingleQ(i, btn) {
+  const q = currentQuestions[i];
+  navigator.clipboard.writeText(`${q.question}\n\nTimestamp: ${q.timestamp}\n\n${q.caption}`).then(() => {
+    const orig = btn.textContent; btn.textContent = 'Copied!'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
+  }).catch(()=>{});
+}
+
+function copySingleSlide(i, btn) {
+  const s = currentSlides[i];
+  let text = s.header + '\n';
+  Object.entries(s.fields).forEach(([k,v]) => { text += `${k}: ${v}\n`; });
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent; btn.textContent = 'Copied!'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
+  }).catch(()=>{});
+}
+
+function copyAllQuestions() {
+  if (!currentQuestions) return;
+  let text = `SEEKER QUESTIONS\n${sermonTitle}\n${today}\n${'='.repeat(40)}\n\n`;
+  currentQuestions.forEach((q,i) => { text += `Q${i+1}: ${q.question}\nTimestamp: ${q.timestamp}\nCaption: ${q.caption}\n\n`; });
+  navigator.clipboard.writeText(text).catch(()=>{});
+}
+
+function copyAllSlides() {
+  if (!currentSlides) return;
+  let text = `SERMON NOTES SLIDES\n${sermonTitle}\n${today}\n${'='.repeat(40)}\n\n`;
+  currentSlides.forEach(s => {
+    text += s.header + '\n';
+    Object.entries(s.fields).forEach(([k,v]) => { text += `${k}: ${v}\n`; });
+    text += '\n';
+  });
+  navigator.clipboard.writeText(text).catch(()=>{});
+}
+
+function download(text, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type:'text/plain'}));
+  a.download = filename; a.click();
+}
+
+function slugify(str) { return (str||'sermon').replace(/[^a-z0-9]/gi,'_').toLowerCase().substring(0,40); }
+
+function downloadQuestions() {
+  if (!currentQuestions) return;
+  let text = `SEEKER QUESTIONS\n${sermonTitle}\n${today}\n${'='.repeat(40)}\n\n`;
+  currentQuestions.forEach((q,i) => { text += `Q${i+1}: ${q.question}\nTimestamp: ${q.timestamp}\nCaption: ${q.caption}\n\n`; });
+  download(text, `${slugify(sermonTitle)}_questions.txt`);
+}
+
+function downloadSlides() {
+  if (!currentSlides) return;
+  let text = `SERMON NOTES SLIDES\n${sermonTitle}\n${today}\n${'='.repeat(40)}\n\n`;
+  currentSlides.forEach(s => {
+    text += s.header + '\n';
+    Object.entries(s.fields).forEach(([k,v]) => { text += `${k}: ${v}\n`; });
+    text += '\n';
+  });
+  download(text, `${slugify(sermonTitle)}_slides.txt`);
+}
+</script>
+</body>
+</html>
