@@ -359,6 +359,8 @@ Identify the TOP 5 culturally resonant questions this sermon answers. Real quest
 For each question format EXACTLY as one line:
 Q|[sharp culturally relevant question]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence social media caption that intrigues a skeptic, not preachy]
 
+IMPORTANT: Each clip window must be at least 60 seconds long. Choose timestamps that capture the full answer to the question, not just the hook. If the answer runs longer, let it run.
+
 OUTPUT 2 - SERMON NOTES SLIDES
 Produce exactly ${slideCount} content slides for a mature Christian taking notes.
 
@@ -649,13 +651,13 @@ function timestampToSeconds(ts) {
   return [start, end];
 }
 
-async function pollForCompletion(projectId, statusEl, maxAttempts = 24) {
+async function pollForCompletion(projectId, statusEl, opusKey, maxAttempts = 24) {
   // Poll via our serverless function every 15 seconds — no CORS issues
+  // opusKey captured at send time so field changes don't break polling
   let consecutiveErrors = 0;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     await new Promise(r => setTimeout(r, 15000));
     try {
-      const opusKey = document.getElementById('opusKeyInput').value.trim();
       const res = await fetch(
         '/api/opus?action=poll&projectId=' + encodeURIComponent(projectId),
         { headers: { 'x-opus-key': opusKey } }
@@ -732,7 +734,7 @@ async function sendToOpus(i, btn) {
     statusEl.innerHTML = '<span class="opus-status processing">Queued (Project: ' + projectId + '). Processing...</span>';
 
     // STAGE 2: Poll for completion via serverless function (no CORS)
-    const clip = await pollForCompletion(projectId, statusEl);
+    const clip = await pollForCompletion(projectId, statusEl, opusKey);
 
     if (!clip) {
       statusEl.innerHTML = '<span class="opus-status error">Timed out. Check your Opus Clip dashboard — the clip may still be processing.</span>';

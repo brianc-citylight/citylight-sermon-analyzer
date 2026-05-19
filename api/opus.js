@@ -23,13 +23,24 @@ export default async function handler(req, res) {
     const { videoUrl, startSec, endSec, question } = req.body;
 
     const clipDuration = endSec - startSec;
-    const minDuration = Math.max(15, clipDuration - 5);
-    const maxDuration = clipDuration + 15;
+
+    // Enforce 30 second minimum clip length
+    // If the identified window is shorter than 30s, expand it symmetrically
+    let adjustedStart = startSec;
+    let adjustedEnd = endSec;
+    if (clipDuration < 30) {
+      const deficit = 30 - clipDuration;
+      adjustedStart = Math.max(0, startSec - Math.ceil(deficit / 2));
+      adjustedEnd = endSec + Math.floor(deficit / 2);
+    }
+    const adjustedDuration = adjustedEnd - adjustedStart;
+    const minDuration = Math.max(30, adjustedDuration - 5);
+    const maxDuration = adjustedDuration + 20;
 
     const body = {
       videoUrl,
       curationPref: {
-        range: { startSec, endSec },
+        range: { startSec: adjustedStart, endSec: adjustedEnd },
         clipDurations: [[minDuration, maxDuration]],
         topicKeywords: [question.substring(0, 80)],
         genre: 'Auto',
