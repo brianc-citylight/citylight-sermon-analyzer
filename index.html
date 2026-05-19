@@ -536,8 +536,15 @@ function renderOpusTab(questions) {
   const hasKeys = !!opusKey;
 
   if (!hasKeys) {
-    container.innerHTML = '<div style="font-size:13px; color:var(--gray); padding:0.75rem 0;">Enter your Opus Clip API key and Org ID in the input section above to enable sending clips.</div>';
+    container.innerHTML = '<div style="font-size:13px; color:var(--gray); padding:0.75rem 0;">Enter your Opus Clip API key in the input section above to enable sending clips.</div>';
+    return;
   }
+
+  // Disclaimer
+  const disclaimer = document.createElement('div');
+  disclaimer.style.cssText = 'background:#1a1000; border:1px solid ' + 'var(--gold)' + '; border-radius:8px; padding:10px 14px; margin-bottom:1rem; font-size:12px; color:#cc9900; line-height:1.6;';
+  disclaimer.innerHTML = '<strong style="color:var(--gold);">Important:</strong> Send no more than 3 clips at a time. Your Opus Clip plan supports 4 concurrent projects. Wait for each clip to finish processing before sending more.';
+  container.appendChild(disclaimer);
 
   questions.forEach((q, i) => {
     const card = document.createElement('div');
@@ -548,17 +555,10 @@ function renderOpusTab(questions) {
       <div class="opus-clip-q">${q.question}</div>
       <div class="opus-clip-ts">${q.timestamp}</div>
       <div class="opus-clip-status" id="opus-status-${i}"></div>
-      ${hasKeys ? '<button class="btn btn-sm btn-opus" onclick="sendToOpus(' + i + ', this)" style="margin-top:8px;">Send to Opus Clip</button>' : ''}
+      <button class="btn btn-sm btn-opus" onclick="sendToOpus(${i}, this)" style="margin-top:8px;">Send to Opus Clip</button>
     `;
     container.appendChild(card);
   });
-
-  if (hasKeys && questions.length > 0) {
-    const sendAll = document.createElement('div');
-    sendAll.style.cssText = 'margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border); display:flex; gap:0.75rem;';
-    sendAll.innerHTML = '<button class="btn btn-opus" onclick="sendAllToOpus()" style="flex:1;">Send All 5 Clips to Opus Clip</button>';
-    container.appendChild(sendAll);
-  }
 }
 
 function copySingleQ(i, btn) {
@@ -649,30 +649,21 @@ function timestampToSeconds(ts) {
   return [start, end];
 }
 
-function opusHeaders() {
-  const key = document.getElementById('opusKeyInput').value.trim();
-  return {
-    'Authorization': 'Bearer ' + key,
-    'Content-Type': 'application/json'
-  };
-}
-
 async function pollForCompletion(projectId, statusEl, maxAttempts = 24) {
-  // Poll every 15 seconds, up to 6 minutes total
+  // Poll via our serverless function every 15 seconds — no CORS issues
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     await new Promise(r => setTimeout(r, 15000));
     try {
+      const opusKey = document.getElementById('opusKeyInput').value.trim();
       const res = await fetch(
-        'https://api.opus.pro/api/exportable-clips?q=findByProjectId&projectId=' + projectId,
-        { headers: opusHeaders() }
+        '/api/opus?action=poll&projectId=' + encodeURIComponent(projectId),
+        { headers: { 'x-opus-key': opusKey } }
       );
       if (!res.ok) continue;
-      const clips = await res.json();
-      if (clips && clips.length > 0) {
-        return clips[0]; // return first clip
-      }
-      const mins = Math.round(((attempt + 1) * 15) / 60 * 10) / 10;
-      statusEl.innerHTML = '<span class="opus-status processing">Processing... (' + mins + ' min)</span>';
+      const data = await res.json();
+      if (data.ready) return data;
+      const elapsed = Math.round(((attempt + 1) * 15) / 60 * 10) / 10;
+      statusEl.innerHTML = '<span class="opus-status processing">Processing... (' + elapsed + ' min elapsed)</span>';
     } catch(e) { /* keep polling */ }
   }
   return null;
@@ -691,86 +682,63 @@ async function sendToOpus(i, btn) {
   statusEl.innerHTML = '<span class="opus-status queued">Sending to Opus Clip...</span>';
 
   const [startSec, endSec] = timestampToSeconds(q.timestamp);
-  const clipDuration = endSec - startSec;
 
-  // STAGE 1: Create the project
-  const projectBody = {
-    videoUrl: youtubeUrl,
-    curationPref: {
-      range: { startSec, endSec },
-      clipDurations: [[Math.max(15, clipDuration - 10), clipDuration + 30]],
-      topicKeywords: [q.question.substring(0, 80)],
-      genre: 'Auto',
-      skipCurate: false
-    },
-    importPref: { sourceLang: 'en' }
-  };
-
+  // STAGE 1: Create project via serverless function
   try {
-    const projRes = await fetch('https://api.opus.pro/api/clip-projects', {
+    const projRes = await fetch('/api/opus?action=create', {
       method: 'POST',
-      headers: opusHeaders(),
-      body: JSON.stringify(projectBody)
+      headers: {
+        'Content-Type': 'application/json',
+        'x-opus-key': opusKey
+      },
+      body: JSON.stringify({
+        videoUrl: youtubeUrl,
+        startSec,
+        endSec,
+        question: q.question
+      })
     });
-    const projData = await projRes.json();
 
+    const projData = await projRes.json();
     if (!projRes.ok) {
-      statusEl.innerHTML = '<span class="opus-status error">Error: ' + (projData.message || projData.error || 'Unknown error') + '</span>';
+      statusEl.innerHTML = '<span class="opus-status error">Error: ' + (projData.error || 'Unknown error') + '</span>';
       btn.disabled = false;
       return;
     }
 
-    const projectId = projData.id || projData.projectId || '';
-    statusEl.innerHTML = '<span class="opus-status processing">Clip queued (Project: ' + projectId + '). Waiting for processing...</span>';
+    const projectId = projData.projectId || '';
+    statusEl.innerHTML = '<span class="opus-status processing">Queued (Project: ' + projectId + '). Processing...</span>';
 
-    // STAGE 2: Poll until clip is ready
+    // STAGE 2: Poll for completion via serverless function (no CORS)
     const clip = await pollForCompletion(projectId, statusEl);
 
     if (!clip) {
-      statusEl.innerHTML = '<span class="opus-status error">Timed out waiting for clip. Check your Opus Clip dashboard directly.</span>';
+      statusEl.innerHTML = '<span class="opus-status error">Timed out. Check your Opus Clip dashboard — the clip may still be processing.</span>';
       btn.disabled = false;
       return;
     }
 
-    const clipId = clip.id || clip.curationId || '';
-    statusEl.innerHTML = '<span class="opus-status processing">Clip ready. Attaching question and caption...</span>';
-
-    // STAGE 3: Store clip info on card for later publish use
+    // STAGE 3: Show result with caption ready to copy
     const card = document.getElementById('opus-card-' + i);
-    card.dataset.projectId = projectId;
-    card.dataset.clipId = clipId;
-    card.dataset.clipUrl = clip.uriForPreview || '';
-
-    // Show clip preview link and publish button
-    const previewHtml = clip.uriForPreview
-      ? '<a href="' + clip.uriForPreview + '" target="_blank" style="font-size:12px; color:var(--gold); text-decoration:underline; display:block; margin-top:6px;">Preview clip in Opus Clip</a>'
+    const previewHtml = clip.previewUrl
+      ? '<a href="' + clip.previewUrl + '" target="_blank" style="font-size:12px; color:var(--gold); text-decoration:underline; display:block; margin-top:6px;">Preview in Opus Clip</a>'
       : '';
 
-    statusEl.innerHTML = '<span class="opus-status done">Clip processed successfully.</span>' + previewHtml;
+    statusEl.innerHTML = '<span class="opus-status done">Clip ready.</span>' + previewHtml;
     btn.textContent = 'Sent';
     btn.classList.add('copied');
 
-    // Show caption note
     const captionNote = document.createElement('div');
-    captionNote.style.cssText = 'font-size:12px; color:#aaa; margin-top:8px; padding:8px 10px; background:#111; border-radius:6px; line-height:1.5;';
-    captionNote.innerHTML = '<strong style="color:var(--gold);">Question sent as title.</strong> Caption ready to copy below for posting.<br><span style="color:#ccc;">' + q.caption + '</span>';
+    captionNote.style.cssText = 'font-size:12px; color:#aaa; margin-top:10px; padding:10px 12px; background:#0a0a0a; border:1px solid #333; border-radius:6px; line-height:1.6;';
+    captionNote.innerHTML =
+      '<div style="color:var(--gold); font-weight:700; margin-bottom:4px;">Caption — copy before posting:</div>' +
+      '<div style="color:#ddd;">' + q.caption + '</div>' +
+      '<button class="btn btn-sm" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy Caption',1500);" style="margin-top:8px; font-size:11px;">Copy Caption</button>';
     card.appendChild(captionNote);
 
   } catch(e) {
-    statusEl.innerHTML = '<span class="opus-status error">Network error: ' + e.message + '</span>';
+    statusEl.innerHTML = '<span class="opus-status error">Error: ' + e.message + '</span>';
     btn.disabled = false;
-  }
-}
-
-async function sendAllToOpus() {
-  for (let i = 0; i < currentQuestions.length; i++) {
-    const card = document.getElementById('opus-card-' + i);
-    if (!card) continue;
-    const btn = card.querySelector('button.btn-opus:not(.copied)');
-    if (btn && !btn.disabled) {
-      sendToOpus(i, btn); // fire without await so they run in parallel
-      await new Promise(r => setTimeout(r, 2000)); // stagger by 2 seconds
-    }
   }
 }
 </script>
