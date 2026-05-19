@@ -651,6 +651,7 @@ function timestampToSeconds(ts) {
 
 async function pollForCompletion(projectId, statusEl, maxAttempts = 24) {
   // Poll via our serverless function every 15 seconds — no CORS issues
+  let consecutiveErrors = 0;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     await new Promise(r => setTimeout(r, 15000));
     try {
@@ -659,12 +660,33 @@ async function pollForCompletion(projectId, statusEl, maxAttempts = 24) {
         '/api/opus?action=poll&projectId=' + encodeURIComponent(projectId),
         { headers: { 'x-opus-key': opusKey } }
       );
-      if (!res.ok) continue;
+      if (!res.ok) {
+        consecutiveErrors++;
+        const elapsed = Math.round(((attempt + 1) * 15) / 60 * 10) / 10;
+        if (consecutiveErrors >= 3) {
+          // Serverless function not reachable — tell user to check dashboard
+          statusEl.innerHTML = '<span class="opus-status error">Cannot reach poll endpoint (HTTP ' + res.status + '). Your clip may be ready — check your Opus Clip dashboard directly. Project ID: ' + projectId + '</span>';
+          return null;
+        }
+        statusEl.innerHTML = '<span class="opus-status processing">Polling... (' + elapsed + ' min, retrying)</span>';
+        continue;
+      }
+      consecutiveErrors = 0;
       const data = await res.json();
       if (data.ready) return data;
+      if (data.error) {
+        statusEl.innerHTML = '<span class="opus-status processing">Processing... (' + Math.round(((attempt + 1) * 15) / 60 * 10) / 10 + ' min)</span>';
+        continue;
+      }
       const elapsed = Math.round(((attempt + 1) * 15) / 60 * 10) / 10;
       statusEl.innerHTML = '<span class="opus-status processing">Processing... (' + elapsed + ' min elapsed)</span>';
-    } catch(e) { /* keep polling */ }
+    } catch(e) {
+      consecutiveErrors++;
+      if (consecutiveErrors >= 3) {
+        statusEl.innerHTML = '<span class="opus-status error">Poll error: ' + e.message + '. Check your Opus Clip dashboard. Project ID: ' + projectId + '</span>';
+        return null;
+      }
+    }
   }
   return null;
 }
