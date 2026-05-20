@@ -1,29 +1,64 @@
 # City Light Sermon Analyzer
 
-Sermon analysis tool for City Light Church, Vicksburg, MS.
-Paste a YouTube sermon link — get seeker questions and sermon notes slides.
+Sermon content tool for City Light Church, Vicksburg, MS.
+Paste a YouTube sermon link and get five outputs every Tuesday.
 
-## Files
+## What It Does
 
-- `public/index.html` — the full web app
-- `api/analyze.js` — Claude API call (serverless function)
-- `api/title.js` — YouTube title fetcher
-- `api/transcript.js` — YouTube transcript fetcher
-- `vercel.json` — Vercel deployment config
+1. Seeker Questions — Top 5 culturally resonant questions the sermon answers, each with timestamps and a social media caption
+2. Sermon Notes Slides — 3 to 5 branded slide content cards ready to copy into Canva or generate as PNG images
+3. Sermon Summary — 500 word or less narrative summary ready to post to social media
+4. Opus Clip — Sends exact clip windows to Opus Clip for video production, then publishes to Instagram and Facebook
+5. Slide Images — Generates branded 1080x1080 PNG slide images per slide, ready to download and post
+
+## File Structure
+
+```
+index.html          — the full web app (single page)
+package.json        — Node dependencies for Puppeteer slide rendering
+vercel.json         — Vercel function configuration
+README.md           — this file
+
+api/
+  analyze.js        — Claude API call for sermon analysis
+  title.js          — YouTube title fetcher
+  transcript.js     — YouTube transcript fetcher
+  opus.js           — Opus Clip integration (create, poll, accounts, publish)
+  slides.js         — Puppeteer slide image renderer
+```
 
 ## Deploy to Vercel
 
-1. Push this folder to a GitHub repository
-2. Go to vercel.com → New Project → import the GitHub repo
-3. Add environment variable: `ANTHROPIC_API_KEY` = your key from console.anthropic.com
-4. Click Deploy
+1. Push all files to GitHub maintaining the folder structure above
+2. Go to vercel.com, import the GitHub repo
+3. Add environment variable: ANTHROPIC_API_KEY (from console.anthropic.com)
+4. Deploy
 
-## Password
+## Passwords and Keys
 
-Default: `citylight2026`
-To change: edit line 2 of the `<script>` tag in `public/index.html`
+- Staff password: citylight2026
+- Anthropic API key: paste from your Notes app each session
+- Opus Clip API key: paste from your Notes app each session
+- Keys are never stored — paste fresh each session
 
 ## Canva Template
 
-The "Open Canva Template" button links to template ID `EAHKE92RscA`
-in the brianc@citylightvicksburg.org Canva account.
+Template ID: EAHKE92RscA
+Account: brianc@citylightvicksburg.org
+Open template link: https://www.canva.com/design?create=true&template=EAHKE92RscA
+
+## Opus Clip
+
+Connected accounts: City Light Church Instagram and City Light Church Facebook
+Plan: supports 4 concurrent projects and 900 credits per month
+Send no more than 3 clips at a time
+
+## Weekly Timeline
+
+Tuesday: Sermon available on YouTube. Run analysis.
+Wednesday: Post content to Instagram and Facebook.
+
+## To Change the Staff Password
+
+Edit line 1 of the script tag in index.html:
+const CORRECT_PASSWORD = 'citylight2026';
