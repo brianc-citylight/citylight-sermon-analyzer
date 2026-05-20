@@ -675,13 +675,15 @@ async function pollForCompletion(projectId, statusEl, opusKey, maxAttempts = 24)
       }
       consecutiveErrors = 0;
       const data = await res.json();
+      // Log debug info to console so we can see what Opus returns
+      if (data.debug) console.log('Opus poll attempt ' + (attempt+1) + ':', JSON.stringify(data.debug, null, 2));
       if (data.ready) return data;
       if (data.error) {
         statusEl.innerHTML = '<span class="opus-status processing">Processing... (' + Math.round(((attempt + 1) * 15) / 60 * 10) / 10 + ' min)</span>';
         continue;
       }
       const elapsed = Math.round(((attempt + 1) * 15) / 60 * 10) / 10;
-      statusEl.innerHTML = '<span class="opus-status processing">Processing... (' + elapsed + ' min elapsed)</span>';
+      statusEl.innerHTML = '<span class="opus-status processing">Processing... (' + elapsed + ' min elapsed) — check console for debug info</span>';
     } catch(e) {
       consecutiveErrors++;
       if (consecutiveErrors >= 3) {

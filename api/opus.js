@@ -70,29 +70,63 @@ export default async function handler(req, res) {
     const { projectId } = req.query;
     if (!projectId) return res.status(400).json({ error: 'Missing projectId' });
 
-    try {
-      const opusRes = await fetch(
-        `https://api.opus.pro/api/exportable-clips?q=findByProjectId&projectId=${projectId}`,
-        { headers: opusHeaders }
-      );
-      if (!opusRes.ok) {
-        return res.status(opusRes.status).json({ ready: false, error: 'Poll failed' });
+    // Try both known Opus Clip endpoints
+    const endpoints = [
+      `https://api.opus.pro/api/clips?projectId=${projectId}`,
+      `https://api.opus.pro/api/exportable-clips?q=findByProjectId&projectId=${projectId}`,
+      `https://api.opus.pro/api/clip-projects/${projectId}/clips`,
+    ];
+
+    const debugInfo = [];
+
+    for (const url of endpoints) {
+      try {
+        const opusRes = await fetch(url, { headers: opusHeaders });
+        const statusCode = opusRes.status;
+        const raw = await opusRes.text();
+        debugInfo.push({ url, status: statusCode, body: raw.substring(0, 300) });
+
+        if (!opusRes.ok) continue;
+
+        let parsed;
+        try { parsed = JSON.parse(raw); } catch(e) { continue; }
+
+        // Handle array response
+        const clips = Array.isArray(parsed) ? parsed :
+                      parsed.clips ? parsed.clips :
+                      parsed.data ? parsed.data :
+                      parsed.items ? parsed.items : null;
+
+        if (clips && clips.length > 0) {
+          const clip = clips[0];
+          return res.status(200).json({
+            ready: true,
+            clipId: clip.id || clip.curationId || clip.clipId,
+            previewUrl: clip.uriForPreview || clip.previewUrl || clip.url || '',
+            exportUrl: clip.uriForExport || clip.exportUrl || '',
+            durationMs: clip.durationMs || clip.duration || 0,
+            debug: debugInfo
+          });
+        }
+
+        // Single object response
+        if (parsed && (parsed.id || parsed.curationId) && parsed.status === 'done') {
+          return res.status(200).json({
+            ready: true,
+            clipId: parsed.id || parsed.curationId,
+            previewUrl: parsed.uriForPreview || parsed.previewUrl || '',
+            exportUrl: parsed.uriForExport || parsed.exportUrl || '',
+            debug: debugInfo
+          });
+        }
+
+      } catch (e) {
+        debugInfo.push({ url, error: e.message });
       }
-      const clips = await opusRes.json();
-      if (clips && clips.length > 0) {
-        const clip = clips[0];
-        return res.status(200).json({
-          ready: true,
-          clipId: clip.id || clip.curationId,
-          previewUrl: clip.uriForPreview || '',
-          exportUrl: clip.uriForExport || '',
-          durationMs: clip.durationMs || 0
-        });
-      }
-      return res.status(200).json({ ready: false });
-    } catch (e) {
-      return res.status(500).json({ ready: false, error: e.message });
     }
+
+    // Nothing found — return debug info so we can see what Opus is returning
+    return res.status(200).json({ ready: false, debug: debugInfo });
   }
 
   return res.status(404).json({ error: 'Unknown action' });
