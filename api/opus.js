@@ -99,9 +99,13 @@ export default async function handler(req, res) {
 
         if (clips && clips.length > 0) {
           const clip = clips[0];
+          // Extract clean clipId — Opus uses formats like "PROJECTID.clipid" or just "clipid"
+          const rawId = clip.id || clip.curationId || clip.clipId || '';
+          const cleanClipId = rawId.includes('.') ? rawId.split('.').pop() : rawId;
           return res.status(200).json({
             ready: true,
-            clipId: clip.id || clip.curationId || clip.clipId,
+            clipId: cleanClipId,
+            rawClipId: rawId,
             previewUrl: clip.uriForPreview || clip.previewUrl || clip.url || '',
             exportUrl: clip.uriForExport || clip.exportUrl || '',
             durationMs: clip.durationMs || clip.duration || 0,
@@ -111,9 +115,12 @@ export default async function handler(req, res) {
 
         // Single object response
         if (parsed && (parsed.id || parsed.curationId) && parsed.status === 'done') {
+          const rawId = parsed.id || parsed.curationId;
+          const cleanClipId = rawId.includes('.') ? rawId.split('.').pop() : rawId;
           return res.status(200).json({
             ready: true,
-            clipId: parsed.id || parsed.curationId,
+            clipId: cleanClipId,
+            rawClipId: rawId,
             previewUrl: parsed.uriForPreview || parsed.previewUrl || '',
             exportUrl: parsed.uriForExport || parsed.exportUrl || '',
             debug: debugInfo
@@ -173,38 +180,48 @@ export default async function handler(req, res) {
       }
     };
 
-    const body = {
-      projectId,
-      clipId,
-      postAccountId,
-      postDetail
-    };
-
-    // subAccountId required for Instagram and Facebook
-    if (subAccountId && subAccountId !== 'null' && subAccountId !== 'undefined') {
-      body.subAccountId = subAccountId;
+    // Try both clipId formats — clean suffix only, and full composite
+    const clipIdVariants = [clipId];
+    if (!clipId.includes('.') && projectId) {
+      clipIdVariants.push(projectId + '.' + clipId);
+    }
+    // Also try the raw composite if we only got the clean version
+    if (clipId.includes('.')) {
+      clipIdVariants.push(clipId.split('.').pop());
     }
 
-    try {
-      const opusRes = await fetch('https://api.opus.pro/api/post-tasks', {
-        method: 'POST',
-        headers: opusHeaders,
-        body: JSON.stringify(body)
-      });
-      const raw = await opusRes.text();
-      let data;
-      try { data = JSON.parse(raw); } catch(e) { data = { raw }; }
-      if (!opusRes.ok) {
-        return res.status(opusRes.status).json({
-          error: data.message || data.error || 'Publish failed',
-          detail: data,
-          sentBody: body
-        });
+    let lastError = null;
+    for (const tryClipId of clipIdVariants) {
+      const body = {
+        projectId,
+        clipId: tryClipId,
+        postAccountId,
+        postDetail
+      };
+
+      if (subAccountId && subAccountId !== 'null' && subAccountId !== 'undefined') {
+        body.subAccountId = subAccountId;
       }
-      return res.status(200).json({ success: true, postId: data.data?.postId || '' });
-    } catch (e) {
-      return res.status(500).json({ error: e.message });
+
+      try {
+        const opusRes = await fetch('https://api.opus.pro/api/post-tasks', {
+          method: 'POST',
+          headers: opusHeaders,
+          body: JSON.stringify(body)
+        });
+        const raw = await opusRes.text();
+        let data;
+        try { data = JSON.parse(raw); } catch(e) { data = { raw }; }
+
+        if (opusRes.ok) {
+          return res.status(200).json({ success: true, postId: data.data?.postId || '', clipIdUsed: tryClipId });
+        }
+        lastError = { error: data.message || data.errorName || data.error || 'Publish failed', detail: data, sentBody: body };
+      } catch (e) {
+        lastError = { error: e.message };
+      }
     }
+    return res.status(400).json(lastError || { error: 'Publish failed' });
   }
 
   return res.status(404).json({ error: 'Unknown action' });
