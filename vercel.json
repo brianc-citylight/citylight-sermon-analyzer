@@ -1,3 +1,8 @@
 {
-  "version": 2
+  "functions": {
+    "api/analyze.js": { "maxDuration": 60 },
+    "api/title.js": { "maxDuration": 10 },
+    "api/transcript.js": { "maxDuration": 10 },
+    "api/opus.js": { "maxDuration": 60 }
+  }
 }
