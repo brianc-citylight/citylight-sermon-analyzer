@@ -129,5 +129,68 @@ export default async function handler(req, res) {
     return res.status(200).json({ ready: false, debug: debugInfo });
   }
 
+  // ── GET SOCIAL ACCOUNTS ──────────────────────────────────────────────────
+  if (req.method === 'GET' && req.query.action === 'accounts') {
+    try {
+      const opusRes = await fetch(
+        'https://api.opus.pro/api/social-accounts?q=mine',
+        { headers: opusHeaders }
+      );
+      const data = await opusRes.json();
+      if (!opusRes.ok) {
+        return res.status(opusRes.status).json({ error: data.message || 'Failed to fetch accounts' });
+      }
+      // Return only Instagram and Facebook accounts
+      const accounts = (data.data || data || []).filter(a =>
+        a.platform === 'INSTAGRAM_BUSINESS' || a.platform === 'FACEBOOK_PAGE'
+      );
+      return res.status(200).json({ accounts });
+    } catch (e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── PUBLISH CLIP ──────────────────────────────────────────────────────────
+  if (req.method === 'POST' && req.query.action === 'publish') {
+    const { projectId, clipId, postAccountId, subAccountId, title, description, platform } = req.body;
+
+    if (!projectId || !clipId || !postAccountId || !title) {
+      return res.status(400).json({ error: 'Missing required publish fields' });
+    }
+
+    const postDetail = {
+      title: title.substring(0, 150),
+      mediaType: 'video',
+      custom: {
+        description: description || '',
+        privacy: 'public'
+      }
+    };
+
+    const body = {
+      projectId,
+      clipId,
+      postAccountId,
+      postDetail
+    };
+
+    if (subAccountId) body.subAccountId = subAccountId;
+
+    try {
+      const opusRes = await fetch('https://api.opus.pro/api/post-tasks', {
+        method: 'POST',
+        headers: opusHeaders,
+        body: JSON.stringify(body)
+      });
+      const data = await opusRes.json();
+      if (!opusRes.ok) {
+        return res.status(opusRes.status).json({ error: data.message || data.error || 'Publish failed' });
+      }
+      return res.status(200).json({ success: true, postId: data.data?.postId || '' });
+    } catch (e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
   return res.status(404).json({ error: 'Unknown action' });
 }

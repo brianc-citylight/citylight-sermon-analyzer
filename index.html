@@ -737,6 +737,7 @@ async function sendToOpus(i, btn) {
 
     // STAGE 2: Poll for completion via serverless function (no CORS)
     const clip = await pollForCompletion(projectId, statusEl, opusKey);
+    if (clip) clip.projectId = projectId; // attach for publish step
 
     if (!clip) {
       statusEl.innerHTML = '<span class="opus-status error">Timed out. Check your Opus Clip dashboard — the clip may still be processing.</span>';
@@ -744,43 +745,148 @@ async function sendToOpus(i, btn) {
       return;
     }
 
-    // STAGE 3: Show result with caption ready to copy
+    // STAGE 3: Show review and confirm UI
     const card = document.getElementById('opus-card-' + i);
-    const previewHtml = clip.previewUrl
-      ? '<a href="' + clip.previewUrl + '" target="_blank" style="font-size:12px; color:var(--gold); text-decoration:underline; display:block; margin-top:6px;">Preview in Opus Clip</a>'
-      : '';
 
+    const previewHtml = clip.previewUrl
+      ? '<a href="' + clip.previewUrl + '" target="_blank" style="font-size:12px; color:var(--gold); text-decoration:underline; display:block; margin-top:4px;">Preview in Opus Clip</a>'
+      : '';
     statusEl.innerHTML = '<span class="opus-status done">Clip ready.</span>' + previewHtml;
     btn.textContent = 'Sent';
     btn.classList.add('copied');
 
-    const captionNote = document.createElement('div');
-    captionNote.style.cssText = 'font-size:12px; color:#aaa; margin-top:10px; padding:10px 12px; background:#0a0a0a; border:1px solid #333; border-radius:6px; line-height:1.6;';
-    const captionLabel = document.createElement('div');
-    captionLabel.style.cssText = 'color:var(--gold); font-weight:700; margin-bottom:4px;';
-    captionLabel.textContent = 'Caption — copy before posting:';
-    const captionText = document.createElement('div');
-    captionText.style.color = '#ddd';
-    captionText.textContent = q.caption;
-    const captionCopyBtn = document.createElement('button');
-    captionCopyBtn.className = 'btn btn-sm';
-    captionCopyBtn.style.cssText = 'margin-top:8px; font-size:11px;';
-    captionCopyBtn.textContent = 'Copy Caption';
-    captionCopyBtn.onclick = function() {
-      navigator.clipboard.writeText(q.caption).then(() => {
-        captionCopyBtn.textContent = 'Copied!';
-        setTimeout(() => { captionCopyBtn.textContent = 'Copy Caption'; }, 1500);
-      }).catch(() => {});
-    };
-    captionNote.appendChild(captionLabel);
-    captionNote.appendChild(captionText);
-    captionNote.appendChild(captionCopyBtn);
-    card.appendChild(captionNote);
+    // Fetch social accounts then render review panel
+    try {
+      const acctRes = await fetch('/api/opus?action=accounts', {
+        headers: { 'x-opus-key': opusKey }
+      });
+      const acctData = await acctRes.json();
+      const accounts = acctData.accounts || [];
+      renderReviewPanel(card, i, q, clip, accounts, opusKey);
+    } catch(e) {
+      renderReviewPanel(card, i, q, clip, [], opusKey);
+    }
 
   } catch(e) {
     statusEl.innerHTML = '<span class="opus-status error">Error: ' + e.message + '</span>';
     btn.disabled = false;
   }
+}
+
+// ── REVIEW AND PUBLISH ───────────────────────────────────────────────────
+
+function renderReviewPanel(card, clipIndex, q, clip, accounts, opusKey) {
+  const panel = document.createElement('div');
+  panel.style.cssText = 'margin-top:12px; padding:12px; background:#0a0a0a; border:1px solid #333; border-radius:8px;';
+
+  // Title section
+  const titleLabel = document.createElement('div');
+  titleLabel.style.cssText = 'color:var(--gold); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px;';
+  titleLabel.textContent = 'Post Title (Seeker Question)';
+  const titleVal = document.createElement('div');
+  titleVal.style.cssText = 'color:#fff; font-size:13px; font-weight:600; margin-bottom:12px; line-height:1.4;';
+  titleVal.textContent = q.question;
+
+  // Caption section
+  const capLabel = document.createElement('div');
+  capLabel.style.cssText = 'color:var(--gold); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px;';
+  capLabel.textContent = 'Post Caption';
+  const capVal = document.createElement('div');
+  capVal.style.cssText = 'color:#ccc; font-size:13px; line-height:1.6; margin-bottom:12px;';
+  capVal.textContent = q.caption;
+
+  // Copy caption button
+  const copyCap = document.createElement('button');
+  copyCap.className = 'btn btn-sm';
+  copyCap.style.cssText = 'font-size:11px; margin-bottom:14px;';
+  copyCap.textContent = 'Copy Caption';
+  copyCap.onclick = function() {
+    navigator.clipboard.writeText(q.caption).then(() => {
+      copyCap.textContent = 'Copied!';
+      setTimeout(() => { copyCap.textContent = 'Copy Caption'; }, 1500);
+    }).catch(() => {});
+  };
+
+  panel.appendChild(titleLabel);
+  panel.appendChild(titleVal);
+  panel.appendChild(capLabel);
+  panel.appendChild(capVal);
+  panel.appendChild(copyCap);
+
+  // Publish buttons per account
+  if (accounts.length === 0) {
+    const noAcct = document.createElement('div');
+    noAcct.style.cssText = 'font-size:12px; color:#888; margin-top:4px;';
+    noAcct.textContent = 'No Instagram or Facebook accounts found in Opus Clip. Connect them in your Opus Clip dashboard to enable auto-publishing.';
+    panel.appendChild(noAcct);
+  } else {
+    const pubLabel = document.createElement('div');
+    pubLabel.style.cssText = 'color:var(--gold); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;';
+    pubLabel.textContent = 'Publish To';
+    panel.appendChild(pubLabel);
+
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap;';
+
+    accounts.forEach(acct => {
+      const platformLabel = acct.platform === 'INSTAGRAM_BUSINESS' ? 'Instagram' : 'Facebook';
+      const name = acct.extUserName || platformLabel;
+      const pubBtn = document.createElement('button');
+      pubBtn.className = 'btn btn-sm btn-opus';
+      pubBtn.style.cssText = 'font-size:12px;';
+      pubBtn.textContent = 'Publish to ' + platformLabel + ' (' + name + ')';
+
+      const statusSpan = document.createElement('div');
+      statusSpan.style.cssText = 'font-size:12px; color:#aaa; margin-top:6px; display:none;';
+      panel.appendChild(statusSpan);
+
+      pubBtn.onclick = async function() {
+        pubBtn.disabled = true;
+        pubBtn.textContent = 'Publishing...';
+        statusSpan.style.display = 'block';
+        statusSpan.textContent = 'Sending to ' + platformLabel + '...';
+
+        try {
+          const res = await fetch('/api/opus?action=publish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-opus-key': opusKey },
+            body: JSON.stringify({
+              projectId: clip.projectId || '',
+              clipId: clip.clipId,
+              postAccountId: acct.postAccountId,
+              subAccountId: acct.subAccountId || undefined,
+              title: q.question,
+              description: q.caption,
+              platform: acct.platform
+            })
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) {
+            pubBtn.textContent = 'Failed — retry';
+            pubBtn.disabled = false;
+            statusSpan.style.color = '#ff6666';
+            statusSpan.textContent = 'Error: ' + (data.error || 'Unknown error');
+          } else {
+            pubBtn.textContent = 'Published to ' + platformLabel;
+            pubBtn.style.borderColor = '#00cc88';
+            pubBtn.style.color = '#00cc88';
+            statusSpan.style.color = '#00cc88';
+            statusSpan.textContent = 'Successfully published to ' + platformLabel + '.';
+          }
+        } catch(e) {
+          pubBtn.textContent = 'Failed — retry';
+          pubBtn.disabled = false;
+          statusSpan.style.color = '#ff6666';
+          statusSpan.textContent = 'Network error: ' + e.message;
+        }
+      };
+
+      btnRow.appendChild(pubBtn);
+      panel.appendChild(btnRow);
+    });
+  }
+
+  card.appendChild(panel);
 }
 </script>
 </body>
