@@ -134,6 +134,24 @@
 
     <div class="card">
       <div class="card-label">New Sermon Analysis</div>
+      <div class="options-row" style="margin-bottom:1rem;">
+        <div class="input-group" style="flex:2; margin-bottom:0;">
+          <label>Speaker First Name</label>
+          <input type="text" id="speakerFirst" placeholder="Brian" />
+        </div>
+        <div class="input-group" style="flex:2; margin-bottom:0;">
+          <label>Speaker Last Name</label>
+          <input type="text" id="speakerLast" placeholder="Last name" />
+        </div>
+        <div class="input-group" style="flex:2; margin-bottom:0;">
+          <label>Speaker Title</label>
+          <input type="text" id="speakerTitle" placeholder="Pastor" />
+        </div>
+        <div class="input-group" style="flex:2; margin-bottom:0;">
+          <label>Sermon Date</label>
+          <input type="text" id="sermonDate" placeholder="May 18, 2026 (required)" />
+        </div>
+      </div>
       <div class="input-group">
         <label>YouTube Sermon Link</label>
         <input type="text" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." />
@@ -154,6 +172,10 @@
           <label>Sermon Transcript</label>
           <textarea id="transcriptInput" placeholder="Go to the YouTube video → click '...' → Show transcript → copy and paste here."></textarea>
         </div>
+      </div>
+      <div class="input-group" style="margin-top:0.75rem; margin-bottom:0;">
+        <label>Custom Seeker Question (optional)</label>
+        <input type="text" id="customQuestion" placeholder="Is there a specific question you want to check this sermon answers?" />
       </div>
       <div class="input-group" style="margin-top:1rem; margin-bottom:0;">
         <label>Anthropic API Key</label>
@@ -197,14 +219,17 @@
       </div>
       <div class="tab-content" id="tab-notes">
         <div class="canva-banner">
-          <p><strong>Ready to build your slides.</strong><br>Copy each slide below into your Canva template.</p>
+          <p><strong>Ready to build your slides.</strong><br>Download as branded image slides or copy content into your Canva template.</p>
           <a href="https://www.canva.com/design?create=true&template=EAHKE92RscA" target="_blank">Open Canva &#8599;</a>
         </div>
+        <div id="slidesImageContainer" style="display:none; margin-bottom:1rem;"></div>
         <div id="slidesContainer"></div>
         <div class="action-row">
+          <button class="btn btn-sm" id="generateSlidesBtn" onclick="generateSlideImages()">&#9654; Generate Slide Images</button>
           <button class="btn btn-sm" onclick="downloadSlides()">&#8595; Download .txt</button>
           <button class="btn btn-sm" onclick="copyAllSlides()">&#10697; Copy All</button>
         </div>
+        <div id="slidesGenStatus" style="font-size:12px; color:var(--gray); margin-top:0.5rem; display:none;"></div>
       </div>
       <div class="tab-content" id="tab-summary">
         <div id="summaryContainer">
@@ -233,6 +258,7 @@ const CORRECT_PASSWORD = 'citylight2026';
 let currentQuestions = null;
 let currentSlides = null;
 let currentSummary = '';
+let currentCustomQ = null;
 let sermonTitle = '';
 const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
@@ -286,8 +312,16 @@ async function analyzeSermon() {
   const questionCount = 5;
   const slideCount = document.getElementById('slideCount').value;
   const apiKey = document.getElementById('apiKeyInput').value.trim();
+  const speakerFirst = document.getElementById('speakerFirst').value.trim();
+  const speakerLast = document.getElementById('speakerLast').value.trim();
+  const speakerTitle = document.getElementById('speakerTitle').value.trim();
+  const sermonDateInput = document.getElementById('sermonDate').value.trim();
+  const customQuestion = document.getElementById('customQuestion').value.trim();
+  const speakerFull = [speakerTitle, speakerFirst, speakerLast].filter(Boolean).join(' ') || 'the pastor';
+  const sermonDateDisplay2 = sermonDateInput;
 
   if (!url) { showError('Please enter a YouTube link.'); return; }
+  if (!sermonDateInput) { showError('Please enter the sermon date. This ensures accurate dating of all outputs.'); return; }
   if (!apiKey) { showError('Please enter your Anthropic API key.'); return; }
   const videoId = extractVideoId(url);
   if (!videoId) { showError('Could not parse a YouTube video ID. Please check the URL.'); return; }
@@ -401,7 +435,7 @@ ${parseInt(slideCount) > 3 ? 'SLIDE_4\nSubpoint: [fourth subpoint]\nKey Takeaway
 ${parseInt(slideCount) > 4 ? 'SLIDE_5\nSubpoint: [fifth subpoint]\nKey Takeaway: [core insight, 40-55 words]\nKey Reflection: [personal application question, 15-30 words]\nScripture: [optional key verse reference]' : ''}
 
 OUTPUT 3 - SERMON SUMMARY
-Write a sermon summary of 500 words or less for social media. Use narrative prose. Use the main point and each subpoint as bold headers formatted like: **Main Point: [text]** and **[Subpoint text]**. Leave a blank line between each section. Do not use em dashes. Write as if summarizing for someone who did not attend but wants to understand what was taught.
+Write a sermon summary of 500 words or less for social media. Use narrative prose. Use the main point and each subpoint as bold headers formatted like: **Main Point: [text]** and **[Subpoint text]**. Leave a blank line between each section. Do not use em dashes. When referencing the speaker, use "${speakerFull}". Write as if summarizing for someone who did not attend but wants to understand what was taught. Do NOT begin the summary with any label, heading, or prefix like "Output 3", "Sermon Summary", or similar. Begin directly with the first content header or sentence.
 
 Separate outputs with these exact lines:
 ---SLIDES---
@@ -429,10 +463,14 @@ Separate outputs with these exact lines:
     const rawText = data.content.map(b => b.text || '').join('');
     const slideSplit = rawText.split('---SLIDES---');
     const summarySplit = (slideSplit[1] || '').split('---SUMMARY---');
-    currentQuestions = slideSplit[0].trim().split('\n').filter(l => l.startsWith('Q')).map(line => {
+    const seekerLines = slideSplit[0].trim().split('\n');
+    currentQuestions = seekerLines.filter(l => l.startsWith('Q|')).map(line => {
       const p = line.split('|');
       return { question: p[1]||'', timestamp: p[2]||'', caption: p[3]||'' };
     });
+    // Parse custom question if present
+    const customLine = seekerLines.find(l => l.startsWith('CQ|'));
+    currentCustomQ = customLine ? (() => { const p = customLine.split('|'); return { question: p[1]||'', timestamp: p[2]||'', explanation: p[3]||'' }; })() : null;
     currentSlides = parseSlidesFromRaw(summarySplit[0] || '');
     currentSummary = (summarySplit[1] || '').trim();
     renderResults(currentQuestions, currentSlides, currentSummary);
@@ -467,7 +505,9 @@ function parseSlidesFromRaw(raw) {
 
 function renderResults(questions, slides, summary) {
   document.getElementById('sermonTitleDisplay').textContent = sermonTitle;
-  document.getElementById('sermonDateDisplay').textContent = today;
+  const speakerDisplayVal = [document.getElementById('speakerTitle').value.trim(), document.getElementById('speakerFirst').value.trim(), document.getElementById('speakerLast').value.trim()].filter(Boolean).join(' ');
+  const dateDisplayVal = document.getElementById('sermonDate').value.trim() || today;
+  document.getElementById('sermonDateDisplay').textContent = (speakerDisplayVal ? speakerDisplayVal + '  |  ' : '') + dateDisplayVal;
 
   const qContainer = document.getElementById('questionsContainer');
   qContainer.innerHTML = '';
@@ -527,6 +567,28 @@ function renderResults(questions, slides, summary) {
 
   // Render Opus Clip tab
   renderOpusTab(questions);
+
+  // Render custom question if present
+  if (summary !== undefined) {
+    const qContainer = document.getElementById('questionsContainer');
+    if (currentCustomQ) {
+      const divider = document.createElement('div');
+      divider.style.cssText = 'border-top:1px solid var(--border); margin:1rem 0; padding-top:1rem;';
+      const customCard = document.createElement('div');
+      customCard.className = 'question-card';
+      const addressed = currentCustomQ.timestamp && currentCustomQ.timestamp !== 'NONE';
+      customCard.innerHTML = `
+        <div class="q-number" style="color:${addressed ? 'var(--gold)' : '#cc3333'};">Custom Question</div>
+        <div class="q-question">${currentCustomQ.question}</div>
+        ${addressed
+          ? '<div class="q-timestamp">' + currentCustomQ.timestamp + '</div><div class="q-caption" style="margin-top:8px;">' + currentCustomQ.explanation + '</div>'
+          : '<div style="font-size:13px; color:#cc3333; margin-top:6px; padding:8px 12px; background:#fdf2f2; border-radius:8px; border-left:3px solid #cc3333;">' + (currentCustomQ.explanation || 'This sermon does not directly address this question.') + '</div>'
+        }
+      `;
+      qContainer.appendChild(divider);
+      qContainer.appendChild(customCard);
+    }
+  }
 
   document.getElementById('resultsSection').classList.add('visible');
 }
@@ -900,6 +962,91 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts, opusKey) {
   }
 
   card.appendChild(panel);
+}
+
+// ── SLIDE IMAGE GENERATION ───────────────────────────────────────────────
+
+async function generateSlideImages() {
+  if (!currentSlides || currentSlides.length === 0) return;
+  const btn = document.getElementById('generateSlidesBtn');
+  const statusEl = document.getElementById('slidesGenStatus');
+  const imgContainer = document.getElementById('slidesImageContainer');
+
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+  statusEl.style.display = 'block';
+  imgContainer.style.display = 'none';
+  imgContainer.innerHTML = '';
+
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+  const speakerFirst = document.getElementById('speakerFirst').value.trim();
+  const speakerLast = document.getElementById('speakerLast').value.trim();
+  const speakerTitle = document.getElementById('speakerTitle').value.trim();
+  const speakerFull = [speakerTitle, speakerFirst, speakerLast].filter(Boolean).join(' ') || '';
+  const sermonDate = document.getElementById('sermonDate').value.trim();
+
+  let successCount = 0;
+
+  for (let i = 0; i < currentSlides.length; i++) {
+    const slide = currentSlides[i];
+    statusEl.textContent = 'Rendering slide ' + (i + 1) + ' of ' + currentSlides.length + '...';
+
+    try {
+      const res = await fetch('/api/slides', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slide,
+          index: i,
+          sermonTitle,
+          sermonDate,
+          speaker: speakerFull
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        statusEl.textContent = 'Slide ' + (i + 1) + ' failed: ' + (err.error || 'Unknown error');
+        continue;
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+
+      const labelMap = { 'TITLE_SLIDE': 'Title Slide', 'INTRO_SLIDE': 'Intro Slide' };
+      const num = slide.header.match(/\d+/);
+      const label = labelMap[slide.header] || 'Takeaway ' + (num ? num[0] : (i + 1));
+
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'margin-bottom:1rem; border:1px solid var(--border); border-radius:10px; overflow:hidden;';
+
+      const slideLabel = document.createElement('div');
+      slideLabel.style.cssText = 'padding:8px 12px; background:var(--light); font-size:11px; font-weight:700; color:var(--gold); text-transform:uppercase; letter-spacing:0.08em; display:flex; align-items:center; justify-content:space-between;';
+      slideLabel.innerHTML = label + '<a href="' + url + '" download="citylight_slide_' + (i + 1) + '.png" style="font-size:12px; color:var(--black); text-decoration:none; font-weight:600; padding:4px 10px; border:1px solid var(--border); border-radius:6px; background:white;">&#8595; Download</a>';
+
+      const img = document.createElement('img');
+      img.src = url;
+      img.style.cssText = 'width:100%; display:block;';
+      img.alt = label;
+
+      wrapper.appendChild(slideLabel);
+      wrapper.appendChild(img);
+      imgContainer.appendChild(wrapper);
+      successCount++;
+    } catch(e) {
+      statusEl.textContent = 'Error on slide ' + (i + 1) + ': ' + e.message;
+    }
+  }
+
+  if (successCount > 0) {
+    imgContainer.style.display = 'block';
+    statusEl.textContent = successCount + ' of ' + currentSlides.length + ' slides generated. Click Download on each to save.';
+    btn.textContent = 'Regenerate Slides';
+  } else {
+    statusEl.textContent = 'Slide generation failed. Make sure your Vercel app is deployed with the api/slides.js function.';
+    btn.textContent = 'Generate Slide Images';
+  }
+  btn.disabled = false;
 }
 </script>
 </body>

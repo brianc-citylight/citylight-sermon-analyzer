@@ -3,6 +3,7 @@
     "api/analyze.js": { "maxDuration": 60 },
     "api/title.js": { "maxDuration": 10 },
     "api/transcript.js": { "maxDuration": 10 },
-    "api/opus.js": { "maxDuration": 60 }
+    "api/opus.js": { "maxDuration": 60 },
+    "api/slides.js": { "maxDuration": 30, "memory": 1024 }
   }
 }
