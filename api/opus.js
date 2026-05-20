@@ -136,13 +136,19 @@ export default async function handler(req, res) {
         'https://api.opus.pro/api/social-accounts?q=mine',
         { headers: opusHeaders }
       );
-      const data = await opusRes.json();
-      if (!opusRes.ok) {
-        return res.status(opusRes.status).json({ error: data.message || 'Failed to fetch accounts' });
+      const raw = await opusRes.text();
+      let data;
+      try { data = JSON.parse(raw); } catch(e) {
+        return res.status(opusRes.status).json({ error: 'Opus Clip returned: ' + raw.substring(0, 100) });
       }
-      // Return only Instagram and Facebook accounts
-      const accounts = (data.data || data || []).filter(a =>
-        a.platform === 'INSTAGRAM_BUSINESS' || a.platform === 'FACEBOOK_PAGE'
+      if (!opusRes.ok) {
+        return res.status(opusRes.status).json({ error: data.message || data.error || 'Failed to fetch accounts' });
+      }
+      const allAccounts = data.accounts || data.data || data || [];
+      // Filter to City Light Church accounts only — exclude Mission Mississippi
+      const accounts = allAccounts.filter(a =>
+        (a.platform === 'INSTAGRAM_BUSINESS' || a.platform === 'FACEBOOK_PAGE') &&
+        a.extUserName === 'City Light Church'
       );
       return res.status(200).json({ accounts });
     } catch (e) {
@@ -174,7 +180,10 @@ export default async function handler(req, res) {
       postDetail
     };
 
-    if (subAccountId) body.subAccountId = subAccountId;
+    // subAccountId required for Instagram and Facebook
+    if (subAccountId && subAccountId !== 'null' && subAccountId !== 'undefined') {
+      body.subAccountId = subAccountId;
+    }
 
     try {
       const opusRes = await fetch('https://api.opus.pro/api/post-tasks', {
@@ -182,9 +191,15 @@ export default async function handler(req, res) {
         headers: opusHeaders,
         body: JSON.stringify(body)
       });
-      const data = await opusRes.json();
+      const raw = await opusRes.text();
+      let data;
+      try { data = JSON.parse(raw); } catch(e) { data = { raw }; }
       if (!opusRes.ok) {
-        return res.status(opusRes.status).json({ error: data.message || data.error || 'Publish failed' });
+        return res.status(opusRes.status).json({
+          error: data.message || data.error || 'Publish failed',
+          detail: data,
+          sentBody: body
+        });
       }
       return res.status(200).json({ success: true, postId: data.data?.postId || '' });
     } catch (e) {

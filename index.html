@@ -748,8 +748,11 @@ async function sendToOpus(i, btn) {
     // STAGE 3: Show review and confirm UI
     const card = document.getElementById('opus-card-' + i);
 
-    const previewHtml = clip.previewUrl
-      ? '<a href="' + clip.previewUrl + '" target="_blank" style="font-size:12px; color:var(--gold); text-decoration:underline; display:block; margin-top:4px;">Preview in Opus Clip</a>'
+    const dashboardUrl = clip.projectId
+      ? 'https://www.opus.pro/app/clip-projects/' + clip.projectId
+      : (clip.previewUrl || '');
+    const previewHtml = dashboardUrl
+      ? '<a href="' + dashboardUrl + '" target="_blank" style="font-size:12px; color:var(--gold); text-decoration:underline; display:block; margin-top:4px;">Open in Opus Clip Dashboard</a>'
       : '';
     statusEl.innerHTML = '<span class="opus-status done">Clip ready.</span>' + previewHtml;
     btn.textContent = 'Sent';
@@ -825,6 +828,16 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts, opusKey) {
     pubLabel.textContent = 'Publish To';
     panel.appendChild(pubLabel);
 
+    // Check for expired tokens
+    const now = Math.floor(Date.now() / 1000);
+    const expiredAccts = accounts.filter(a => a.tokenExpiredTimeStampInSecond && a.tokenExpiredTimeStampInSecond < now);
+    if (expiredAccts.length > 0) {
+      const expWarn = document.createElement('div');
+      expWarn.style.cssText = 'background:#1a0000; border:1px solid #cc3333; border-radius:6px; padding:8px 10px; font-size:12px; color:#ff8888; margin-bottom:10px; line-height:1.5;';
+      expWarn.innerHTML = '<strong>Warning:</strong> Your ' + expiredAccts.map(a => a.platform === 'FACEBOOK_PAGE' ? 'Facebook' : 'Instagram').join(' and ') + ' connection may be expired. Go to your Opus Clip dashboard and reconnect your social accounts before publishing.';
+      panel.appendChild(expWarn);
+    }
+
     const btnRow = document.createElement('div');
     btnRow.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap;';
 
@@ -854,7 +867,7 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts, opusKey) {
               projectId: clip.projectId || '',
               clipId: clip.clipId,
               postAccountId: acct.postAccountId,
-              subAccountId: acct.subAccountId || undefined,
+              subAccountId: acct.subAccountId || null,
               title: q.question,
               description: q.caption,
               platform: acct.platform
