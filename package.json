@@ -1,6 +1,7 @@
 {
   "name": "citylight-sermon-analyzer",
   "version": "1.0.0",
+  "type": "module",
   "dependencies": {
     "@sparticuz/chromium": "^123.0.0",
     "puppeteer-core": "^22.0.0"

@@ -1,10 +1,9 @@
-const chromium = require('@sparticuz/chromium');
-const puppeteer = require('puppeteer-core');
+import chromium from '@sparticuz/chromium';
+import puppeteer from 'puppeteer-core';
 
 const GOLD = '#C9A84C';
 const BLACK = '#111111';
 const WHITE = '#FFFFFF';
-const LIGHT = '#F8F8F6';
 
 function buildSlideHtml(slide, sermonTitle, sermonDate, speaker) {
   const { header, fields } = slide;
@@ -43,7 +42,7 @@ function buildSlideHtml(slide, sermonTitle, sermonDate, speaker) {
         <div style="width:80px;height:4px;background:${GOLD};margin:32px auto;"></div>
         <div style="font-family:Arial,sans-serif;font-size:28px;font-weight:700;color:${BLACK};margin-bottom:12px;">${fields['Sermon Title'] || sermonTitle}</div>
         <div style="font-family:Arial,sans-serif;font-size:20px;color:#666;">${fields['Sermon Date'] || sermonDate}</div>
-        ${speaker ? '<div style="font-family:Arial,sans-serif;font-size:18px;color:#888;margin-top:8px;">' + speaker + '</div>' : ''}
+        ${speaker ? `<div style="font-family:Arial,sans-serif;font-size:18px;color:#888;margin-top:8px;">${speaker}</div>` : ''}
       </div>
     `;
   } else if (header === 'INTRO_SLIDE') {
@@ -73,7 +72,7 @@ function buildSlideHtml(slide, sermonTitle, sermonDate, speaker) {
           <div style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${GOLD};margin-bottom:6px;">Reflection</div>
           <div style="font-family:Arial,sans-serif;font-size:16px;color:#333;line-height:1.5;font-style:italic;">${reflection}</div>
         </div>
-        ${scripture ? '<div style="font-family:Arial,sans-serif;font-size:14px;color:#999;font-weight:600;margin-top:12px;">' + scripture + '</div>' : ''}
+        ${scripture ? `<div style="font-family:Arial,sans-serif;font-size:14px;color:#999;font-weight:600;margin-top:12px;">${scripture}</div>` : ''}
       </div>
     `;
   }
@@ -95,7 +94,7 @@ body { width:1080px; height:1080px; background:${WHITE}; overflow:hidden; positi
 </html>`;
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { slide, sermonTitle, sermonDate, speaker } = req.body;
@@ -128,7 +127,7 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: e.message, stack: e.stack });
   } finally {
     if (browser) {
-      try { await browser.close(); } catch(e) {}
+      try { await browser.close(); } catch (closeErr) {}
     }
   }
-};
+}
