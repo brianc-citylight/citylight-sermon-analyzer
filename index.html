@@ -226,8 +226,12 @@
         <div id="slidesImageContainer" style="display:none; margin-bottom:1rem;"></div>
         <div id="slidesContainer"></div>
         <div class="action-row">
+          <button class="btn btn-sm" onclick="exportSlidesAsHtml()">&#9635; Export as HTML Slideshow</button>
           <button class="btn btn-sm" onclick="downloadSlides()">&#8595; Download .txt</button>
           <button class="btn btn-sm" onclick="copyAllSlides()">&#10697; Copy All</button>
+        </div>
+        <div style="font-size:11px; color:var(--gray); margin-top:6px; line-height:1.5;">
+          HTML Slideshow opens in your browser at 1080x1080. Screenshot each slide or use browser print to save as images.
         </div>
       </div>
       <div class="tab-content" id="tab-summary">
@@ -1009,8 +1013,16 @@ async function generateSlideImages() {
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        statusEl.textContent = 'Slide ' + (i + 1) + ' failed: ' + (err.error || 'Unknown error');
+        let errMsg = 'Unknown error';
+        let errDetail = '';
+        try {
+          const errData = await res.json();
+          errMsg = errData.error || errMsg;
+          errDetail = errData.stack ? errData.stack.split('\n')[0] : '';
+        } catch(e) { errMsg = 'HTTP ' + res.status; }
+        statusEl.style.color = '#cc3333';
+        statusEl.textContent = 'Slide ' + (i + 1) + ' failed: ' + errMsg + (errDetail ? ' | ' + errDetail : '');
+        console.error('Slide ' + (i+1) + ' error:', errMsg, errDetail);
         continue;
       }
 
@@ -1052,6 +1064,124 @@ async function generateSlideImages() {
     btn.textContent = 'Generate Slide Images';
   }
   btn.disabled = false;
+}
+
+// ── HTML SLIDE EXPORT (Puppeteer-free fallback) ───────────────────────────
+
+function exportSlidesAsHtml() {
+  if (!currentSlides || currentSlides.length === 0) return;
+
+  const GOLD = '#C9A84C';
+  const BLACK = '#111111';
+  const speakerFirst = document.getElementById('speakerFirst').value.trim();
+  const speakerLast = document.getElementById('speakerLast').value.trim();
+  const speakerTitle = document.getElementById('speakerTitle').value.trim();
+  const speakerFull = [speakerTitle, speakerFirst, speakerLast].filter(Boolean).join(' ') || '';
+  const sermonDate = document.getElementById('sermonDate').value.trim();
+
+  const logoSvg = `<svg width="52" height="52" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="26" cy="26" r="25" fill="${GOLD}"/>
+    <circle cx="26" cy="26" r="16" fill="none" stroke="${BLACK}" stroke-width="2.5"/>
+    <circle cx="26" cy="26" r="8" fill="${BLACK}"/>
+    <line x1="26" y1="1" x2="26" y2="12" stroke="${BLACK}" stroke-width="2.5"/>
+    <line x1="26" y1="40" x2="26" y2="51" stroke="${BLACK}" stroke-width="2.5"/>
+    <line x1="1" y1="26" x2="12" y2="26" stroke="${BLACK}" stroke-width="2.5"/>
+    <line x1="40" y1="26" x2="51" y2="26" stroke="${BLACK}" stroke-width="2.5"/>
+  </svg>`;
+
+  const corners = `
+    <div style="position:absolute;top:0;left:0;width:3px;height:60px;background:${GOLD};"></div>
+    <div style="position:absolute;top:0;left:0;width:60px;height:3px;background:${GOLD};"></div>
+    <div style="position:absolute;top:0;right:0;width:3px;height:60px;background:${GOLD};"></div>
+    <div style="position:absolute;top:0;right:0;width:60px;height:3px;background:${GOLD};"></div>
+    <div style="position:absolute;bottom:0;left:0;width:3px;height:60px;background:${GOLD};"></div>
+    <div style="position:absolute;bottom:0;left:0;width:60px;height:3px;background:${GOLD};"></div>
+    <div style="position:absolute;bottom:0;right:0;width:3px;height:60px;background:${GOLD};"></div>
+    <div style="position:absolute;bottom:0;right:0;width:60px;height:3px;background:${GOLD};"></div>
+  `;
+
+  const logo = `<div style="position:absolute;bottom:28px;right:28px;">${logoSvg}</div>`;
+
+  function renderSlide(slide) {
+    const { header, fields } = slide;
+    let body = '';
+
+    if (header === 'TITLE_SLIDE') {
+      body = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:80px 60px;">
+        <div style="font-family:'Arial Black',Arial,sans-serif;font-size:72px;font-weight:900;letter-spacing:-0.02em;line-height:1;">
+          <span style="color:${GOLD};">SERMON</span><span style="color:${BLACK};">NOTES</span>
+        </div>
+        <div style="width:80px;height:4px;background:${GOLD};margin:32px auto;"></div>
+        <div style="font-family:Arial,sans-serif;font-size:28px;font-weight:700;color:${BLACK};margin-bottom:12px;">${fields['Sermon Title'] || sermonTitle}</div>
+        <div style="font-family:Arial,sans-serif;font-size:20px;color:#666;">${fields['Sermon Date'] || sermonDate}</div>
+        ${speakerFull ? '<div style="font-family:Arial,sans-serif;font-size:18px;color:#888;margin-top:8px;">' + speakerFull + '</div>' : ''}
+      </div>`;
+    } else if (header === 'INTRO_SLIDE') {
+      body = `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:70px 64px;">
+        <div style="font-family:Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${GOLD};margin-bottom:24px;">The Text</div>
+        <div style="font-family:Arial,sans-serif;font-size:22px;font-weight:700;color:${BLACK};line-height:1.4;margin-bottom:36px;padding-bottom:32px;border-bottom:2px solid #eee;">${fields['Scripture'] || ''}</div>
+        <div style="font-family:Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${GOLD};margin-bottom:16px;">Key Point</div>
+        <div style="font-family:Arial,sans-serif;font-size:26px;font-weight:700;color:${BLACK};line-height:1.4;">${fields['Key Point'] || ''}</div>
+      </div>`;
+    } else {
+      const num = header.match(/\d+/);
+      const scripture = fields['Scripture'] || '';
+      body = `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:60px 64px;">
+        <div style="font-family:'Arial Black',Arial,sans-serif;font-size:13px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:${GOLD};margin-bottom:4px;">TAKEAWAY ${num ? num[0] : ''}</div>
+        <div style="font-family:Arial,sans-serif;font-size:24px;font-weight:700;color:${BLACK};line-height:1.35;margin-bottom:24px;padding-bottom:20px;border-bottom:2px solid #eee;">${fields['Subpoint'] || ''}</div>
+        <div style="font-family:Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#999;margin-bottom:8px;">Key Takeaway</div>
+        <div style="font-family:Arial,sans-serif;font-size:17px;color:#333;line-height:1.6;margin-bottom:20px;">${fields['Key Takeaway'] || ''}</div>
+        <div style="background:#f9f5eb;border-left:4px solid ${GOLD};padding:14px 18px;border-radius:0 6px 6px 0;${scripture ? 'margin-bottom:16px;' : ''}">
+          <div style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${GOLD};margin-bottom:6px;">Reflection</div>
+          <div style="font-family:Arial,sans-serif;font-size:16px;color:#333;line-height:1.5;font-style:italic;">${fields['Key Reflection'] || ''}</div>
+        </div>
+        ${scripture ? '<div style="font-family:Arial,sans-serif;font-size:14px;color:#999;font-weight:600;margin-top:12px;">' + scripture + '</div>' : ''}
+      </div>`;
+    }
+
+    return `<div class="slide-wrapper">
+      <div class="slide">
+        ${corners}
+        ${body}
+        ${logo}
+      </div>
+      <div class="slide-nav">Slide ${currentSlides.indexOf(slide) + 1} of ${currentSlides.length} &nbsp;|&nbsp; <strong>${header.replace('_', ' ')}</strong> &nbsp;|&nbsp; <em>Screenshot this slide then move to the next</em></div>
+    </div>`;
+  }
+
+  const slidesHtml = currentSlides.map(renderSlide).join('');
+
+  const fullHtml = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<title>${sermonTitle} — Sermon Notes Slides</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#222; font-family:Arial,sans-serif; padding:20px; }
+.slide-wrapper { margin-bottom:40px; }
+.slide { width:1080px; height:1080px; background:#fff; position:relative; overflow:hidden; box-shadow:0 8px 40px rgba(0,0,0,0.4); }
+.slide-nav { color:#aaa; font-size:13px; margin-top:10px; padding:8px 0; border-top:1px solid #444; }
+@media (max-width:1120px) {
+  .slide { width:100%; height:auto; aspect-ratio:1/1; }
+}
+</style>
+</head>
+<body>
+<div style="color:#C9A84C; font-size:14px; font-weight:700; margin-bottom:24px; padding:12px 16px; background:#1a1000; border:1px solid #C9A84C; border-radius:8px; max-width:1080px;">
+  CITY LIGHT CHURCH &nbsp;|&nbsp; ${sermonTitle} &nbsp;|&nbsp; ${sermonDate}
+  <span style="color:#888; font-weight:400; margin-left:16px;">Screenshot each slide at 1080x1080 for Instagram. Use browser zoom to fit your screen.</span>
+</div>
+${slidesHtml}
+</body>
+</html>`;
+
+  const blob = new Blob([fullHtml], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (sermonTitle || 'sermon').replace(/[^a-z0-9]/gi,'_').toLowerCase() + '_slides.html';
+  a.click();
 }
 </script>
 </body>
