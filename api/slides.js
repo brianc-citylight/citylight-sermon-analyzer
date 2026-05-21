@@ -1,7 +1,5 @@
-import chromium from '@sparticuz/chromium';
-import puppeteer from 'puppeteer-core';
-
-export const config = { maxDuration: 30 };
+const chromium = require('@sparticuz/chromium');
+const puppeteer = require('puppeteer-core');
 
 const GOLD = '#C9A84C';
 const BLACK = '#111111';
@@ -75,7 +73,7 @@ function buildSlideHtml(slide, sermonTitle, sermonDate, speaker) {
           <div style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${GOLD};margin-bottom:6px;">Reflection</div>
           <div style="font-family:Arial,sans-serif;font-size:16px;color:#333;line-height:1.5;font-style:italic;">${reflection}</div>
         </div>
-        ${scripture ? '<div style="font-family:Arial,sans-serif;font-size:14px;color:#999;font-weight:600;">' + scripture + '</div>' : ''}
+        ${scripture ? '<div style="font-family:Arial,sans-serif;font-size:14px;color:#999;font-weight:600;margin-top:12px;">' + scripture + '</div>' : ''}
       </div>
     `;
   }
@@ -97,7 +95,7 @@ body { width:1080px; height:1080px; background:${WHITE}; overflow:hidden; positi
 </html>`;
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { slide, sermonTitle, sermonDate, speaker } = req.body;
@@ -105,10 +103,12 @@ export default async function handler(req, res) {
 
   let browser = null;
   try {
+    const execPath = await chromium.executablePath();
+
     browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: { width: 1080, height: 1080 },
-      executablePath: await chromium.executablePath(),
+      executablePath: execPath,
       headless: chromium.headless,
     });
 
@@ -122,11 +122,13 @@ export default async function handler(req, res) {
 
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Content-Disposition', 'attachment; filename="slide.png"');
-    return res.send(screenshot);
+    return res.send(Buffer.from(screenshot));
 
   } catch (e) {
-    return res.status(500).json({ error: e.message });
+    return res.status(500).json({ error: e.message, stack: e.stack });
   } finally {
-    if (browser) await browser.close();
+    if (browser) {
+      try { await browser.close(); } catch(e) {}
+    }
   }
-}
+};

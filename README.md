@@ -36,7 +36,7 @@ api/
 
 ## Passwords and Keys
 
-- Staff password: paste from your Notes app each session
+- Staff password: citylight2026
 - Anthropic API key: paste from your Notes app each session
 - Opus Clip API key: paste from your Notes app each session
 - Keys are never stored — paste fresh each session
@@ -61,4 +61,4 @@ Wednesday: Post content to Instagram and Facebook.
 ## To Change the Staff Password
 
 Edit line 1 of the script tag in index.html:
-const CORRECT_PASSWORD = 'XXXXXXXXXX';
+const CORRECT_PASSWORD = 'citylight2026';
