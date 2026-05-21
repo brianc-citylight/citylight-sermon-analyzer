@@ -219,17 +219,16 @@
       </div>
       <div class="tab-content" id="tab-notes">
         <div class="canva-banner">
-          <p><strong>Ready to build your slides.</strong><br>Download as branded image slides or copy content into your Canva template.</p>
-          <a href="https://www.canva.com/design?create=true&template=EAHKE92RscA" target="_blank">Open Canva &#8599;</a>
+          <p><strong>Ready to build your slides.</strong><br>Click Generate to download branded 1080x1080 PNG images ready to post.</p>
+          <button class="btn btn-gold" id="generateSlidesBtn" onclick="generateSlideImages()" style="width:auto; padding:9px 18px; font-size:13px; white-space:nowrap;">&#9654; Generate Slide Images</button>
         </div>
+        <div id="slidesGenStatus" style="font-size:12px; color:var(--gray); margin-top:-0.5rem; margin-bottom:1rem; display:none;"></div>
         <div id="slidesImageContainer" style="display:none; margin-bottom:1rem;"></div>
         <div id="slidesContainer"></div>
         <div class="action-row">
-          <button class="btn btn-sm" id="generateSlidesBtn" onclick="generateSlideImages()">&#9654; Generate Slide Images</button>
           <button class="btn btn-sm" onclick="downloadSlides()">&#8595; Download .txt</button>
           <button class="btn btn-sm" onclick="copyAllSlides()">&#10697; Copy All</button>
         </div>
-        <div id="slidesGenStatus" style="font-size:12px; color:var(--gray); margin-top:0.5rem; display:none;"></div>
       </div>
       <div class="tab-content" id="tab-summary">
         <div id="summaryContainer">
@@ -529,8 +528,13 @@ function renderResults(questions, slides, summary) {
 
   const sContainer = document.getElementById('slidesContainer');
   sContainer.innerHTML = '';
+  const actualSermonDate = document.getElementById('sermonDate').value.trim();
   const labelMap = { 'TITLE_SLIDE': 'Title Slide', 'INTRO_SLIDE': 'Intro Slide: Scripture and Key Point' };
   slides.forEach((slide, idx) => {
+    // Override sermon date on title slide with the actual required input value
+    if (slide.header === 'TITLE_SLIDE' && actualSermonDate) {
+      slide.fields['Sermon Date'] = actualSermonDate;
+    }
     const num = slide.header.match(/\d+/);
     const label = labelMap[slide.header] || `Takeaway Slide ${num ? num[0] : ''}`;
     const fieldsHtml = Object.entries(slide.fields).map(([k,v]) => `
@@ -1043,7 +1047,8 @@ async function generateSlideImages() {
     statusEl.textContent = successCount + ' of ' + currentSlides.length + ' slides generated. Click Download on each to save.';
     btn.textContent = 'Regenerate Slides';
   } else {
-    statusEl.textContent = 'Slide generation failed. Make sure your Vercel app is deployed with the api/slides.js function.';
+    statusEl.style.color = '#cc3333';
+    statusEl.textContent = 'Slide generation failed. This usually means Vercel is still installing Puppeteer dependencies (package.json must be in your GitHub repo root). Wait 2 minutes and try again. If the problem persists, check your Vercel Functions tab for errors on api/slides.';
     btn.textContent = 'Generate Slide Images';
   }
   btn.disabled = false;
