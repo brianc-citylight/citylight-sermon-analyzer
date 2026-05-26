@@ -226,10 +226,9 @@
       <div class="tab-content" id="tab-notes">
         <div class="canva-banner">
           <p><strong>Ready to build your slides.</strong><br>Click Generate to download branded 1080x1080 PNG images ready to post.</p>
-          <button class="btn btn-gold" id="generateSlidesBtn" onclick="generateSlideImages()" style="width:auto; padding:9px 18px; font-size:13px; white-space:nowrap;">&#9654; Generate Slide Images</button>
+          <button class="btn btn-gold" id="generateSlidesBtn" onclick="exportSlidesAsHtml()" style="width:auto; padding:9px 18px; font-size:13px; white-space:nowrap;">&#9654; Generate Slide Images</button>
         </div>
-        <div id="slidesGenStatus" style="font-size:12px; color:var(--gray); margin-top:-0.5rem; margin-bottom:1rem; display:none;"></div>
-        <div id="slidesImageContainer" style="display:none; margin-bottom:1rem;"></div>
+
         <div id="slidesContainer"></div>
         <div class="action-row">
           <button class="btn btn-sm" onclick="exportSlidesAsHtml()">&#9635; Export as HTML Slideshow</button>
@@ -505,6 +504,14 @@ function renderResults(questions, slides, summary) {
       </div>
       ${fieldsHtml}
     `;
+    // Add Export Slide button next to Copy Slide
+    const slideHeader = card.querySelector('.slide-header');
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'btn btn-sm';
+    exportBtn.style.cssText = 'font-size:12px;';
+    exportBtn.textContent = 'Export Slide';
+    exportBtn.onclick = () => exportSingleSlide(slide);
+    slideHeader.appendChild(exportBtn);
     sContainer.appendChild(card);
   });
 
@@ -1027,52 +1034,52 @@ function exportSlidesAsHtml() {
   const LOGO_URL = 'https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/CityLightLogo.png';
 
   const corners = `
-    <div style="position:absolute;top:0;left:0;width:3px;height:60px;background:${ACCENT_BAR};"></div>
-    <div style="position:absolute;top:0;left:0;width:60px;height:3px;background:${ACCENT_BAR};"></div>
-    <div style="position:absolute;top:0;right:0;width:3px;height:60px;background:${ACCENT_BAR};"></div>
-    <div style="position:absolute;top:0;right:0;width:60px;height:3px;background:${ACCENT_BAR};"></div>
-    <div style="position:absolute;bottom:0;left:0;width:3px;height:60px;background:${ACCENT_BAR};"></div>
-    <div style="position:absolute;bottom:0;left:0;width:60px;height:3px;background:${ACCENT_BAR};"></div>
-    <div style="position:absolute;bottom:0;right:0;width:3px;height:60px;background:${ACCENT_BAR};"></div>
-    <div style="position:absolute;bottom:0;right:0;width:60px;height:3px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;top:0;left:0;width:4px;height:72px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;top:0;left:0;width:72px;height:4px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;top:0;right:0;width:4px;height:72px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;top:0;right:0;width:72px;height:4px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;bottom:0;left:0;width:4px;height:72px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;bottom:0;left:0;width:72px;height:4px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;bottom:0;right:0;width:4px;height:72px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;bottom:0;right:0;width:72px;height:4px;background:${ACCENT_BAR};"></div>
   `;
 
-  const logo = `<div style="position:absolute;bottom:24px;right:28px;"><img src="${LOGO_URL}" alt="City Light" style="height:40px;width:auto;opacity:0.9;" /></div>`;
+  const logo = `<div style="position:absolute;bottom:24px;right:28px;"><img src="${LOGO_URL}" alt="City Light" style="height:48px;width:auto;opacity:0.9;" /></div>`;
 
   function renderSlide(slide) {
     const { header, fields } = slide;
     let body = '';
 
     if (header === 'TITLE_SLIDE') {
-      body = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:80px 60px;">
-        <div style="font-family:'Arial Black',Arial,sans-serif;font-size:72px;font-weight:900;letter-spacing:-0.02em;line-height:1;">
+      body = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:80px 72px;">
+        <div style="font-family:'Arial Black',Arial,sans-serif;font-size:86px;font-weight:900;letter-spacing:-0.02em;line-height:1;">
           <span style="color:${ACCENT};">SERMON</span><span style="color:${TEXT};">NOTES</span>
         </div>
-        <div style="width:80px;height:4px;background:${ACCENT};margin:32px auto;"></div>
-        <div style="font-family:Arial,sans-serif;font-size:28px;font-weight:700;color:${TEXT};margin-bottom:12px;">${fields['Sermon Title'] || sermonTitle}</div>
-        <div style="font-family:Arial,sans-serif;font-size:20px;color:${SUBTEXT};">${fields['Sermon Date'] || sermonDate}</div>
+        <div style="width:96px;height:5px;background:${ACCENT};margin:38px auto;"></div>
+        <div style="font-family:Arial,sans-serif;font-size:34px;font-weight:700;color:${TEXT};margin-bottom:14px;">${fields['Sermon Title'] || sermonTitle}</div>
+        <div style="font-family:Arial,sans-serif;font-size:24px;color:${SUBTEXT};">${fields['Sermon Date'] || sermonDate}</div>
         ${speakerFull ? '<div style="font-family:Arial,sans-serif;font-size:18px;color:' + SUBTEXT + ';margin-top:8px;">' + speakerFull + '</div>' : ''}
       </div>`;
     } else if (header === 'INTRO_SLIDE') {
-      body = `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:70px 64px;">
-        <div style="font-family:Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:24px;">The Text</div>
-        <div style="font-family:Arial,sans-serif;font-size:22px;font-weight:700;color:${TEXT};line-height:1.4;margin-bottom:36px;padding-bottom:32px;border-bottom:2px solid ${DIVIDER};">${fields['Scripture'] || ''}</div>
-        <div style="font-family:Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:16px;">Key Point</div>
-        <div style="font-family:Arial,sans-serif;font-size:26px;font-weight:700;color:${TEXT};line-height:1.4;">${fields['Key Point'] || ''}</div>
+      body = `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:70px 76px;">
+        <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:29px;">The Text</div>
+        <div style="font-family:Arial,sans-serif;font-size:31px;font-weight:700;color:${TEXT};line-height:1.4;margin-bottom:43px;padding-bottom:38px;border-bottom:2px solid ${DIVIDER};">${fields['Scripture'] || ''}</div>
+        <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:19px;">Key Point</div>
+        <div style="font-family:Arial,sans-serif;font-size:31px;font-weight:700;color:${TEXT};line-height:1.4;">${fields['Key Point'] || ''}</div>
       </div>`;
     } else {
       const num = header.match(/\d+/);
       const scripture = fields['Scripture'] || '';
-      body = `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:60px 64px;">
-        <div style="font-family:'Arial Black',Arial,sans-serif;font-size:13px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:4px;">TAKEAWAY ${num ? num[0] : ''}</div>
-        <div style="font-family:Arial,sans-serif;font-size:24px;font-weight:700;color:${TEXT};line-height:1.35;margin-bottom:24px;padding-bottom:20px;border-bottom:2px solid ${DIVIDER};">${fields['Subpoint'] || ''}</div>
-        <div style="font-family:Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${SUBTEXT};margin-bottom:8px;">Key Takeaway</div>
-        <div style="font-family:Arial,sans-serif;font-size:17px;color:${SUBTEXT};line-height:1.6;margin-bottom:20px;">${fields['Key Takeaway'] || ''}</div>
+      body = `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:60px 76px;">
+        <div style="font-family:'Arial Black',Arial,sans-serif;font-size:16px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:5px;">TAKEAWAY ${num ? num[0] : ''}</div>
+        <div style="font-family:Arial,sans-serif;font-size:29px;font-weight:700;color:${TEXT};line-height:1.35;margin-bottom:29px;padding-bottom:24px;border-bottom:2px solid ${DIVIDER};">${fields['Subpoint'] || ''}</div>
+        <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${SUBTEXT};margin-bottom:10px;">Key Takeaway</div>
+        <div style="font-family:Arial,sans-serif;font-size:20px;color:${SUBTEXT};line-height:1.6;margin-bottom:24px;">${fields['Key Takeaway'] || ''}</div>
         <div style="background:${TAKEAWAY_BG};border-left:4px solid ${REFL_BORDER};padding:14px 18px;border-radius:0 6px 6px 0;${scripture ? 'margin-bottom:16px;' : ''}">
-          <div style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${REFL_LABEL};margin-bottom:6px;">Reflection</div>
-          <div style="font-family:Arial,sans-serif;font-size:16px;color:${TEXT};line-height:1.5;font-style:italic;">${fields['Key Reflection'] || ''}</div>
+          <div style="font-family:Arial,sans-serif;font-size:14px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${REFL_LABEL};margin-bottom:7px;">Reflection</div>
+          <div style="font-family:Arial,sans-serif;font-size:19px;color:${TEXT};line-height:1.5;font-style:italic;">${fields['Key Reflection'] || ''}</div>
         </div>
-        ${scripture ? '<div style="font-family:Arial,sans-serif;font-size:14px;color:' + SCRIPTURE + ';font-weight:600;margin-top:12px;">' + scripture + '</div>' : ''}
+        ${scripture ? '<div style="font-family:Arial,sans-serif;font-size:17px;color:' + SCRIPTURE + ';font-weight:600;margin-top:14px;">' + scripture + '</div>' : ''}
       </div>`;
     }
 
@@ -1082,7 +1089,6 @@ function exportSlidesAsHtml() {
         ${body}
         ${logo}
       </div>
-      <div class="slide-nav">Slide ${currentSlides.indexOf(slide) + 1} of ${currentSlides.length} &nbsp;|&nbsp; <strong>${header.replace('_', ' ')}</strong> &nbsp;|&nbsp; <em>Screenshot this slide then move to the next</em></div>
     </div>`;
   }
 
@@ -1095,20 +1101,15 @@ function exportSlidesAsHtml() {
 <title>${sermonTitle} — Sermon Notes Slides</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-body { background:#222; font-family:Arial,sans-serif; padding:20px; }
-.slide-wrapper { margin-bottom:40px; }
-.slide { width:1080px; height:1080px; background:${BG}; position:relative; overflow:hidden; box-shadow:0 8px 40px rgba(0,0,0,0.4); }
-.slide-nav { color:#aaa; font-size:13px; margin-top:10px; padding:8px 0; border-top:1px solid #444; }
+body { background:#111; font-family:Arial,sans-serif; padding:20px; }
+.slide-wrapper { margin-bottom:20px; }
+.slide { width:1080px; height:1080px; background:${BG}; position:relative; overflow:hidden; }
 @media (max-width:1120px) {
   .slide { width:100%; height:auto; aspect-ratio:1/1; }
 }
 </style>
 </head>
 <body>
-<div style="color:#C9A84C; font-size:14px; font-weight:700; margin-bottom:24px; padding:12px 16px; background:#1a1000; border:1px solid #C9A84C; border-radius:8px; max-width:1080px;">
-  CITY LIGHT CHURCH &nbsp;|&nbsp; ${sermonTitle} &nbsp;|&nbsp; ${sermonDate}
-  <span style="color:#888; font-weight:400; margin-left:16px;">Screenshot each slide at 1080x1080 for Instagram. Use browser zoom to fit your screen.</span>
-</div>
 ${slidesHtml}
 </body>
 </html>`;
@@ -1118,6 +1119,109 @@ ${slidesHtml}
   const a = document.createElement('a');
   a.href = url;
   a.download = (sermonTitle || 'sermon').replace(/[^a-z0-9]/gi,'_').toLowerCase() + '_slides.html';
+  a.click();
+}
+
+// ── EXPORT SINGLE SLIDE ──────────────────────────────────────────────────
+function exportSingleSlide(slide) {
+  if (!slide) return;
+
+  const theme = THEMES[currentTheme] || THEMES['1'];
+  const BG = theme.bg;
+  const TEXT = theme.text;
+  const SUBTEXT = theme.subtext;
+  const ACCENT = theme.accent;
+  const ACCENT_BAR = theme.accentBar;
+  const TAKEAWAY_BG = theme.takeawayBg;
+  const REFL_BORDER = theme.reflBorder;
+  const REFL_LABEL = theme.reflLabel;
+  const SCRIPTURE = theme.scripture;
+  const DIVIDER = theme.divider;
+
+  const speakerFirst = document.getElementById('speakerFirst').value.trim();
+  const speakerLast = document.getElementById('speakerLast').value.trim();
+  const speakerTitle = document.getElementById('speakerTitle').value.trim();
+  const speakerFull = [speakerTitle, speakerFirst, speakerLast].filter(Boolean).join(' ') || '';
+  const sermonDate = document.getElementById('sermonDate').value.trim();
+  const LOGO_URL = 'https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/CityLightLogo.png';
+
+  const corners = `
+    <div style="position:absolute;top:0;left:0;width:4px;height:72px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;top:0;left:0;width:72px;height:4px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;top:0;right:0;width:4px;height:72px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;top:0;right:0;width:72px;height:4px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;bottom:0;left:0;width:4px;height:72px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;bottom:0;left:0;width:72px;height:4px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;bottom:0;right:0;width:4px;height:72px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;bottom:0;right:0;width:72px;height:4px;background:${ACCENT_BAR};"></div>
+  `;
+  const logo = `<div style="position:absolute;bottom:24px;right:28px;"><img src="${LOGO_URL}" alt="City Light" style="height:48px;width:auto;opacity:0.9;" /></div>`;
+
+  const { header, fields } = slide;
+  let body = '';
+
+  if (header === 'TITLE_SLIDE') {
+    body = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:80px 72px;">
+      <div style="font-family:'Arial Black',Arial,sans-serif;font-size:86px;font-weight:900;letter-spacing:-0.02em;line-height:1;">
+        <span style="color:${ACCENT};">SERMON</span><span style="color:${TEXT};">NOTES</span>
+      </div>
+      <div style="width:96px;height:5px;background:${ACCENT};margin:38px auto;"></div>
+      <div style="font-family:Arial,sans-serif;font-size:34px;font-weight:700;color:${TEXT};margin-bottom:14px;">${fields['Sermon Title'] || sermonTitle}</div>
+      <div style="font-family:Arial,sans-serif;font-size:24px;color:${SUBTEXT};">${fields['Sermon Date'] || sermonDate}</div>
+      ${speakerFull ? '<div style="font-family:Arial,sans-serif;font-size:20px;color:' + SUBTEXT + ';margin-top:8px;">' + speakerFull + '</div>' : ''}
+    </div>`;
+  } else if (header === 'INTRO_SLIDE') {
+    body = `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:70px 76px;">
+      <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:29px;">The Text</div>
+      <div style="font-family:Arial,sans-serif;font-size:26px;font-weight:700;color:${TEXT};line-height:1.4;margin-bottom:43px;padding-bottom:38px;border-bottom:2px solid ${DIVIDER};">${fields['Scripture'] || ''}</div>
+      <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:19px;">Key Point</div>
+      <div style="font-family:Arial,sans-serif;font-size:31px;font-weight:700;color:${TEXT};line-height:1.4;">${fields['Key Point'] || ''}</div>
+    </div>`;
+  } else {
+    const num = header.match(/\d+/);
+    const scripture = fields['Scripture'] || '';
+    body = `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:60px 76px;">
+      <div style="font-family:'Arial Black',Arial,sans-serif;font-size:16px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:5px;">TAKEAWAY ${num ? num[0] : ''}</div>
+      <div style="font-family:Arial,sans-serif;font-size:29px;font-weight:700;color:${TEXT};line-height:1.35;margin-bottom:29px;padding-bottom:24px;border-bottom:2px solid ${DIVIDER};">${fields['Subpoint'] || ''}</div>
+      <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${SUBTEXT};margin-bottom:10px;">Key Takeaway</div>
+      <div style="font-family:Arial,sans-serif;font-size:20px;color:${SUBTEXT};line-height:1.6;margin-bottom:24px;">${fields['Key Takeaway'] || ''}</div>
+      <div style="background:${TAKEAWAY_BG};border-left:4px solid ${REFL_BORDER};padding:14px 18px;border-radius:0 6px 6px 0;${scripture ? 'margin-bottom:16px;' : ''}">
+        <div style="font-family:Arial,sans-serif;font-size:14px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${REFL_LABEL};margin-bottom:7px;">Reflection</div>
+        <div style="font-family:Arial,sans-serif;font-size:19px;color:${TEXT};line-height:1.5;font-style:italic;">${fields['Key Reflection'] || ''}</div>
+      </div>
+      ${scripture ? '<div style="font-family:Arial,sans-serif;font-size:17px;color:' + SCRIPTURE + ';font-weight:600;margin-top:14px;">' + scripture + '</div>' : ''}
+    </div>`;
+  }
+
+  const labelMap = { 'TITLE_SLIDE': 'title', 'INTRO_SLIDE': 'intro' };
+  const num = header.match(/\d+/);
+  const slug = labelMap[header] || 'takeaway-' + (num ? num[0] : '1');
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<title>${sermonTitle} — ${slug}</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#111; display:flex; justify-content:center; padding:20px; }
+.slide { width:1080px; height:1080px; background:${BG}; position:relative; overflow:hidden; }
+@media (max-width:1120px) { .slide { width:100%; height:auto; aspect-ratio:1/1; } }
+</style>
+</head>
+<body>
+<div class="slide">
+  ${corners}
+  ${body}
+  ${logo}
+</div>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (sermonTitle || 'sermon').replace(/[^a-z0-9]/gi,'_').toLowerCase() + '_' + slug + '.html';
   a.click();
 }
 </script>
