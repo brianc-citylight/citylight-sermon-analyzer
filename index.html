@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>City Light Sermon Analyzer</title>
-  <style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --gold: #C9A84C;
@@ -512,6 +513,13 @@ function renderResults(questions, slides, summary) {
     exportBtn.textContent = 'Export Slide';
     exportBtn.onclick = () => exportSingleSlide(slide);
     slideHeader.appendChild(exportBtn);
+
+    const pngBtn = document.createElement('button');
+    pngBtn.className = 'btn btn-sm';
+    pngBtn.style.cssText = 'font-size:12px;';
+    pngBtn.textContent = 'Download PNG';
+    pngBtn.onclick = () => downloadSlideAsPng(slide, pngBtn);
+    slideHeader.appendChild(pngBtn);
     sContainer.appendChild(card);
   });
 
@@ -1223,6 +1231,132 @@ body { background:#111; display:flex; justify-content:center; padding:20px; }
   a.href = URL.createObjectURL(blob);
   a.download = (sermonTitle || 'sermon').replace(/[^a-z0-9]/gi,'_').toLowerCase() + '_' + slug + '.html';
   a.click();
+}
+
+// ── DOWNLOAD SLIDE AS PNG ────────────────────────────────────────────────
+async function downloadSlideAsPng(slide, btn) {
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Rendering...';
+
+  const theme = THEMES[currentTheme] || THEMES['1'];
+  const BG = theme.bg;
+  const TEXT = theme.text;
+  const SUBTEXT = theme.subtext;
+  const ACCENT = theme.accent;
+  const ACCENT_BAR = theme.accentBar;
+  const TAKEAWAY_BG = theme.takeawayBg;
+  const REFL_BORDER = theme.reflBorder;
+  const REFL_LABEL = theme.reflLabel;
+  const SCRIPTURE = theme.scripture;
+  const DIVIDER = theme.divider;
+
+  const speakerFirst = document.getElementById('speakerFirst').value.trim();
+  const speakerLast = document.getElementById('speakerLast').value.trim();
+  const speakerTitle = document.getElementById('speakerTitle').value.trim();
+  const speakerFull = [speakerTitle, speakerFirst, speakerLast].filter(Boolean).join(' ') || '';
+  const sermonDate = document.getElementById('sermonDate').value.trim();
+
+  const { header, fields } = slide;
+
+  // Build slide DOM element at 1080x1080
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;left:-9999px;top:0;width:1080px;height:1080px;overflow:hidden;background:' + BG + ';';
+
+  const corners = `
+    <div style="position:absolute;top:0;left:0;width:4px;height:72px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;top:0;left:0;width:72px;height:4px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;top:0;right:0;width:4px;height:72px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;top:0;right:0;width:72px;height:4px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;bottom:0;left:0;width:4px;height:72px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;bottom:0;left:0;width:72px;height:4px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;bottom:0;right:0;width:4px;height:72px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;bottom:0;right:0;width:72px;height:4px;background:${ACCENT_BAR};"></div>
+  `;
+
+  // Logo as image with crossOrigin to allow canvas export
+  const logoHtml = '<div style="position:absolute;bottom:24px;right:28px;"><img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/CityLightLogo.png?raw=true" crossOrigin="anonymous" alt="City Light" style="height:48px;width:auto;opacity:0.9;" /></div>';
+
+  let bodyHtml = '';
+
+  if (header === 'TITLE_SLIDE') {
+    bodyHtml = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:80px 72px;">
+      <div style="font-family:Arial,sans-serif;font-size:86px;font-weight:900;letter-spacing:-0.02em;line-height:1;">
+        <span style="color:${ACCENT};">SERMON</span><span style="color:${TEXT};">NOTES</span>
+      </div>
+      <div style="width:96px;height:5px;background:${ACCENT};margin:38px auto;"></div>
+      <div style="font-family:Arial,sans-serif;font-size:34px;font-weight:700;color:${TEXT};margin-bottom:14px;">${fields['Sermon Title'] || sermonTitle}</div>
+      <div style="font-family:Arial,sans-serif;font-size:24px;color:${SUBTEXT};">${fields['Sermon Date'] || sermonDate}</div>
+      ${speakerFull ? '<div style="font-family:Arial,sans-serif;font-size:20px;color:' + SUBTEXT + ';margin-top:8px;">' + speakerFull + '</div>' : ''}
+    </div>`;
+  } else if (header === 'INTRO_SLIDE') {
+    bodyHtml = `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:70px 76px;">
+      <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:29px;">The Text</div>
+      <div style="font-family:Arial,sans-serif;font-size:26px;font-weight:700;color:${TEXT};line-height:1.4;margin-bottom:43px;padding-bottom:38px;border-bottom:2px solid ${DIVIDER};">${fields['Scripture'] || ''}</div>
+      <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:19px;">Key Point</div>
+      <div style="font-family:Arial,sans-serif;font-size:31px;font-weight:700;color:${TEXT};line-height:1.4;">${fields['Key Point'] || ''}</div>
+    </div>`;
+  } else {
+    const num = header.match(/\d+/);
+    const scripture = fields['Scripture'] || '';
+    bodyHtml = `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:60px 76px;">
+      <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:5px;">TAKEAWAY ${num ? num[0] : ''}</div>
+      <div style="font-family:Arial,sans-serif;font-size:29px;font-weight:700;color:${TEXT};line-height:1.35;margin-bottom:29px;padding-bottom:24px;border-bottom:2px solid ${DIVIDER};">${fields['Subpoint'] || ''}</div>
+      <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${SUBTEXT};margin-bottom:10px;">Key Takeaway</div>
+      <div style="font-family:Arial,sans-serif;font-size:20px;color:${SUBTEXT};line-height:1.6;margin-bottom:24px;">${fields['Key Takeaway'] || ''}</div>
+      <div style="background:${TAKEAWAY_BG};border-left:4px solid ${REFL_BORDER};padding:14px 18px;border-radius:0 6px 6px 0;${scripture ? 'margin-bottom:16px;' : ''}">
+        <div style="font-family:Arial,sans-serif;font-size:14px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${REFL_LABEL};margin-bottom:7px;">Reflection</div>
+        <div style="font-family:Arial,sans-serif;font-size:19px;color:${TEXT};line-height:1.5;font-style:italic;">${fields['Key Reflection'] || ''}</div>
+      </div>
+      ${scripture ? '<div style="font-family:Arial,sans-serif;font-size:17px;color:' + SCRIPTURE + ';font-weight:600;margin-top:14px;">' + scripture + '</div>' : ''}
+    </div>`;
+  }
+
+  container.innerHTML = corners + bodyHtml + logoHtml;
+  document.body.appendChild(container);
+
+  // Wait for logo image to load
+  const img = container.querySelector('img');
+  if (img) {
+    await new Promise(resolve => {
+      if (img.complete) { resolve(); return; }
+      img.onload = resolve;
+      img.onerror = resolve; // proceed even if logo fails
+    });
+  }
+
+  try {
+    const canvas = await html2canvas(container, {
+      width: 1080,
+      height: 1080,
+      scale: 1,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: BG,
+      logging: false
+    });
+
+    const labelMap = { 'TITLE_SLIDE': 'title', 'INTRO_SLIDE': 'intro' };
+    const num = header.match(/\d+/);
+    const slug = labelMap[header] || 'takeaway-' + (num ? num[0] : '1');
+    const filename = (sermonTitle || 'sermon').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_' + slug + '.png';
+
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = filename;
+    a.click();
+
+    btn.textContent = 'Downloaded!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); btn.disabled = false; }, 2000);
+  } catch(e) {
+    btn.textContent = 'Failed — try Export Slide instead';
+    btn.disabled = false;
+    console.error('PNG export error:', e);
+    setTimeout(() => { btn.textContent = orig; }, 3000);
+  } finally {
+    document.body.removeChild(container);
+  }
 }
 </script>
 </body>
