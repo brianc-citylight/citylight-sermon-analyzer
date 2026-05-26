@@ -113,8 +113,10 @@
 <body>
 <div class="gold-bar"></div>
 <div class="header">
-  <div class="church-name">City Light Church &middot; Vicksburg, MS</div>
-  <div class="app-name">Sermon Analyzer</div>
+  <div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;">
+    <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/CityLightLogo.png" alt="City Light Church" style="height:36px;width:auto;" />
+    <div class="app-name" style="font-size:16px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;">Sermon Analyzer</div>
+  </div>
 </div>
 <div class="container">
 
@@ -156,7 +158,7 @@
         <label>YouTube Sermon Link</label>
         <input type="text" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." />
       </div>
-      <div class="options-row">
+      <div class="options-row" style="align-items:flex-end;">
         <div class="option-group">
           <label>Sermon Notes Slides</label>
           <select id="slideCount">
@@ -164,6 +166,20 @@
             <option value="4">4 slides</option>
             <option value="5" selected>5 slides</option>
           </select>
+        </div>
+        <div class="option-group">
+          <label>Slide Theme</label>
+          <div style="display:flex;gap:6px;align-items:center;" id="themeSelector">
+            <div onclick="selectTheme('1')" id="theme-opt-1" title="City Light" style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;width:48px;height:48px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
+        <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/Slide%20Templates/Cover%201.png" style="width:100%;height:100%;object-fit:cover;" alt="City Light" />
+      </div><div onclick="selectTheme('2')" id="theme-opt-2" title="Navy" style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;width:48px;height:48px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
+        <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/Slide%20Templates/Cover%202.png" style="width:100%;height:100%;object-fit:cover;" alt="Navy" />
+      </div><div onclick="selectTheme('3')" id="theme-opt-3" title="Warm Brown" style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;width:48px;height:48px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
+        <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/Slide%20Templates/Cover%203.png" style="width:100%;height:100%;object-fit:cover;" alt="Warm Brown" />
+      </div><div onclick="selectTheme('4')" id="theme-opt-4" title="Slate" style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;width:48px;height:48px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
+        <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/Slide%20Templates/Cover%204.png" style="width:100%;height:100%;object-fit:cover;" alt="Slate" />
+      </div>
+          </div>
         </div>
       </div>
       <span class="transcript-toggle" onclick="toggleTranscript()">+ Paste transcript manually (recommended for accuracy)</span>
@@ -252,7 +268,26 @@ let currentQuestions = null;
 let currentSlides = null;
 let currentSummary = '';
 let currentCustomQ = null;
+let currentTheme = '1';
 let sermonTitle = '';
+
+// Theme definitions matching the four Canva slide template sets
+const THEMES = {
+  '1': { bg:'#FFFFFF', text:'#111111', subtext:'#444444', accent:'#C9A84C', accentBar:'#C9A84C', takeawayBg:'#f9f5eb', reflBorder:'#C9A84C', reflLabel:'#C9A84C', scripture:'#999999', divider:'#eeeeee', name:'City Light' },
+  '2': { bg:'#1B3054', text:'#FFFFFF', subtext:'#ccddee', accent:'#FFFFFF', accentBar:'#FFFFFF', takeawayBg:'rgba(255,255,255,0.08)', reflBorder:'#FFFFFF', reflLabel:'#aaccee', scripture:'#aaccee', divider:'rgba(255,255,255,0.2)', name:'Navy' },
+  '3': { bg:'#6B5B4E', text:'#FFFFFF', subtext:'#e8ddd7', accent:'#FFFFFF', accentBar:'#FFFFFF', takeawayBg:'rgba(255,255,255,0.1)', reflBorder:'#FFFFFF', reflLabel:'#e8ddd7', scripture:'#e8ddd7', divider:'rgba(255,255,255,0.2)', name:'Warm Brown' },
+  '4': { bg:'#686868', text:'#FFFFFF', subtext:'#e0e0e0', accent:'#FFFFFF', accentBar:'#111111', takeawayBg:'rgba(255,255,255,0.1)', reflBorder:'#FFFFFF', reflLabel:'#e0e0e0', scripture:'#e0e0e0', divider:'rgba(255,255,255,0.2)', name:'Slate' }
+};
+
+function selectTheme(id) {
+  currentTheme = id;
+  document.querySelectorAll('.theme-opt').forEach(el => {
+    el.style.borderColor = el.id === 'theme-opt-' + id ? 'var(--gold)' : 'transparent';
+  });
+}
+
+// Select theme 1 by default on load
+window.addEventListener('DOMContentLoaded', () => selectTheme('1'));
 const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
 function handleLogin() {
@@ -322,10 +357,16 @@ async function analyzeSermon() {
 
   setStatus('Fetching sermon title...');
   try {
-    const ytRes = await fetch('/api/title?videoId=' + encodeURIComponent(videoId));
+    const ytRes = await fetch('https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + videoId + '&format=json');
     const ytData = await ytRes.json();
     sermonTitle = ytData.title || 'Untitled Sermon';
-  } catch(e) { sermonTitle = 'Untitled Sermon'; }
+  } catch(e) {
+    try {
+      const ytRes2 = await fetch('/api/title?videoId=' + encodeURIComponent(videoId));
+      const ytData2 = await ytRes2.json();
+      sermonTitle = ytData2.title || 'Untitled Sermon';
+    } catch(e2) { sermonTitle = 'Untitled Sermon'; }
+  }
 
   let transcript = manualTranscript;
   if (!transcript) {
@@ -380,7 +421,11 @@ async function analyzeSermon() {
     const customLine = seekerLines.find(l => l.startsWith('CQ|'));
     currentCustomQ = customLine ? (() => { const p = customLine.split('|'); return { question: p[1]||'', timestamp: p[2]||'', explanation: p[3]||'' }; })() : null;
     currentSlides = parseSlidesFromRaw(summarySplit[0] || '');
-    currentSummary = (summarySplit[1] || '').trim();
+    let rawSummary = (summarySplit[1] || '').trim();
+    // Strip any output label Claude may have included despite prompt instruction
+    rawSummary = rawSummary.replace(/^(OUTPUT\s*3\s*[-:]\s*)?SERMON\s*SUMMARY\s*[-:]?\s*/i, '').trim();
+    rawSummary = rawSummary.replace(/^OUTPUT\s*3\s*[-:]?\s*/i, '').trim();
+    currentSummary = rawSummary;
     renderResults(currentQuestions, currentSlides, currentSummary);
 
   } catch(e) {
@@ -961,36 +1006,38 @@ async function generateSlideImages() {
 function exportSlidesAsHtml() {
   if (!currentSlides || currentSlides.length === 0) return;
 
-  const GOLD = '#C9A84C';
-  const BLACK = '#111111';
+  const theme = THEMES[currentTheme] || THEMES['1'];
+  const BG = theme.bg;
+  const TEXT = theme.text;
+  const SUBTEXT = theme.subtext;
+  const ACCENT = theme.accent;
+  const ACCENT_BAR = theme.accentBar;
+  const TAKEAWAY_BG = theme.takeawayBg;
+  const REFL_BORDER = theme.reflBorder;
+  const REFL_LABEL = theme.reflLabel;
+  const SCRIPTURE = theme.scripture;
+  const DIVIDER = theme.divider;
+
   const speakerFirst = document.getElementById('speakerFirst').value.trim();
   const speakerLast = document.getElementById('speakerLast').value.trim();
   const speakerTitle = document.getElementById('speakerTitle').value.trim();
   const speakerFull = [speakerTitle, speakerFirst, speakerLast].filter(Boolean).join(' ') || '';
   const sermonDate = document.getElementById('sermonDate').value.trim();
 
-  const logoSvg = `<svg width="52" height="52" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="26" cy="26" r="25" fill="${GOLD}"/>
-    <circle cx="26" cy="26" r="16" fill="none" stroke="${BLACK}" stroke-width="2.5"/>
-    <circle cx="26" cy="26" r="8" fill="${BLACK}"/>
-    <line x1="26" y1="1" x2="26" y2="12" stroke="${BLACK}" stroke-width="2.5"/>
-    <line x1="26" y1="40" x2="26" y2="51" stroke="${BLACK}" stroke-width="2.5"/>
-    <line x1="1" y1="26" x2="12" y2="26" stroke="${BLACK}" stroke-width="2.5"/>
-    <line x1="40" y1="26" x2="51" y2="26" stroke="${BLACK}" stroke-width="2.5"/>
-  </svg>`;
+  const LOGO_URL = 'https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/CityLightLogo.png';
 
   const corners = `
-    <div style="position:absolute;top:0;left:0;width:3px;height:60px;background:${GOLD};"></div>
-    <div style="position:absolute;top:0;left:0;width:60px;height:3px;background:${GOLD};"></div>
-    <div style="position:absolute;top:0;right:0;width:3px;height:60px;background:${GOLD};"></div>
-    <div style="position:absolute;top:0;right:0;width:60px;height:3px;background:${GOLD};"></div>
-    <div style="position:absolute;bottom:0;left:0;width:3px;height:60px;background:${GOLD};"></div>
-    <div style="position:absolute;bottom:0;left:0;width:60px;height:3px;background:${GOLD};"></div>
-    <div style="position:absolute;bottom:0;right:0;width:3px;height:60px;background:${GOLD};"></div>
-    <div style="position:absolute;bottom:0;right:0;width:60px;height:3px;background:${GOLD};"></div>
+    <div style="position:absolute;top:0;left:0;width:3px;height:60px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;top:0;left:0;width:60px;height:3px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;top:0;right:0;width:3px;height:60px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;top:0;right:0;width:60px;height:3px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;bottom:0;left:0;width:3px;height:60px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;bottom:0;left:0;width:60px;height:3px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;bottom:0;right:0;width:3px;height:60px;background:${ACCENT_BAR};"></div>
+    <div style="position:absolute;bottom:0;right:0;width:60px;height:3px;background:${ACCENT_BAR};"></div>
   `;
 
-  const logo = `<div style="position:absolute;bottom:28px;right:28px;">${logoSvg}</div>`;
+  const logo = `<div style="position:absolute;bottom:24px;right:28px;"><img src="${LOGO_URL}" alt="City Light" style="height:40px;width:auto;opacity:0.9;" /></div>`;
 
   function renderSlide(slide) {
     const { header, fields } = slide;
@@ -999,38 +1046,38 @@ function exportSlidesAsHtml() {
     if (header === 'TITLE_SLIDE') {
       body = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:80px 60px;">
         <div style="font-family:'Arial Black',Arial,sans-serif;font-size:72px;font-weight:900;letter-spacing:-0.02em;line-height:1;">
-          <span style="color:${GOLD};">SERMON</span><span style="color:${BLACK};">NOTES</span>
+          <span style="color:${ACCENT};">SERMON</span><span style="color:${TEXT};">NOTES</span>
         </div>
-        <div style="width:80px;height:4px;background:${GOLD};margin:32px auto;"></div>
-        <div style="font-family:Arial,sans-serif;font-size:28px;font-weight:700;color:${BLACK};margin-bottom:12px;">${fields['Sermon Title'] || sermonTitle}</div>
-        <div style="font-family:Arial,sans-serif;font-size:20px;color:#666;">${fields['Sermon Date'] || sermonDate}</div>
-        ${speakerFull ? '<div style="font-family:Arial,sans-serif;font-size:18px;color:#888;margin-top:8px;">' + speakerFull + '</div>' : ''}
+        <div style="width:80px;height:4px;background:${ACCENT};margin:32px auto;"></div>
+        <div style="font-family:Arial,sans-serif;font-size:28px;font-weight:700;color:${TEXT};margin-bottom:12px;">${fields['Sermon Title'] || sermonTitle}</div>
+        <div style="font-family:Arial,sans-serif;font-size:20px;color:${SUBTEXT};">${fields['Sermon Date'] || sermonDate}</div>
+        ${speakerFull ? '<div style="font-family:Arial,sans-serif;font-size:18px;color:' + SUBTEXT + ';margin-top:8px;">' + speakerFull + '</div>' : ''}
       </div>`;
     } else if (header === 'INTRO_SLIDE') {
       body = `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:70px 64px;">
-        <div style="font-family:Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${GOLD};margin-bottom:24px;">The Text</div>
-        <div style="font-family:Arial,sans-serif;font-size:22px;font-weight:700;color:${BLACK};line-height:1.4;margin-bottom:36px;padding-bottom:32px;border-bottom:2px solid #eee;">${fields['Scripture'] || ''}</div>
-        <div style="font-family:Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${GOLD};margin-bottom:16px;">Key Point</div>
-        <div style="font-family:Arial,sans-serif;font-size:26px;font-weight:700;color:${BLACK};line-height:1.4;">${fields['Key Point'] || ''}</div>
+        <div style="font-family:Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:24px;">The Text</div>
+        <div style="font-family:Arial,sans-serif;font-size:22px;font-weight:700;color:${TEXT};line-height:1.4;margin-bottom:36px;padding-bottom:32px;border-bottom:2px solid ${DIVIDER};">${fields['Scripture'] || ''}</div>
+        <div style="font-family:Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:16px;">Key Point</div>
+        <div style="font-family:Arial,sans-serif;font-size:26px;font-weight:700;color:${TEXT};line-height:1.4;">${fields['Key Point'] || ''}</div>
       </div>`;
     } else {
       const num = header.match(/\d+/);
       const scripture = fields['Scripture'] || '';
       body = `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:60px 64px;">
-        <div style="font-family:'Arial Black',Arial,sans-serif;font-size:13px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:${GOLD};margin-bottom:4px;">TAKEAWAY ${num ? num[0] : ''}</div>
-        <div style="font-family:Arial,sans-serif;font-size:24px;font-weight:700;color:${BLACK};line-height:1.35;margin-bottom:24px;padding-bottom:20px;border-bottom:2px solid #eee;">${fields['Subpoint'] || ''}</div>
-        <div style="font-family:Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#999;margin-bottom:8px;">Key Takeaway</div>
-        <div style="font-family:Arial,sans-serif;font-size:17px;color:#333;line-height:1.6;margin-bottom:20px;">${fields['Key Takeaway'] || ''}</div>
-        <div style="background:#f9f5eb;border-left:4px solid ${GOLD};padding:14px 18px;border-radius:0 6px 6px 0;${scripture ? 'margin-bottom:16px;' : ''}">
-          <div style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${GOLD};margin-bottom:6px;">Reflection</div>
-          <div style="font-family:Arial,sans-serif;font-size:16px;color:#333;line-height:1.5;font-style:italic;">${fields['Key Reflection'] || ''}</div>
+        <div style="font-family:'Arial Black',Arial,sans-serif;font-size:13px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:4px;">TAKEAWAY ${num ? num[0] : ''}</div>
+        <div style="font-family:Arial,sans-serif;font-size:24px;font-weight:700;color:${TEXT};line-height:1.35;margin-bottom:24px;padding-bottom:20px;border-bottom:2px solid ${DIVIDER};">${fields['Subpoint'] || ''}</div>
+        <div style="font-family:Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${SUBTEXT};margin-bottom:8px;">Key Takeaway</div>
+        <div style="font-family:Arial,sans-serif;font-size:17px;color:${SUBTEXT};line-height:1.6;margin-bottom:20px;">${fields['Key Takeaway'] || ''}</div>
+        <div style="background:${TAKEAWAY_BG};border-left:4px solid ${REFL_BORDER};padding:14px 18px;border-radius:0 6px 6px 0;${scripture ? 'margin-bottom:16px;' : ''}">
+          <div style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${REFL_LABEL};margin-bottom:6px;">Reflection</div>
+          <div style="font-family:Arial,sans-serif;font-size:16px;color:${TEXT};line-height:1.5;font-style:italic;">${fields['Key Reflection'] || ''}</div>
         </div>
-        ${scripture ? '<div style="font-family:Arial,sans-serif;font-size:14px;color:#999;font-weight:600;margin-top:12px;">' + scripture + '</div>' : ''}
+        ${scripture ? '<div style="font-family:Arial,sans-serif;font-size:14px;color:' + SCRIPTURE + ';font-weight:600;margin-top:12px;">' + scripture + '</div>' : ''}
       </div>`;
     }
 
     return `<div class="slide-wrapper">
-      <div class="slide">
+      <div class="slide" style="background:${BG};">
         ${corners}
         ${body}
         ${logo}
@@ -1050,7 +1097,7 @@ function exportSlidesAsHtml() {
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:#222; font-family:Arial,sans-serif; padding:20px; }
 .slide-wrapper { margin-bottom:40px; }
-.slide { width:1080px; height:1080px; background:#fff; position:relative; overflow:hidden; box-shadow:0 8px 40px rgba(0,0,0,0.4); }
+.slide { width:1080px; height:1080px; background:${BG}; position:relative; overflow:hidden; box-shadow:0 8px 40px rgba(0,0,0,0.4); }
 .slide-nav { color:#aaa; font-size:13px; margin-top:10px; padding:8px 0; border-top:1px solid #444; }
 @media (max-width:1120px) {
   .slide { width:100%; height:auto; aspect-ratio:1/1; }
