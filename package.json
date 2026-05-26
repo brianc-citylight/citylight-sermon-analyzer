@@ -4,6 +4,7 @@
   "type": "module",
   "dependencies": {
     "@sparticuz/chromium": "^123.0.0",
-    "puppeteer-core": "^22.0.0"
+    "puppeteer-core": "^22.0.0",
+    "youtube-transcript-plus": "^1.0.0"
   }
 }
