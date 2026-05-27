@@ -153,9 +153,10 @@ export default async function handler(req, res) {
       }
       const allAccounts = data.accounts || data.data || data || [];
       // Filter to City Light Church accounts only — exclude Mission Mississippi
+      // Includes Instagram, Facebook, and YouTube
       const accounts = allAccounts.filter(a =>
-        (a.platform === 'INSTAGRAM_BUSINESS' || a.platform === 'FACEBOOK_PAGE') &&
-        a.extUserName === 'City Light Church'
+        (a.platform === 'INSTAGRAM_BUSINESS' || a.platform === 'FACEBOOK_PAGE' || a.platform === 'YOUTUBE') &&
+        (a.extUserName === 'City Light Church' || a.platform === 'YOUTUBE')
       );
       return res.status(200).json({ accounts });
     } catch (e) {
