@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>City Light Sermon Analyzer</title>
+  <title>SermonReach | City Light Church</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -117,7 +117,7 @@
 <div class="header">
   <div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;">
     <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/CityLightLogo.png" alt="City Light Church" style="height:36px;width:auto;" />
-    <div class="app-name" style="font-size:16px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;">Sermon Analyzer</div>
+    <div class="app-name" style="font-size:16px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;">SermonReach</div>
   </div>
   <div style="display:flex;align-items:center;gap:12px;">
     <span id="userEmail" style="font-size:13px;color:var(--gray);display:none;font-weight:500;"></span>
@@ -171,16 +171,33 @@
       <h3 style="font-size:18px;font-weight:700;">Help</h3>
       <button onclick="closeHelpModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray);">&#x2715;</button>
     </div>
-    <div style="font-size:14px;color:var(--gray);line-height:1.8;">
-      <p style="margin-bottom:1rem;"><strong style="color:var(--black);">Weekly Workflow</strong><br>
-      Fill in speaker details and sermon date, paste the YouTube link, paste the transcript, then click Analyze Sermon.</p>
-      <p style="margin-bottom:1rem;"><strong style="color:var(--black);">Seeker Questions</strong><br>
-      Top 5 questions with timestamps and captions. Send clips directly to Opus Clip from the Opus Clip tab.</p>
-      <p style="margin-bottom:1rem;"><strong style="color:var(--black);">Sermon Notes Slides</strong><br>
-      Choose a theme, then click Generate Slide Images to export HTML or Download PNG on individual slides.</p>
-      <p style="margin-bottom:1rem;"><strong style="color:var(--black);">Sermon Summary</strong><br>
-      500 word narrative ready to post as a text caption if slides are not ready.</p>
-      <p><strong style="color:var(--black);">Need help?</strong><br>
+    <div style="font-size:13px;color:var(--gray);line-height:1.7;max-height:60vh;overflow-y:auto;padding-right:4px;">
+
+      <p style="margin-bottom:0.75rem;"><strong style="color:var(--black);font-size:14px;">Getting Started</strong><br>
+      Fill in the speaker title, first name, last name, and sermon date at the top of the Start Here section. The sermon date is required. Then paste the YouTube link and click Analyze Sermon.</p>
+
+      <p style="margin-bottom:0.75rem;"><strong style="color:var(--black);font-size:14px;">Transcript</strong><br>
+      The app will attempt to fetch the transcript automatically from YouTube. If it does not appear, click the "Paste transcript manually" toggle, open the YouTube video, click the three dots below the video, click Show transcript, then use the Copy YouTube Transcript Chrome extension to copy it and paste it here.</p>
+
+      <p style="margin-bottom:0.75rem;"><strong style="color:var(--black);font-size:14px;">Seeker Questions Tab</strong><br>
+      Shows the top 5 culturally resonant questions the sermon answers. Each question has a start and end timestamp and a social media caption. Use the Opus Clip tab to send clips directly to Opus Clip for video production.</p>
+
+      <p style="margin-bottom:0.75rem;"><strong style="color:var(--black);font-size:14px;">Opus Clip Tab</strong><br>
+      Send no more than 3 clips at a time. Each clip takes 2 to 5 minutes to process. When a clip is ready you will see a preview link and publish buttons for Instagram and Facebook. Always review before publishing.</p>
+
+      <p style="margin-bottom:0.75rem;"><strong style="color:var(--black);font-size:14px;">Sermon Notes Slides Tab</strong><br>
+      Choose a theme using the four thumbnails next to the slide count. Click Generate Slide Images to export the full deck as an HTML file. Use Download PNG on individual slides to save them as images. Use Export Slide for a single slide HTML file.</p>
+
+      <p style="margin-bottom:0.75rem;"><strong style="color:var(--black);font-size:14px;">Sermon Summary Tab</strong><br>
+      A 500 word narrative summary ready to post as a text caption on Instagram or Facebook when slides are not ready.</p>
+
+      <p style="margin-bottom:0.75rem;"><strong style="color:var(--black);font-size:14px;">Custom Seeker Question</strong><br>
+      Enter a specific question in the custom question field before analyzing. The app will check whether the sermon addresses it and show the result at the bottom of the Seeker Questions tab.</p>
+
+      <p style="margin-bottom:0.75rem;"><strong style="color:var(--black);font-size:14px;">Sign Out</strong><br>
+      Click the hamburger menu in the top right and select Sign Out.</p>
+
+      <p style="padding-top:0.75rem;border-top:1px solid var(--border);"><strong style="color:var(--black);">Need help?</strong><br>
       Contact Brian at brianc@citylightvicksburg.org</p>
     </div>
     <button class="btn" onclick="closeHelpModal()" style="margin-top:1rem;width:100%;">Close</button>
@@ -191,7 +208,7 @@
   <div class="login-wrapper" id="loginWrapper">
     <div class="login-card">
       <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/CityLightLogo.png" alt="City Light" style="height:40px;width:auto;margin-bottom:1.5rem;" />
-      <h2>Sermon Analyzer</h2>
+      <h2>SermonReach</h2>
       <p>Sign in to your City Light staff account.</p>
 
       <!-- Email/Password Login -->
@@ -245,7 +262,7 @@
   <div class="main" id="mainSection">
 
     <div class="card">
-      <div class="card-label">New Sermon Analysis</div>
+      <div class="card-label">Start Here</div>
       <div class="options-row" style="margin-bottom:1rem;">
         <div class="input-group" style="flex:2; margin-bottom:0;">
           <label>Speaker First Name</label>
