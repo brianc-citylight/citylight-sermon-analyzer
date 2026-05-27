@@ -40,10 +40,7 @@ export default async function handler(req, res) {
 For each clip format EXACTLY as one line:
 Q|[a compelling discipleship-focused insight or question]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence caption written for a believer who wants to grow — theologically honest, reflective, inviting depth, never shallow]`
     : clipMode === 'custom'
-    ? \`Find the TOP 5 culturally resonant questions this sermon answers. Real questions people in 2026 are genuinely asking. No churchy language. Written for someone who may not attend church.
-
-For each question format EXACTLY as one line:
-Q|[sharp culturally relevant question]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence social media caption that intrigues a skeptic, not preachy]\`
+    ? 'Find the TOP 5 culturally resonant questions this sermon answers. Real questions people in 2026 are genuinely asking. No churchy language. Written for someone who may not attend church.\n\nFor each question format EXACTLY as one line:\nQ|[sharp culturally relevant question]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence social media caption that intrigues a skeptic, not preachy]'
     : `Find the TOP 5 moments in this sermon that most directly speak to someone who does not yet believe. Look for moments where the gospel intersects with real questions, doubts, cultural tensions, or felt needs. These clips are for people outside the faith scrolling social media. What would make someone who has never set foot in a church stop and watch?
 
 For each question format EXACTLY as one line:
