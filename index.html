@@ -744,23 +744,7 @@ function renderResults(questions, slides, summary) {
   const dateDisplayVal = document.getElementById('sermonDate').value.trim() || today;
   document.getElementById('sermonDateDisplay').textContent = (speakerDisplayVal ? speakerDisplayVal + '  |  ' : '') + dateDisplayVal;
 
-  // questionsContainer merged into clipsContainer
-  qContainer.innerHTML = '';
-  questions.forEach((q, i) => {
-    const card = document.createElement('div');
-    card.className = 'question-card';
-    card.innerHTML = `
-      <div class="q-meta">
-        <span class="q-number">Question ${i+1}</span>
-        <span class="q-timestamp">&#9201; ${q.timestamp}</span>
-      </div>
-      <div class="q-question">${q.question}</div>
-      <div class="q-caption-label">Social media caption</div>
-      <div class="q-caption">${q.caption}</div>
-      <button class="btn btn-sm" onclick="copySingleQ(${i}, this)" style="margin-top:8px;">Copy Caption</button>
-    `;
-    qContainer.appendChild(card);
-  });
+  // Questions rendered in renderClipsTab
 
   const sContainer = document.getElementById('slidesContainer');
   sContainer.innerHTML = '';
