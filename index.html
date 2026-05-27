@@ -375,23 +375,23 @@
 // ── SUPABASE AUTH ────────────────────────────────────────────────────────
 // Supabase URL and anon key are read from meta tags injected by the server
 // or from window globals set by the api/config endpoint
-let supabase = null;
+let supabaseClient = null;
 let currentUser = null;
 
 async function initSupabase() {
   try {
     const res = await fetch('/api/config');
     const cfg = await res.json();
-    supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+    supabaseClient = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
 
     // Check for existing session
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) {
       onSignedIn(session.user);
     }
 
     // Listen for auth changes (handles Google OAuth redirect)
-    supabase.auth.onAuthStateChange((_event, session) => {
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
       if (session) {
         onSignedIn(session.user);
       } else {
@@ -451,12 +451,12 @@ async function handleEmailLogin() {
 
   if (!email || !password) { errEl.textContent = 'Please enter your email and password.'; return; }
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) { errEl.textContent = error.message; }
 }
 
 async function handleGoogleLogin() {
-  const { error } = await supabase.auth.signInWithOAuth({
+  const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: window.location.origin }
   });
@@ -465,7 +465,7 @@ async function handleGoogleLogin() {
 
 async function signOut() {
   closeMenu();
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
 }
 
 function showForgotPassword() {
@@ -476,7 +476,7 @@ async function handlePasswordReset() {
   const email = document.getElementById('resetEmail').value.trim();
   const msgEl = document.getElementById('resetMsg');
   if (!email) { msgEl.textContent = 'Please enter your email.'; msgEl.style.color = '#cc3333'; return; }
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
     redirectTo: window.location.origin
   });
   if (error) { msgEl.textContent = error.message; msgEl.style.color = '#cc3333'; }
@@ -523,7 +523,7 @@ async function updatePassword() {
   if (newPw !== confirmPw) { msgEl.textContent = 'Passwords do not match.'; msgEl.style.color = '#cc3333'; return; }
   if (newPw.length < 8) { msgEl.textContent = 'Password must be at least 8 characters.'; msgEl.style.color = '#cc3333'; return; }
 
-  const { error } = await supabase.auth.updateUser({ password: newPw });
+  const { error } = await supabaseClient.auth.updateUser({ password: newPw });
   if (error) { msgEl.textContent = error.message; msgEl.style.color = '#cc3333'; }
   else { msgEl.textContent = 'Password updated successfully.'; msgEl.style.color = 'green'; }
 }
