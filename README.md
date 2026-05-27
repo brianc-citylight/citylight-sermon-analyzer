@@ -12,8 +12,8 @@ Paste a YouTube sermon link every Tuesday and get three outputs ready to post by
 ## File Structure
 
 ```
-index.html              — the full web app (single page)
-package.json            — Node dependencies for Chromium slide rendering
+index.html              — the full web app (single page, includes html2canvas slide rendering)
+package.json            — Node dependencies for Chromium
 vercel.json             — Vercel function configuration
 README.md               — this file
 
@@ -22,7 +22,6 @@ api/
   title.js              — YouTube title fetcher
   transcript.js         — YouTube transcript fetcher via Supadata
   opus.js               — Opus Clip integration (create, poll, accounts, publish)
-  slides.js             — Puppeteer slide image renderer
   config.js             — Delivers Supabase credentials to frontend
   test-transcript.js    — Diagnostic endpoint for transcript testing
 
@@ -72,19 +71,7 @@ Four themes available in the Sermon Notes Slides tab:
 
 All slides export at 1080x1080 for Instagram carousel format.
 
-## Canva Template
-
-Template ID: EAHKE92RscA
-Account: brianc@citylightvicksburg.org
-Open template: https://www.canva.com/design?create=true&template=EAHKE92RscA
-
 ## Weekly Timeline
 
 Tuesday: Sermon available on YouTube. Run analysis.
 Wednesday: Post content to Instagram, Facebook, and YouTube Shorts.
-
-## Chrome Extension Required
-
-Install: Copy YouTube Transcript
-Link: chromewebstore.google.com/detail/copy-youtube-transcript/mpfdnefhgmjlbkphfpkiicdaegfanbab
-Use this to copy the sermon transcript from YouTube when auto-fetch is unavailable.
