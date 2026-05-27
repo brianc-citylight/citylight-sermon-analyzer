@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>City Light Sermon Analyzer</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -118,18 +119,126 @@
     <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/CityLightLogo.png" alt="City Light Church" style="height:36px;width:auto;" />
     <div class="app-name" style="font-size:16px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;">Sermon Analyzer</div>
   </div>
+  <div style="display:flex;align-items:center;gap:1rem;">
+    <div id="userEmail" style="font-size:12px;color:var(--gray);display:none;"></div>
+    <button id="hamburgerBtn" onclick="toggleMenu()" style="background:none;border:none;cursor:pointer;padding:6px;display:none;flex-direction:column;gap:5px;" aria-label="Menu">
+      <div style="width:22px;height:2px;background:var(--black);border-radius:2px;"></div>
+      <div style="width:22px;height:2px;background:var(--black);border-radius:2px;"></div>
+      <div style="width:22px;height:2px;background:var(--black);border-radius:2px;"></div>
+    </button>
+  </div>
+</div>
+
+<!-- Dropdown menu -->
+<div id="menuDropdown" style="display:none;position:fixed;top:72px;right:1rem;background:var(--white);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,0.12);z-index:1000;min-width:200px;overflow:hidden;">
+  <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:var(--light);">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold);">Account</div>
+    <div id="menuEmail" style="font-size:13px;color:var(--black);margin-top:2px;"></div>
+  </div>
+  <button onclick="openAccountModal()" style="width:100%;text-align:left;padding:12px 16px;border:none;background:none;font-size:14px;color:var(--black);cursor:pointer;font-family:inherit;border-bottom:1px solid var(--border);">&#9881; My Account</button>
+  <button onclick="openHelpModal()" style="width:100%;text-align:left;padding:12px 16px;border:none;background:none;font-size:14px;color:var(--black);cursor:pointer;font-family:inherit;border-bottom:1px solid var(--border);">&#63; Help</button>
+  <button onclick="signOut()" style="width:100%;text-align:left;padding:12px 16px;border:none;background:none;font-size:14px;color:#cc3333;cursor:pointer;font-family:inherit;">&#8594; Sign Out</button>
+</div>
+
+<!-- Account Modal -->
+<div id="accountModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;display:none;align-items:center;justify-content:center;">
+  <div style="background:var(--white);border-radius:12px;padding:2rem;width:100%;max-width:400px;margin:1rem;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+      <h3 style="font-size:18px;font-weight:700;">My Account</h3>
+      <button onclick="closeAccountModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray);">&#x2715;</button>
+    </div>
+    <div class="input-group">
+      <label>Email</label>
+      <input type="text" id="accountEmail" disabled style="background:var(--light);color:var(--gray);" />
+    </div>
+    <div class="input-group">
+      <label>New Password</label>
+      <input type="password" id="newPassword" placeholder="Leave blank to keep current" />
+    </div>
+    <div class="input-group">
+      <label>Confirm New Password</label>
+      <input type="password" id="confirmPassword" placeholder="Confirm new password" />
+    </div>
+    <div id="accountMsg" style="font-size:13px;margin-bottom:1rem;min-height:20px;"></div>
+    <button class="btn btn-gold" onclick="updatePassword()">Update Password</button>
+  </div>
+</div>
+
+<!-- Help Modal -->
+<div id="helpModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;align-items:center;justify-content:center;">
+  <div style="background:var(--white);border-radius:12px;padding:2rem;width:100%;max-width:480px;margin:1rem;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+      <h3 style="font-size:18px;font-weight:700;">Help</h3>
+      <button onclick="closeHelpModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray);">&#x2715;</button>
+    </div>
+    <div style="font-size:14px;color:var(--gray);line-height:1.8;">
+      <p style="margin-bottom:1rem;"><strong style="color:var(--black);">Weekly Workflow</strong><br>
+      Fill in speaker details and sermon date, paste the YouTube link, paste the transcript, then click Analyze Sermon.</p>
+      <p style="margin-bottom:1rem;"><strong style="color:var(--black);">Seeker Questions</strong><br>
+      Top 5 questions with timestamps and captions. Send clips directly to Opus Clip from the Opus Clip tab.</p>
+      <p style="margin-bottom:1rem;"><strong style="color:var(--black);">Sermon Notes Slides</strong><br>
+      Choose a theme, then click Generate Slide Images to export HTML or Download PNG on individual slides.</p>
+      <p style="margin-bottom:1rem;"><strong style="color:var(--black);">Sermon Summary</strong><br>
+      500 word narrative ready to post as a text caption if slides are not ready.</p>
+      <p><strong style="color:var(--black);">Need help?</strong><br>
+      Contact Brian at brianc@citylightvicksburg.org</p>
+    </div>
+    <button class="btn" onclick="closeHelpModal()" style="margin-top:1rem;width:100%;">Close</button>
+  </div>
 </div>
 <div class="container">
 
   <div class="login-wrapper" id="loginWrapper">
     <div class="login-card">
-      <h2>Staff Access</h2>
-      <p>Enter your City Light staff password to continue.</p>
-      <div class="input-group">
-        <input type="password" id="passwordInput" placeholder="Password" />
+      <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/CityLightLogo.png" alt="City Light" style="height:40px;width:auto;margin-bottom:1.5rem;" />
+      <h2>Sermon Analyzer</h2>
+      <p>Sign in to your City Light staff account.</p>
+
+      <!-- Email/Password Login -->
+      <div id="emailForm">
+        <div class="input-group" style="margin-top:1rem;">
+          <label>Email</label>
+          <input type="email" id="loginEmail" placeholder="you@citylightvicksburg.org" />
+        </div>
+        <div class="input-group">
+          <label>Password</label>
+          <input type="password" id="loginPassword" placeholder="Password" />
+        </div>
+        <div class="login-error" id="loginError"></div>
+        <button class="btn btn-gold" onclick="handleEmailLogin()" style="margin-bottom:0.75rem;">Sign In</button>
       </div>
-      <div class="login-error" id="loginError"></div>
-      <button class="btn btn-gold" onclick="handleLogin()">Sign In</button>
+
+      <!-- Divider -->
+      <div style="display:flex;align-items:center;gap:0.75rem;margin:0.75rem 0;">
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+        <span style="font-size:12px;color:var(--gray);">or</span>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+      </div>
+
+      <!-- Google Sign In -->
+      <button onclick="handleGoogleLogin()" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--white);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font-family:inherit;">
+        <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+          <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/>
+          <path d="M3.964 10.706c-.18-.54-.282-1.117-.282-1.706s.102-1.166.282-1.706V4.962H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.038l3.007-2.332z" fill="#FBBC05"/>
+          <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.962L3.964 6.294C4.672 4.167 6.656 3.58 9 3.58z" fill="#EA4335"/>
+        </svg>
+        Continue with Google
+      </button>
+
+      <div style="margin-top:1rem;">
+        <button onclick="showForgotPassword()" style="background:none;border:none;color:var(--gold);font-size:13px;cursor:pointer;font-family:inherit;text-decoration:underline;">Forgot password?</button>
+      </div>
+
+      <!-- Forgot Password form (hidden by default) -->
+      <div id="forgotForm" style="display:none;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+        <div class="input-group">
+          <label>Enter your email to reset password</label>
+          <input type="email" id="resetEmail" placeholder="you@citylightvicksburg.org" />
+        </div>
+        <div id="resetMsg" style="font-size:13px;margin-bottom:0.5rem;min-height:18px;"></div>
+        <button class="btn btn-gold" onclick="handlePasswordReset()">Send Reset Email</button>
+      </div>
     </div>
   </div>
 
@@ -263,7 +372,157 @@
   </div>
 </div>
 <script>
-const CORRECT_PASSWORD = 'citylight2026';
+// ── SUPABASE AUTH ────────────────────────────────────────────────────────
+// Supabase URL and anon key are read from meta tags injected by the server
+// or from window globals set by the api/config endpoint
+let supabase = null;
+let currentUser = null;
+
+async function initSupabase() {
+  try {
+    const res = await fetch('/api/config');
+    const cfg = await res.json();
+    supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+
+    // Check for existing session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      onSignedIn(session.user);
+    }
+
+    // Listen for auth changes (handles Google OAuth redirect)
+    supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        onSignedIn(session.user);
+      } else {
+        onSignedOut();
+      }
+    });
+  } catch(e) {
+    console.error('Supabase init error:', e);
+    document.getElementById('loginError').textContent = 'Auth system unavailable. Contact your administrator.';
+  }
+}
+
+function onSignedIn(user) {
+  currentUser = user;
+  document.getElementById('loginWrapper').style.display = 'none';
+  document.getElementById('mainSection').classList.add('visible');
+  document.getElementById('hamburgerBtn').style.display = 'flex';
+  document.getElementById('userEmail').style.display = 'block';
+  document.getElementById('userEmail').textContent = user.email;
+  document.getElementById('menuEmail').textContent = user.email;
+  document.getElementById('accountEmail').value = user.email;
+}
+
+function onSignedOut() {
+  currentUser = null;
+  document.getElementById('loginWrapper').style.display = 'flex';
+  document.getElementById('mainSection').classList.remove('visible');
+  document.getElementById('hamburgerBtn').style.display = 'none';
+  document.getElementById('userEmail').style.display = 'none';
+}
+
+async function handleEmailLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+
+  if (!email || !password) { errEl.textContent = 'Please enter your email and password.'; return; }
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) { errEl.textContent = error.message; }
+}
+
+async function handleGoogleLogin() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin }
+  });
+  if (error) { document.getElementById('loginError').textContent = error.message; }
+}
+
+async function signOut() {
+  closeMenu();
+  await supabase.auth.signOut();
+}
+
+function showForgotPassword() {
+  document.getElementById('forgotForm').style.display = 'block';
+}
+
+async function handlePasswordReset() {
+  const email = document.getElementById('resetEmail').value.trim();
+  const msgEl = document.getElementById('resetMsg');
+  if (!email) { msgEl.textContent = 'Please enter your email.'; msgEl.style.color = '#cc3333'; return; }
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin
+  });
+  if (error) { msgEl.textContent = error.message; msgEl.style.color = '#cc3333'; }
+  else { msgEl.textContent = 'Reset email sent. Check your inbox.'; msgEl.style.color = 'green'; }
+}
+
+// ── MENU ─────────────────────────────────────────────────────────────────
+function toggleMenu() {
+  const menu = document.getElementById('menuDropdown');
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+function closeMenu() {
+  document.getElementById('menuDropdown').style.display = 'none';
+}
+
+document.addEventListener('click', function(e) {
+  const menu = document.getElementById('menuDropdown');
+  const btn = document.getElementById('hamburgerBtn');
+  if (!menu.contains(e.target) && !btn.contains(e.target)) {
+    menu.style.display = 'none';
+  }
+});
+
+function openAccountModal() {
+  closeMenu();
+  document.getElementById('accountModal').style.display = 'flex';
+}
+
+function closeAccountModal() {
+  document.getElementById('accountModal').style.display = 'none';
+  document.getElementById('accountMsg').textContent = '';
+  document.getElementById('newPassword').value = '';
+  document.getElementById('confirmPassword').value = '';
+}
+
+async function updatePassword() {
+  const newPw = document.getElementById('newPassword').value;
+  const confirmPw = document.getElementById('confirmPassword').value;
+  const msgEl = document.getElementById('accountMsg');
+  msgEl.textContent = '';
+
+  if (!newPw) { msgEl.textContent = 'Please enter a new password.'; msgEl.style.color = '#cc3333'; return; }
+  if (newPw !== confirmPw) { msgEl.textContent = 'Passwords do not match.'; msgEl.style.color = '#cc3333'; return; }
+  if (newPw.length < 8) { msgEl.textContent = 'Password must be at least 8 characters.'; msgEl.style.color = '#cc3333'; return; }
+
+  const { error } = await supabase.auth.updateUser({ password: newPw });
+  if (error) { msgEl.textContent = error.message; msgEl.style.color = '#cc3333'; }
+  else { msgEl.textContent = 'Password updated successfully.'; msgEl.style.color = 'green'; }
+}
+
+function openHelpModal() {
+  closeMenu();
+  document.getElementById('helpModal').style.display = 'flex';
+}
+
+function closeHelpModal() {
+  document.getElementById('helpModal').style.display = 'none';
+}
+
+// Initialize Supabase on page load
+window.addEventListener('DOMContentLoaded', () => {
+  initSupabase();
+  selectTheme('1');
+});
+
 let currentQuestions = null;
 let currentSlides = null;
 let currentSummary = '';
@@ -287,19 +546,17 @@ function selectTheme(id) {
 }
 
 // Select theme 1 by default on load
-window.addEventListener('DOMContentLoaded', () => selectTheme('1'));
+
 const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-function handleLogin() {
-  const pw = document.getElementById('passwordInput').value;
-  if (pw === CORRECT_PASSWORD) {
-    document.getElementById('loginWrapper').style.display = 'none';
-    document.getElementById('mainSection').classList.add('visible');
-  } else {
-    document.getElementById('loginError').textContent = 'Incorrect password. Please try again.';
-  }
-}
-document.getElementById('passwordInput').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  const pwInput = document.getElementById('loginPassword');
+  if (pwInput) pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleEmailLogin(); });
+  const emailInput = document.getElementById('loginEmail');
+  if (emailInput) emailInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleEmailLogin(); });
+});
 
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
