@@ -205,7 +205,7 @@
           <input type="password" id="loginPassword" placeholder="Password" />
         </div>
         <div class="login-error" id="loginError"></div>
-        <button class="btn btn-gold" onclick="handleEmailLogin()" style="margin-bottom:0.75rem;">Sign In</button>
+        <button class="btn btn-gold" id="emailSignInBtn" style="margin-bottom:0.75rem;">Sign In</button>
       </div>
 
       <!-- Divider -->
@@ -216,7 +216,7 @@
       </div>
 
       <!-- Google Sign In -->
-      <button onclick="handleGoogleLogin()" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--white);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font-family:inherit;">
+      <button id="googleSignInBtn" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--white);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font-family:inherit;">
         <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
           <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
           <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/>
@@ -227,7 +227,7 @@
       </button>
 
       <div style="margin-top:1rem;">
-        <button onclick="showForgotPassword()" style="background:none;border:none;color:var(--gold);font-size:13px;cursor:pointer;font-family:inherit;text-decoration:underline;">Forgot password?</button>
+        <button id="forgotBtn" style="background:none;border:none;color:var(--gold);font-size:13px;cursor:pointer;font-family:inherit;text-decoration:underline;">Forgot password?</button>
       </div>
 
       <!-- Forgot Password form (hidden by default) -->
@@ -237,7 +237,7 @@
           <input type="email" id="resetEmail" placeholder="you@citylightvicksburg.org" />
         </div>
         <div id="resetMsg" style="font-size:13px;margin-bottom:0.5rem;min-height:18px;"></div>
-        <button class="btn btn-gold" onclick="handlePasswordReset()">Send Reset Email</button>
+        <button class="btn btn-gold" id="resetBtn">Send Reset Email</button>
       </div>
     </div>
   </div>
@@ -398,6 +398,26 @@ async function initSupabase() {
         onSignedOut();
       }
     });
+
+    // Wire up auth buttons after Supabase is ready
+    const googleBtn = document.getElementById('googleSignInBtn');
+    if (googleBtn) googleBtn.addEventListener('click', handleGoogleLogin);
+
+    const emailBtn = document.getElementById('emailSignInBtn');
+    if (emailBtn) emailBtn.addEventListener('click', handleEmailLogin);
+
+    const forgotBtn = document.getElementById('forgotBtn');
+    if (forgotBtn) forgotBtn.addEventListener('click', showForgotPassword);
+
+    const resetBtn = document.getElementById('resetBtn');
+    if (resetBtn) resetBtn.addEventListener('click', handlePasswordReset);
+
+    const loginEmail = document.getElementById('loginEmail');
+    if (loginEmail) loginEmail.addEventListener('keydown', e => { if (e.key === 'Enter') handleEmailLogin(); });
+
+    const loginPassword = document.getElementById('loginPassword');
+    if (loginPassword) loginPassword.addEventListener('keydown', e => { if (e.key === 'Enter') handleEmailLogin(); });
+
   } catch(e) {
     console.error('Supabase init error:', e);
     document.getElementById('loginError').textContent = 'Auth system unavailable. Contact your administrator.';
@@ -550,13 +570,6 @@ function selectTheme(id) {
 const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
 
-
-document.addEventListener('DOMContentLoaded', () => {
-  const pwInput = document.getElementById('loginPassword');
-  if (pwInput) pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleEmailLogin(); });
-  const emailInput = document.getElementById('loginEmail');
-  if (emailInput) emailInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleEmailLogin(); });
-});
 
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
