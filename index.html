@@ -18,7 +18,7 @@
     }
     body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #F8F8F6; color: var(--black); min-height: 100vh; }
     .gold-bar { height: 4px; background: var(--gold); }
-    .header { background: var(--white); border-bottom: 1px solid var(--border); padding: 1.25rem 2rem; }
+    .header { background: var(--white); border-bottom: 1px solid var(--border); padding: 1.25rem 2rem; display: flex; align-items: center; justify-content: space-between; }
     .church-name { font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); }
     .app-name { font-size: 20px; font-weight: 700; color: var(--black); letter-spacing: -0.02em; }
     .container { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem; }
@@ -119,9 +119,9 @@
     <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/CityLightLogo.png" alt="City Light Church" style="height:36px;width:auto;" />
     <div class="app-name" style="font-size:16px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;">Sermon Analyzer</div>
   </div>
-  <div style="display:flex;align-items:center;gap:1rem;">
-    <div id="userEmail" style="font-size:12px;color:var(--gray);display:none;"></div>
-    <button id="hamburgerBtn" onclick="toggleMenu()" style="background:none;border:none;cursor:pointer;padding:6px;display:none;flex-direction:column;gap:5px;" aria-label="Menu">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span id="userEmail" style="font-size:13px;color:var(--gray);display:none;font-weight:500;"></span>
+    <button id="hamburgerBtn" onclick="toggleMenu()" style="background:none;border:none;cursor:pointer;padding:6px;display:none;flex-direction:column;justify-content:center;gap:5px;" aria-label="Menu">
       <div style="width:22px;height:2px;background:var(--black);border-radius:2px;"></div>
       <div style="width:22px;height:2px;background:var(--black);border-radius:2px;"></div>
       <div style="width:22px;height:2px;background:var(--black);border-radius:2px;"></div>
