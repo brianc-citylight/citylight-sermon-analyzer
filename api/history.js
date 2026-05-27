@@ -1,115 +1,132 @@
 // SermonReach History API
-// Handles sermon analysis history and publish tracking
-// Uses Supabase service role key for secure server-side database access
+// Uses Supabase REST API directly via fetch — no npm package required
+// SUPABASE_URL and SUPABASE_SERVICE_KEY read from Vercel environment variables
 
-import { createClient } from '@supabase/supabase-js';
+const getHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': 'Bearer ' + process.env.SUPABASE_SERVICE_KEY,
+  'apikey': process.env.SUPABASE_SERVICE_KEY,
+  'Prefer': 'return=representation'
+});
 
-function getSupabase() {
-  return createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY
-  );
+const db = (path) => process.env.SUPABASE_URL + '/rest/v1/' + path;
+
+async function dbGet(path) {
+  const res = await fetch(db(path), { headers: getHeaders() });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error('DB GET error: ' + err);
+  }
+  return res.json();
+}
+
+async function dbPost(path, body) {
+  const res = await fetch(db(path), {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error('DB POST error: ' + err);
+  }
+  return res.json();
+}
+
+async function dbPatch(path, body) {
+  const res = await fetch(db(path), {
+    method: 'PATCH',
+    headers: { ...getHeaders(), 'Prefer': 'return=representation' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error('DB PATCH error: ' + err);
+  }
+  return res.json();
+}
+
+async function dbDelete(path) {
+  const res = await fetch(db(path), {
+    method: 'DELETE',
+    headers: getHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error('DB DELETE error: ' + err);
+  }
+  return true;
 }
 
 export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-user-id');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
   const { action } = req.query;
   const userId = req.headers['x-user-id'];
 
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    return res.status(500).json({ error: 'Supabase not configured' });
+  }
 
-  const supabase = getSupabase();
+  try {
 
-  // ── CHECK: Does a matching analysis exist? ──────────────────────────────
-  if (req.method === 'GET' && action === 'check') {
-    const { videoId, clipMode, slideCount } = req.query;
-    if (!videoId || !clipMode || !slideCount) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('sermon_analyses')
-        .select('id, sermon_title, sermon_date, clip_mode, slide_count, speaker, created_at')
-        .eq('user_id', userId)
-        .eq('video_id', videoId)
-        .eq('clip_mode', clipMode)
-        .eq('slide_count', parseInt(slideCount))
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (error) return res.status(500).json({ error: error.message });
+    // ── CHECK ──────────────────────────────────────────────────────────────
+    if (req.method === 'GET' && action === 'check') {
+      const { videoId, clipMode, slideCount } = req.query;
+      if (!videoId || !clipMode || !slideCount) {
+        return res.status(400).json({ error: 'Missing fields' });
+      }
+      const data = await dbGet(
+        `sermon_analyses?user_id=eq.${userId}&video_id=eq.${encodeURIComponent(videoId)}&clip_mode=eq.${encodeURIComponent(clipMode)}&slide_count=eq.${parseInt(slideCount)}&order=created_at.desc&limit=1&select=id,sermon_title,sermon_date,clip_mode,slide_count,speaker,created_at`
+      );
       return res.status(200).json({ match: data && data.length > 0 ? data[0] : null });
-    } catch (e) {
-      return res.status(500).json({ error: e.message });
     }
-  }
 
-  // ── LOAD: Fetch last 10 analyses for user ───────────────────────────────
-  if (req.method === 'GET' && action === 'load') {
-    try {
-      const { data, error } = await supabase
-        .from('sermon_analyses')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (error) return res.status(500).json({ error: error.message });
+    // ── LOAD ALL ───────────────────────────────────────────────────────────
+    if (req.method === 'GET' && action === 'load') {
+      const data = await dbGet(
+        `sermon_analyses?user_id=eq.${userId}&order=created_at.desc&limit=10`
+      );
       return res.status(200).json({ analyses: data || [] });
-    } catch (e) {
-      return res.status(500).json({ error: e.message });
-    }
-  }
-
-  // ── GET ONE: Fetch a single full analysis by ID ─────────────────────────
-  if (req.method === 'GET' && action === 'get') {
-    const { id } = req.query;
-    if (!id) return res.status(400).json({ error: 'Missing id' });
-
-    try {
-      const { data, error } = await supabase
-        .from('sermon_analyses')
-        .select('*')
-        .eq('id', id)
-        .eq('user_id', userId)
-        .single();
-
-      if (error) return res.status(500).json({ error: error.message });
-      return res.status(200).json({ analysis: data });
-    } catch (e) {
-      return res.status(500).json({ error: e.message });
-    }
-  }
-
-  // ── SAVE: Upsert analysis, trim to 10 per user ──────────────────────────
-  if (req.method === 'POST' && action === 'save') {
-    const {
-      videoId, sermonTitle, sermonDate, clipMode,
-      slideCount, speaker, questions, slides, summary, customQ
-    } = req.body;
-
-    if (!videoId || !sermonTitle || !clipMode) {
-      return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    try {
-      // Check if matching record exists to upsert
-      const { data: existing } = await supabase
-        .from('sermon_analyses')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('video_id', videoId)
-        .eq('clip_mode', clipMode)
-        .eq('slide_count', parseInt(slideCount))
-        .limit(1);
+    // ── GET ONE ────────────────────────────────────────────────────────────
+    if (req.method === 'GET' && action === 'get') {
+      const { id } = req.query;
+      if (!id) return res.status(400).json({ error: 'Missing id' });
+      const data = await dbGet(
+        `sermon_analyses?id=eq.${id}&user_id=eq.${userId}&limit=1`
+      );
+      return res.status(200).json({ analysis: data && data.length > 0 ? data[0] : null });
+    }
+
+    // ── SAVE ───────────────────────────────────────────────────────────────
+    if (req.method === 'POST' && action === 'save') {
+      const {
+        videoId, sermonTitle, sermonDate, clipMode,
+        slideCount, speaker, questions, slides, summary, customQ
+      } = req.body;
+
+      if (!videoId || !sermonTitle || !clipMode) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      // Check if matching record exists
+      const existing = await dbGet(
+        `sermon_analyses?user_id=eq.${userId}&video_id=eq.${encodeURIComponent(videoId)}&clip_mode=eq.${encodeURIComponent(clipMode)}&slide_count=eq.${parseInt(slideCount)}&limit=1&select=id`
+      );
 
       let savedId;
 
       if (existing && existing.length > 0) {
-        // Update existing record
-        const { data, error } = await supabase
-          .from('sermon_analyses')
-          .update({
+        // Update existing
+        const updated = await dbPatch(
+          `sermon_analyses?id=eq.${existing[0].id}&user_id=eq.${userId}`,
+          {
             sermon_title: sermonTitle,
             sermon_date: sermonDate,
             speaker: speaker || null,
@@ -118,85 +135,62 @@ export default async function handler(req, res) {
             summary: summary || '',
             custom_q: customQ || null,
             created_at: new Date().toISOString()
-          })
-          .eq('id', existing[0].id)
-          .select('id')
-          .single();
-
-        if (error) return res.status(500).json({ error: error.message });
-        savedId = data.id;
+          }
+        );
+        savedId = existing[0].id;
       } else {
-        // Insert new record
-        const { data, error } = await supabase
-          .from('sermon_analyses')
-          .insert({
-            user_id: userId,
-            video_id: videoId,
-            sermon_title: sermonTitle,
-            sermon_date: sermonDate,
-            clip_mode: clipMode,
-            slide_count: parseInt(slideCount),
-            speaker: speaker || null,
-            questions: questions || [],
-            slides: slides || [],
-            summary: summary || '',
-            custom_q: customQ || null
-          })
-          .select('id')
-          .single();
-
-        if (error) return res.status(500).json({ error: error.message });
-        savedId = data.id;
+        // Insert new
+        const inserted = await dbPost('sermon_analyses', {
+          user_id: userId,
+          video_id: videoId,
+          sermon_title: sermonTitle,
+          sermon_date: sermonDate,
+          clip_mode: clipMode,
+          slide_count: parseInt(slideCount),
+          speaker: speaker || null,
+          questions: questions || [],
+          slides: slides || [],
+          summary: summary || '',
+          custom_q: customQ || null
+        });
+        savedId = inserted && inserted[0] ? inserted[0].id : null;
       }
 
-      // Trim to 10 most recent per user
-      const { data: allRecords } = await supabase
-        .from('sermon_analyses')
-        .select('id, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
+      // Trim to 10 most recent
+      const allRecords = await dbGet(
+        `sermon_analyses?user_id=eq.${userId}&order=created_at.desc&select=id`
+      );
       if (allRecords && allRecords.length > 10) {
         const toDelete = allRecords.slice(10).map(r => r.id);
-        await supabase
-          .from('sermon_analyses')
-          .delete()
-          .in('id', toDelete);
+        for (const id of toDelete) {
+          await dbDelete(`sermon_analyses?id=eq.${id}&user_id=eq.${userId}`);
+        }
       }
 
       return res.status(200).json({ success: true, id: savedId });
-    } catch (e) {
-      return res.status(500).json({ error: e.message });
-    }
-  }
-
-  // ── PUBLISH: Mark clip as published to a platform ───────────────────────
-  if (req.method === 'POST' && action === 'publish') {
-    const { analysisId, clipIndex, platform, postId } = req.body;
-
-    if (analysisId === undefined || clipIndex === undefined || !platform) {
-      return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    try {
-      // Fetch current questions array
-      const { data: record, error: fetchErr } = await supabase
-        .from('sermon_analyses')
-        .select('questions')
-        .eq('id', analysisId)
-        .eq('user_id', userId)
-        .single();
+    // ── PUBLISH ────────────────────────────────────────────────────────────
+    if (req.method === 'POST' && action === 'publish') {
+      const { analysisId, clipIndex, platform, postId } = req.body;
 
-      if (fetchErr || !record) {
+      if (!analysisId || clipIndex === undefined || !platform) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      // Fetch current questions
+      const records = await dbGet(
+        `sermon_analyses?id=eq.${analysisId}&user_id=eq.${userId}&limit=1&select=questions`
+      );
+      if (!records || records.length === 0) {
         return res.status(404).json({ error: 'Analysis not found' });
       }
 
-      const questions = record.questions || [];
+      const questions = records[0].questions || [];
       if (!questions[clipIndex]) {
         return res.status(400).json({ error: 'Clip index out of range' });
       }
 
-      // Update publish record for this clip
       if (!questions[clipIndex].published) {
         questions[clipIndex].published = {};
       }
@@ -205,20 +199,17 @@ export default async function handler(req, res) {
         postId: postId || null
       };
 
-      // Save back
-      const { error: updateErr } = await supabase
-        .from('sermon_analyses')
-        .update({ questions })
-        .eq('id', analysisId)
-        .eq('user_id', userId);
+      await dbPatch(
+        `sermon_analyses?id=eq.${analysisId}&user_id=eq.${userId}`,
+        { questions }
+      );
 
-      if (updateErr) return res.status(500).json({ error: updateErr.message });
       return res.status(200).json({ success: true, questions });
-
-    } catch (e) {
-      return res.status(500).json({ error: e.message });
     }
-  }
 
-  return res.status(404).json({ error: 'Unknown action' });
+    return res.status(404).json({ error: 'Unknown action' });
+
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
 }
