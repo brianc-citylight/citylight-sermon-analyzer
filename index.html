@@ -338,24 +338,27 @@
         <span class="sdate" id="sermonDateDisplay"></span>
       </div>
       <div class="tab-row">
-        <button class="tab-btn active" onclick="switchTab('seekers')">Seeker Questions</button>
+        <button class="tab-btn active" onclick="switchTab('summary')">Sermon Summary</button>
         <button class="tab-btn" onclick="switchTab('notes')">Sermon Notes Slides</button>
-        <button class="tab-btn" onclick="switchTab('summary')">Sermon Summary</button>
-        <button class="tab-btn" onclick="switchTab('opus')">Opus Clip</button>
+        <button class="tab-btn" onclick="switchTab('clips')">Seeker Sermon Clips</button>
       </div>
-      <div class="tab-content active" id="tab-seekers">
-        <div id="questionsContainer"></div>
-        <div class="action-row">
-          <button class="btn btn-sm" onclick="downloadQuestions()">&#8595; Download .txt</button>
-          <button class="btn btn-sm" onclick="copyAllQuestions()">&#10697; Copy All</button>
+      <!-- SERMON SUMMARY TAB -->
+      <div class="tab-content active" id="tab-summary">
+        <div id="summaryContainer">
+          <div style="font-size:13px; color:var(--gray); padding: 1rem 0;">Run an analysis above to generate the sermon summary.</div>
+        </div>
+        <div class="action-row" id="summaryActions" style="display:none;">
+          <button class="btn btn-sm" onclick="downloadSummary()">&#8595; Download .txt</button>
+          <button class="btn btn-sm" onclick="copyAllSummary()">&#10697; Copy Summary</button>
         </div>
       </div>
+
+      <!-- SERMON NOTES SLIDES TAB -->
       <div class="tab-content" id="tab-notes">
         <div class="canva-banner">
           <p><strong>Ready to build your slides.</strong><br>Click Generate to download branded 1080x1080 PNG images ready to post.</p>
           <button class="btn btn-gold" id="generateSlidesBtn" onclick="exportSlidesAsHtml()" style="width:auto; padding:9px 18px; font-size:13px; white-space:nowrap;">&#9654; Generate Slide Images</button>
         </div>
-
         <div id="slidesContainer"></div>
         <div class="action-row">
           <button class="btn btn-sm" onclick="exportSlidesAsHtml()">&#9635; Export as HTML Slideshow</button>
@@ -366,21 +369,14 @@
           HTML Slideshow opens in your browser at 1080x1080. Screenshot each slide or use browser print to save as images.
         </div>
       </div>
-      <div class="tab-content" id="tab-summary">
-        <div id="summaryContainer">
-          <div style="font-size:13px; color:var(--gray); padding: 1rem 0;">Run an analysis above to generate the sermon summary.</div>
-        </div>
-        <div class="action-row" id="summaryActions" style="display:none;">
-          <button class="btn btn-sm" onclick="downloadSummary()">&#8595; Download .txt</button>
-          <button class="btn btn-sm" onclick="copyAllSummary()">&#10697; Copy Summary</button>
-        </div>
-      </div>
-      <div class="tab-content" id="tab-opus">
+
+      <!-- SEEKER SERMON CLIPS TAB -->
+      <div class="tab-content" id="tab-clips">
         <div class="opus-banner">
-          <p style="color:#fff; font-weight:700; margin-bottom:4px;">Send Clips to Opus Clip</p>
-          <p>Each seeker question clip will be sent to Opus Clip using the exact timestamps identified. Make sure your Opus Clip API key and Org ID are entered above before sending.</p>
+          <p style="color:#fff; font-weight:700; margin-bottom:4px;">Create Seeker Sermon Clips</p>
+          <p>Each clip is sent to Opus Clip using the exact timestamps identified. Send no more than 3 clips at a time and wait for each to finish before sending more.</p>
         </div>
-        <div id="opusContainer">
+        <div id="clipsContainer">
           <div style="font-size:13px; color:var(--gray); padding:1rem 0;">Run an analysis above to see clip options.</div>
         </div>
       </div>
@@ -591,10 +587,9 @@ const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'nume
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
     b.classList.toggle('active',
-      (i===0&&tab==='seekers')||(i===1&&tab==='notes')||
-      (i===2&&tab==='summary')||(i===3&&tab==='opus'));
+      (i===0&&tab==='summary')||(i===1&&tab==='notes')||(i===2&&tab==='clips'));
   });
-  ['seekers','notes','summary','opus'].forEach(t => {
+  ['summary','notes','clips'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
   });
 }
@@ -749,7 +744,7 @@ function renderResults(questions, slides, summary) {
   const dateDisplayVal = document.getElementById('sermonDate').value.trim() || today;
   document.getElementById('sermonDateDisplay').textContent = (speakerDisplayVal ? speakerDisplayVal + '  |  ' : '') + dateDisplayVal;
 
-  const qContainer = document.getElementById('questionsContainer');
+  // questionsContainer merged into clipsContainer
   qContainer.innerHTML = '';
   questions.forEach((q, i) => {
     const card = document.createElement('div');
@@ -825,54 +820,84 @@ function renderResults(questions, slides, summary) {
     summaryActions.style.display = 'none';
   }
 
-  // Render Opus Clip tab
-  renderOpusTab(questions);
-
-  // Render custom question if present
-  if (summary !== undefined) {
-    const qContainer = document.getElementById('questionsContainer');
-    if (currentCustomQ) {
-      const divider = document.createElement('div');
-      divider.style.cssText = 'border-top:1px solid var(--border); margin:1rem 0; padding-top:1rem;';
-      const customCard = document.createElement('div');
-      customCard.className = 'question-card';
-      const addressed = currentCustomQ.timestamp && currentCustomQ.timestamp !== 'NONE';
-      customCard.innerHTML = `
-        <div class="q-number" style="color:${addressed ? 'var(--gold)' : '#cc3333'};">Custom Question</div>
-        <div class="q-question">${currentCustomQ.question}</div>
-        ${addressed
-          ? '<div class="q-timestamp">' + currentCustomQ.timestamp + '</div><div class="q-caption" style="margin-top:8px;">' + currentCustomQ.explanation + '</div>'
-          : '<div style="font-size:13px; color:#cc3333; margin-top:6px; padding:8px 12px; background:#fdf2f2; border-radius:8px; border-left:3px solid #cc3333;">' + (currentCustomQ.explanation || 'This sermon does not directly address this question.') + '</div>'
-        }
-      `;
-      qContainer.appendChild(divider);
-      qContainer.appendChild(customCard);
-    }
-  }
+  // Render Seeker Sermon Clips tab
+  renderClipsTab(questions);
 
   document.getElementById('resultsSection').classList.add('visible');
 }
 
-function renderOpusTab(questions) {
-  const container = document.getElementById('opusContainer');
+function renderClipsTab(questions) {
+  const container = document.getElementById('clipsContainer');
   container.innerHTML = '';
-  // Disclaimer
-  const disclaimer = document.createElement('div');
-  disclaimer.style.cssText = 'background:#1a1000; border:1px solid ' + 'var(--gold)' + '; border-radius:8px; padding:10px 14px; margin-bottom:1rem; font-size:12px; color:#cc9900; line-height:1.6;';
-  disclaimer.innerHTML = '<strong style="color:var(--gold);">Important:</strong> Send no more than 3 clips at a time. Your Opus Clip plan supports 4 concurrent projects. Wait for each clip to finish processing before sending more.';
-  container.appendChild(disclaimer);
 
-  questions.forEach((q, i) => {
+  const allClips = [...questions];
+
+  // Add custom question as sixth clip if it has a timestamp
+  if (currentCustomQ) {
+    const hasTimestamp = currentCustomQ.timestamp && currentCustomQ.timestamp !== 'NONE';
+    allClips.push({
+      question: currentCustomQ.question,
+      timestamp: hasTimestamp ? currentCustomQ.timestamp : null,
+      caption: currentCustomQ.explanation || '',
+      isCustom: true,
+      addressed: hasTimestamp
+    });
+  }
+
+  allClips.forEach((q, i) => {
     const card = document.createElement('div');
-    card.className = 'opus-clip-card';
+    card.className = 'question-card';
     card.id = 'opus-card-' + i;
+    card.style.cssText = 'margin-bottom:1rem;';
+
+    const isCustom = q.isCustom || false;
+    const notAddressed = isCustom && !q.addressed;
+
+    // Build caption copy button
+    const captionCopyId = 'cap-copy-' + i;
+
     card.innerHTML = `
-      <div class="q-number">Clip ${i+1}</div>
-      <div class="opus-clip-q">${q.question}</div>
-      <div class="opus-clip-ts">${q.timestamp}</div>
-      <div class="opus-clip-status" id="opus-status-${i}"></div>
-      <button class="btn btn-sm btn-opus" onclick="sendToOpus(${i}, this)" style="margin-top:8px;">Send to Opus Clip</button>
+      <div class="q-meta">
+        <span class="q-number" style="color:${isCustom ? '#888' : 'var(--gold)'};">${isCustom ? 'Custom Question' : 'Clip ' + (i + 1)}</span>
+        ${q.timestamp ? '<span class="q-timestamp">&#9201; ' + q.timestamp + '</span>' : ''}
+      </div>
+      <div class="q-question">${q.question}</div>
+      ${notAddressed
+        ? '<div style="font-size:13px;color:#cc3333;margin-top:6px;padding:8px 12px;background:#fdf2f2;border-radius:8px;border-left:3px solid #cc3333;">' + q.caption + '</div>'
+        : '<div class="q-caption-label">Social media caption</div><div class="q-caption" id="cap-text-' + i + '">' + q.caption + '</div>'
+      }
+      <div class="opus-clip-status" id="opus-status-${i}" style="margin-top:6px;"></div>
     `;
+
+    // Add buttons row
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;';
+
+    // Copy Caption button
+    if (!notAddressed && q.caption) {
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'btn btn-sm';
+      copyBtn.textContent = 'Copy Caption';
+      copyBtn.onclick = function() {
+        navigator.clipboard.writeText(q.caption).then(() => {
+          copyBtn.textContent = 'Copied!';
+          copyBtn.classList.add('copied');
+          setTimeout(() => { copyBtn.textContent = 'Copy Caption'; copyBtn.classList.remove('copied'); }, 1500);
+        }).catch(() => {});
+      };
+      btnRow.appendChild(copyBtn);
+    }
+
+    // Create Clip button — only if clip has a timestamp
+    if (q.timestamp && !notAddressed) {
+      const clipBtn = document.createElement('button');
+      clipBtn.className = 'btn btn-sm btn-opus';
+      clipBtn.textContent = 'Create Clip';
+      clipBtn.onclick = function() { sendToOpus(i, clipBtn); };
+      btnRow.appendChild(clipBtn);
+    }
+
+    card.appendChild(btnRow);
     container.appendChild(card);
   });
 }
