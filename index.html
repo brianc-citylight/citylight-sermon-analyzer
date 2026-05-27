@@ -93,6 +93,12 @@
     .action-row { display: flex; gap: 0.75rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
     .action-row .btn { flex: 1; }
     .copied { color: var(--gold) !important; border-color: var(--gold) !important; }
+    .clip-mode-card { flex:1; border:2px solid var(--border); border-radius:10px; padding:14px 12px; cursor:pointer; transition:border-color 0.15s, background 0.15s; background:var(--white); text-align:left; font-family:inherit; }
+    .clip-mode-card:hover { border-color: var(--gold); background: #fffdf5; }
+    .clip-mode-card.active { border-color: var(--gold); background: #fffdf5; }
+    .clip-mode-icon { font-size:22px; margin-bottom:6px; display:block; }
+    .clip-mode-title { font-size:13px; font-weight:700; color:var(--black); display:block; margin-bottom:3px; }
+    .clip-mode-desc { font-size:11px; color:var(--gray); display:block; line-height:1.4; }
     .summary-body { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; font-size: 14px; line-height: 1.8; color: var(--black); }
     .summary-body p { margin-bottom: 1rem; }
     .summary-body strong { font-size: 15px; color: var(--black); display: block; margin-top: 1.25rem; margin-bottom: 0.25rem; }
@@ -136,6 +142,7 @@
     <div id="menuEmail" style="font-size:13px;color:var(--black);margin-top:2px;"></div>
   </div>
   <button onclick="openAccountModal()" style="width:100%;text-align:left;padding:12px 16px;border:none;background:none;font-size:14px;color:var(--black);cursor:pointer;font-family:inherit;border-bottom:1px solid var(--border);">&#9881; My Account</button>
+  <button onclick="openHistoryModal()" style="width:100%;text-align:left;padding:12px 16px;border:none;background:none;font-size:14px;color:var(--black);cursor:pointer;font-family:inherit;border-bottom:1px solid var(--border);">&#128337; Analysis History</button>
   <button onclick="openHelpModal()" style="width:100%;text-align:left;padding:12px 16px;border:none;background:none;font-size:14px;color:var(--black);cursor:pointer;font-family:inherit;border-bottom:1px solid var(--border);">&#63; Help</button>
   <button onclick="signOut()" style="width:100%;text-align:left;padding:12px 16px;border:none;background:none;font-size:14px;color:#cc3333;cursor:pointer;font-family:inherit;">&#8594; Sign Out</button>
 </div>
@@ -171,31 +178,73 @@
       <h3 style="font-size:18px;font-weight:700;">Help</h3>
       <button onclick="closeHelpModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray);">&#x2715;</button>
     </div>
-    <div style="font-size:13px;color:var(--gray);line-height:1.7;max-height:60vh;overflow-y:auto;padding-right:4px;">
+    <div style="font-size:13px;color:var(--gray);line-height:1.8;max-height:65vh;overflow-y:auto;padding-right:6px;">
 
-      <p style="margin-bottom:0.75rem;"><strong style="color:var(--black);font-size:14px;">Getting Started</strong><br>
-      Fill in the speaker title, first name, last name, and sermon date at the top of the Start Here section. The sermon date is required. Then paste the YouTube link and click Analyze Sermon. Results appear in three tabs: Sermon Summary, Sermon Notes Slides, and Seeker Sermon Clips.</p>
+      <p style="margin-bottom:1rem;color:var(--black);font-size:13px;">Welcome to SermonReach. This tool helps you turn Sunday sermons into social media content. Here is everything you need to know to use it.</p>
 
-      <p style="margin-bottom:0.75rem;"><strong style="color:var(--black);font-size:14px;">Transcript</strong><br>
-      SermonReach will attempt to fetch the transcript automatically from YouTube via Supadata. If it does not appear, click the "Paste transcript manually" toggle, open the YouTube video, click the three dots below the video, click Show transcript, then use the Copy YouTube Transcript Chrome extension to copy it and paste it here.</p>
+      <!-- STEP 1 -->
+      <div style="background:var(--light);border-radius:8px;padding:12px 14px;margin-bottom:0.75rem;">
+        <div style="font-weight:700;color:var(--black);font-size:13px;margin-bottom:4px;">Step 1 &nbsp;&#8212;&nbsp; Fill in the sermon details</div>
+        <div>At the top of the page, enter the speaker title (Pastor, Reverend, etc.), their first name, last name, and the date the sermon was preached. The date is required. Then paste the YouTube link for the sermon.</div>
+      </div>
 
-      <p style="margin-bottom:0.75rem;"><strong style="color:var(--black);font-size:14px;">Custom Seeker Question</strong><br>
-      Enter a specific question before analyzing. SermonReach will check whether the sermon addresses it. If it does, it appears as a sixth clip card with a timestamp and Create Clip button. If not, it shows a red card explaining the sermon does not address it.</p>
+      <!-- STEP 2 -->
+      <div style="background:var(--light);border-radius:8px;padding:12px 14px;margin-bottom:0.75rem;">
+        <div style="font-weight:700;color:var(--black);font-size:13px;margin-bottom:4px;">Step 2 &nbsp;&#8212;&nbsp; Choose your clip focus</div>
+        <div>Select one of three options before analyzing:<br>
+        <strong style="color:var(--black);">Outreach</strong> — finds clips for people outside the faith, good for evangelism posts.<br>
+        <strong style="color:var(--black);">Discipleship</strong> — finds clips for believers who want to grow deeper.<br>
+        <strong style="color:var(--black);">Custom</strong> — lets you type a specific question you want the sermon to answer.</div>
+      </div>
 
-      <p style="margin-bottom:0.75rem;"><strong style="color:var(--black);font-size:14px;">Sermon Summary Tab</strong><br>
-      A 500 word or less narrative summary of the sermon. Post it as a text caption on Instagram, Facebook, or YouTube when slides are not ready. Use Copy Summary or Download to save it.</p>
+      <!-- STEP 3 -->
+      <div style="background:var(--light);border-radius:8px;padding:12px 14px;margin-bottom:0.75rem;">
+        <div style="font-weight:700;color:var(--black);font-size:13px;margin-bottom:4px;">Step 3 &nbsp;&#8212;&nbsp; Click Analyze Sermon</div>
+        <div>The app will automatically fetch the sermon transcript from YouTube. If it cannot get it automatically, a toggle will appear — click it, go to YouTube, click the three dots under the video, click Show transcript, copy it, and paste it in. Then click Analyze Sermon and wait about 30 to 45 seconds.</div>
+      </div>
 
-      <p style="margin-bottom:0.75rem;"><strong style="color:var(--black);font-size:14px;">Sermon Notes Slides Tab</strong><br>
-      Choose a theme from the four thumbnails next to the slide count. Click Generate Slide Images to export the full deck as an HTML file. On each slide card use Download PNG to save a 1080x1080 image or Export Slide for a single HTML file. All slides are square format ready for Instagram carousel.</p>
+      <!-- ALREADY DONE NOTICE -->
+      <div style="background:#fffdf5;border:1px solid var(--gold);border-radius:8px;padding:12px 14px;margin-bottom:0.75rem;">
+        <div style="font-weight:700;color:var(--gold);font-size:13px;margin-bottom:4px;">&#9432;&nbsp; Already done this sermon before?</div>
+        <div style="color:var(--black);">SermonReach remembers your last 10 analyses. If you try to analyze the same sermon with the same settings, it will ask if you want to load the saved version instead. This saves time and avoids running the same analysis twice. Click Load from History to use the saved version, or Run New Analysis if you want a fresh result.</div>
+      </div>
 
-      <p style="margin-bottom:0.75rem;"><strong style="color:var(--black);font-size:14px;">Seeker Sermon Clips Tab</strong><br>
-      Shows the top 5 culturally resonant questions the sermon answers, each with a timestamp range and a social media caption. Click Copy Caption to grab the caption text. Click Create Clip to send that exact timestamp window to Opus Clip for video production. Send no more than 3 clips at a time and wait for each to finish before sending more. When a clip is ready, a preview link appears along with Publish buttons for Instagram, Facebook, and YouTube Shorts. Always review the clip before publishing.</p>
+      <!-- TAB 1 -->
+      <div style="border-left:3px solid var(--gold);padding-left:12px;margin-bottom:0.75rem;">
+        <div style="font-weight:700;color:var(--black);font-size:13px;margin-bottom:3px;">Sermon Summary tab</div>
+        <div>A short written summary of the sermon — 500 words or less. Use this as a text post on Instagram or Facebook, especially when slides are not ready. Click Copy Summary to copy it, or Download to save it as a file.</div>
+      </div>
 
-      <p style="margin-bottom:0.75rem;"><strong style="color:var(--black);font-size:14px;">My Account</strong><br>
-      Click the hamburger menu in the top right. From there you can update your password or sign out.</p>
+      <!-- TAB 2 -->
+      <div style="border-left:3px solid var(--gold);padding-left:12px;margin-bottom:0.75rem;">
+        <div style="font-weight:700;color:var(--black);font-size:13px;margin-bottom:3px;">Sermon Notes Slides tab</div>
+        <div>Branded slide images for Instagram carousels. Pick a color theme using the four small thumbnails. Click Generate Slide Images to download the full set as a file you open in your browser and screenshot. Or use Download PNG on any individual slide to save just that one as an image.</div>
+      </div>
 
-      <p style="padding-top:0.75rem;border-top:1px solid var(--border);"><strong style="color:var(--black);">Need help?</strong><br>
-      Contact Brian at brianc@citylightvicksburg.org</p>
+      <!-- TAB 3 -->
+      <div style="border-left:3px solid var(--gold);padding-left:12px;margin-bottom:0.75rem;">
+        <div style="font-weight:700;color:var(--black);font-size:13px;margin-bottom:3px;">Sermon Clips tab</div>
+        <div>Five video clips from the sermon, each tied to a question or insight. For each clip you can:<br>
+        &bull; <strong style="color:var(--black);">Copy Caption</strong> — copies the social media caption to paste when posting.<br>
+        &bull; <strong style="color:var(--black);">Create Clip</strong> — sends that moment to Opus Clip to cut the video. Send no more than 3 at a time.<br>
+        &bull; <strong style="color:var(--black);">Publish</strong> — when the clip is ready, publish directly to Instagram, Facebook, or YouTube Shorts. Always preview before publishing. Clips you have already published will show a green Published badge so you do not accidentally post the same clip twice.</div>
+      </div>
+
+      <!-- HISTORY -->
+      <div style="border-left:3px solid var(--gold);padding-left:12px;margin-bottom:0.75rem;">
+        <div style="font-weight:700;color:var(--black);font-size:13px;margin-bottom:3px;">Analysis History</div>
+        <div>Click the hamburger menu in the top right and choose Analysis History to see your last 10 analyses. Click Load on any entry to bring it back up. The app saves your current work first so you can always get back to it.</div>
+      </div>
+
+      <!-- ACCOUNT -->
+      <div style="border-left:3px solid var(--gold);padding-left:12px;margin-bottom:1rem;">
+        <div style="font-weight:700;color:var(--black);font-size:13px;margin-bottom:3px;">My Account and Sign Out</div>
+        <div>Click the hamburger menu in the top right. Choose My Account to update your password, or Sign Out to log out.</div>
+      </div>
+
+      <div style="padding-top:0.75rem;border-top:1px solid var(--border);font-size:12px;">
+        <strong style="color:var(--black);">Questions?</strong> Contact Brian at brianc@citylightvicksburg.org
+      </div>
     </div>
     <button class="btn" onclick="closeHelpModal()" style="margin-top:1rem;width:100%;">Close</button>
   </div>
@@ -313,9 +362,28 @@
           <textarea id="transcriptInput" placeholder="Go to the YouTube video → click '...' → Show transcript → copy and paste here."></textarea>
         </div>
       </div>
-      <div class="input-group" style="margin-top:0.75rem; margin-bottom:0;">
-        <label>Custom Seeker Question (optional)</label>
-        <input type="text" id="customQuestion" placeholder="Is there a specific question you want to check this sermon answers?" />
+      <div style="margin-top:1rem;">
+        <label style="display:block;font-size:13px;font-weight:600;color:var(--gray);margin-bottom:8px;">Sermon Clip Focus</label>
+        <div style="display:flex;gap:8px;">
+          <button class="clip-mode-card active" id="clipmode-outreach" onclick="selectClipMode('outreach')">
+            <span class="clip-mode-icon">&#127758;</span>
+            <span class="clip-mode-title">Outreach</span>
+            <span class="clip-mode-desc">5 clips for reaching people outside the faith</span>
+          </button>
+          <button class="clip-mode-card" id="clipmode-discipleship" onclick="selectClipMode('discipleship')">
+            <span class="clip-mode-icon">&#128214;</span>
+            <span class="clip-mode-title">Discipleship</span>
+            <span class="clip-mode-desc">5 clips for growing people inside the faith</span>
+          </button>
+          <button class="clip-mode-card" id="clipmode-custom" onclick="selectClipMode('custom')">
+            <span class="clip-mode-icon">&#9998;</span>
+            <span class="clip-mode-title">Custom</span>
+            <span class="clip-mode-desc">Check a specific question from your community</span>
+          </button>
+        </div>
+        <div id="customQuestionField" style="display:none;margin-top:0.75rem;">
+          <input type="text" id="customQuestion" placeholder="Enter your specific question..." style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;" />
+        </div>
       </div>
 
 
@@ -337,7 +405,7 @@
       <div class="tab-row">
         <button class="tab-btn active" onclick="switchTab('summary')">Sermon Summary</button>
         <button class="tab-btn" onclick="switchTab('notes')">Sermon Notes Slides</button>
-        <button class="tab-btn" onclick="switchTab('clips')">Seeker Sermon Clips</button>
+        <button class="tab-btn" onclick="switchTab('clips')">Sermon Clips</button>
       </div>
       <!-- SERMON SUMMARY TAB -->
       <div class="tab-content active" id="tab-summary">
@@ -369,9 +437,9 @@
 
       <!-- SEEKER SERMON CLIPS TAB -->
       <div class="tab-content" id="tab-clips">
-        <div class="opus-banner">
-          <p style="color:#fff; font-weight:700; margin-bottom:4px;">Create Seeker Sermon Clips</p>
-          <p>Each clip is sent to Opus Clip using the exact timestamps identified. Send no more than 3 clips at a time and wait for each to finish before sending more.</p>
+        <div class="opus-banner" id="clipsBanner">
+          <p style="color:#fff; font-weight:700; margin-bottom:4px;" id="clipsBannerTitle">Create Sermon Clips</p>
+          <p id="clipsBannerDesc">Each clip is sent to Opus Clip using the exact timestamps identified. Send no more than 3 clips at a time and wait for each to finish before sending more.</p>
         </div>
         <div id="clipsContainer">
           <div style="font-size:13px; color:var(--gray); padding:1rem 0;">Run an analysis above to see clip options.</div>
@@ -558,7 +626,33 @@ let currentSlides = null;
 let currentSummary = '';
 let currentCustomQ = null;
 let currentTheme = '1';
+let currentClipMode = 'outreach';
+let currentAnalysisId = null; // Supabase record ID for current analysis
+let currentVideoId = null;    // YouTube video ID for current analysis
 let sermonTitle = '';
+
+// Helper: get current user ID from Supabase session
+function getCurrentUserId() {
+  return supabaseClient?.auth?.getUser
+    ? supabaseClient.auth.getUser().then(r => r?.data?.user?.id || null)
+    : Promise.resolve(null);
+}
+
+// Helper: history API call
+async function historyCall(method, action, body = null) {
+  const userId = await getCurrentUserId();
+  if (!userId) return null;
+  const url = '/api/history?action=' + action;
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json', 'x-user-id': userId }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  try {
+    const res = await fetch(url, opts);
+    return await res.json();
+  } catch(e) { return null; }
+}
 
 // Theme definitions matching the four Canva slide template sets
 const THEMES = {
@@ -567,6 +661,16 @@ const THEMES = {
   '3': { bg:'#6B5B4E', text:'#FFFFFF', subtext:'#e8ddd7', accent:'#FFFFFF', accentBar:'#FFFFFF', takeawayBg:'rgba(255,255,255,0.1)', reflBorder:'#FFFFFF', reflLabel:'#e8ddd7', scripture:'#e8ddd7', divider:'rgba(255,255,255,0.2)', name:'Warm Brown' },
   '4': { bg:'#686868', text:'#FFFFFF', subtext:'#e0e0e0', accent:'#FFFFFF', accentBar:'#111111', takeawayBg:'rgba(255,255,255,0.1)', reflBorder:'#FFFFFF', reflLabel:'#e0e0e0', scripture:'#e0e0e0', divider:'rgba(255,255,255,0.2)', name:'Slate' }
 };
+
+function selectClipMode(mode) {
+  currentClipMode = mode;
+  ['outreach','discipleship','custom'].forEach(m => {
+    const el = document.getElementById('clipmode-' + m);
+    if (el) el.classList.toggle('active', m === mode);
+  });
+  const customField = document.getElementById('customQuestionField');
+  if (customField) customField.style.display = mode === 'custom' ? 'block' : 'none';
+}
 
 function selectTheme(id) {
   currentTheme = id;
@@ -612,7 +716,7 @@ function showError(msg) {
 }
 function hideError() { document.getElementById('errorCard').classList.remove('visible'); }
 
-async function analyzeSermon() {
+async function analyzeSermon(skipDuplicateCheck = false) {
   hideError();
   const url = document.getElementById('youtubeUrl').value.trim();
   const manualTranscript = document.getElementById('transcriptInput').value.trim();
@@ -622,7 +726,9 @@ async function analyzeSermon() {
   const speakerLast = document.getElementById('speakerLast').value.trim();
   const speakerTitle = document.getElementById('speakerTitle').value.trim();
   const sermonDateInput = document.getElementById('sermonDate').value.trim();
-  const customQuestion = document.getElementById('customQuestion').value.trim();
+  const customQuestion = currentClipMode === 'custom'
+    ? (document.getElementById('customQuestion').value.trim())
+    : '';
   const speakerFull = [speakerTitle, speakerFirst, speakerLast].filter(Boolean).join(' ') || 'the pastor';
   const sermonDateDisplay2 = sermonDateInput;
 
@@ -633,6 +739,9 @@ async function analyzeSermon() {
 
   document.getElementById('analyzeBtn').disabled = true;
   document.getElementById('resultsSection').classList.remove('visible');
+
+  // Store videoId globally for history use
+  currentVideoId = videoId;
 
   setStatus('Fetching sermon title...');
   try {
@@ -649,7 +758,19 @@ async function analyzeSermon() {
 
   let transcript = manualTranscript;
   if (!transcript) {
-    setStatus('Fetching transcript via Supadata...');
+    // Check history for matching analysis before running (unless skipped)
+  if (!skipDuplicateCheck) {
+    setStatus('Checking history...');
+    const dupCheck = await historyCall('GET', 'check&videoId=' + encodeURIComponent(videoId) + '&clipMode=' + encodeURIComponent(currentClipMode) + '&slideCount=' + encodeURIComponent(slideCount));
+    if (dupCheck && dupCheck.match) {
+      document.getElementById('analyzeBtn').disabled = false;
+      document.getElementById('statusBar').classList.remove('visible');
+      showDuplicatePrompt(dupCheck.match, videoId, slideCount);
+      return;
+    }
+  }
+
+  setStatus('Fetching transcript via Supadata...');
     try {
       const tRes = await fetch('/api/transcript?videoId=' + encodeURIComponent(videoId));
       const tData = await tRes.json();
@@ -677,7 +798,8 @@ async function analyzeSermon() {
         slideCount,
         date: sermonDateDisplay2,
         speaker: speakerFull,
-        customQuestion
+        customQuestion,
+        clipMode: currentClipMode
       })
     });
 
@@ -707,12 +829,37 @@ async function analyzeSermon() {
     currentSummary = rawSummary;
     renderResults(currentQuestions, currentSlides, currentSummary);
 
+    // Auto-save to history
+    autoSaveAnalysis(videoId, slideCount);
+
   } catch(e) {
     showError('Network error: ' + e.message);
   }
 
   document.getElementById('analyzeBtn').disabled = false;
   document.getElementById('statusBar').classList.remove('visible');
+}
+
+async function autoSaveAnalysis(videoId, slideCount) {
+  const data = await historyCall('POST', 'save', {
+    videoId,
+    sermonTitle,
+    sermonDate: document.getElementById('sermonDate').value.trim(),
+    clipMode: currentClipMode,
+    slideCount: parseInt(slideCount),
+    speaker: [
+      document.getElementById('speakerTitle').value.trim(),
+      document.getElementById('speakerFirst').value.trim(),
+      document.getElementById('speakerLast').value.trim()
+    ].filter(Boolean).join(' '),
+    questions: currentQuestions,
+    slides: currentSlides,
+    summary: currentSummary,
+    customQ: currentCustomQ || null
+  });
+  if (data && data.id) {
+    currentAnalysisId = data.id;
+  }
 }
 
 function parseSlidesFromRaw(raw) {
@@ -801,7 +948,7 @@ function renderResults(questions, slides, summary) {
     summaryActions.style.display = 'none';
   }
 
-  // Render Seeker Sermon Clips tab
+  // Render Sermon Clips tab
   renderClipsTab(questions);
 
   document.getElementById('resultsSection').classList.add('visible');
@@ -810,6 +957,22 @@ function renderResults(questions, slides, summary) {
 function renderClipsTab(questions) {
   const container = document.getElementById('clipsContainer');
   container.innerHTML = '';
+
+  // Update banner title and desc based on clip mode
+  const bannerTitle = document.getElementById('clipsBannerTitle');
+  const bannerDesc = document.getElementById('clipsBannerDesc');
+  if (bannerTitle) {
+    if (currentClipMode === 'discipleship') {
+      bannerTitle.textContent = 'Create Discipleship Sermon Clips';
+      bannerDesc.textContent = 'Clips focused on growing believers deeper in their faith. Send no more than 3 at a time.';
+    } else if (currentClipMode === 'custom') {
+      bannerTitle.textContent = 'Create Custom Sermon Clips';
+      bannerDesc.textContent = 'Clips based on your custom question focus. Send no more than 3 at a time.';
+    } else {
+      bannerTitle.textContent = 'Create Outreach Sermon Clips';
+      bannerDesc.textContent = 'Clips focused on reaching people outside the faith. Send no more than 3 at a time.';
+    }
+  }
 
   const allClips = [...questions];
 
@@ -1099,7 +1262,7 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts) {
   // Title section
   const titleLabel = document.createElement('div');
   titleLabel.style.cssText = 'color:var(--gold); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px;';
-  titleLabel.textContent = 'Post Title (Seeker Question)';
+  titleLabel.textContent = 'Post Title';
   const titleVal = document.createElement('div');
   titleVal.style.cssText = 'color:#fff; font-size:13px; font-weight:600; margin-bottom:12px; line-height:1.4;';
   titleVal.textContent = q.question;
@@ -1199,6 +1362,8 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts) {
             pubBtn.style.color = '#00cc88';
             statusSpan.style.color = '#00cc88';
             statusSpan.textContent = 'Successfully published to ' + platformLabel + '.';
+            // Track publish in history
+            trackPublish(clipIndex, platformLabel, data.postId || null);
           }
         } catch(e) {
           pubBtn.textContent = 'Failed — retry';
@@ -1561,6 +1726,177 @@ async function downloadSlideAsPng(slide, btn) {
   } finally {
     document.body.removeChild(container);
   }
+}
+
+// ── HISTORY ──────────────────────────────────────────────────────────────
+
+let pendingDuplicateMatch = null;
+let pendingVideoId = null;
+let pendingSlideCount = null;
+
+function showDuplicatePrompt(match, videoId, slideCount) {
+  pendingDuplicateMatch = match;
+  pendingVideoId = videoId;
+  pendingSlideCount = slideCount;
+
+  const modeLabels = { outreach: 'Outreach', discipleship: 'Discipleship', custom: 'Custom' };
+  document.getElementById('dupTitle').textContent = match.sermon_title;
+  document.getElementById('dupMeta').innerHTML =
+    'Date: ' + match.sermon_date + '<br>' +
+    'Clip Mode: ' + (modeLabels[match.clip_mode] || match.clip_mode) + ' | Slides: ' + match.slide_count + '<br>' +
+    'Analyzed: ' + new Date(match.created_at).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+
+  document.getElementById('duplicatePrompt').style.display = 'flex';
+}
+
+async function loadFromDuplicate() {
+  document.getElementById('duplicatePrompt').style.display = 'none';
+  if (!pendingDuplicateMatch) return;
+
+  setStatus('Loading from history...');
+  document.getElementById('statusBar').classList.add('visible');
+
+  const data = await historyCall('GET', 'get&id=' + pendingDuplicateMatch.id);
+  if (data && data.analysis) {
+    restoreAnalysis(data.analysis);
+  }
+
+  document.getElementById('statusBar').classList.remove('visible');
+  pendingDuplicateMatch = null;
+}
+
+async function runNewAnalysis() {
+  document.getElementById('duplicatePrompt').style.display = 'none';
+  pendingDuplicateMatch = null;
+  // Re-trigger analysis bypassing the duplicate check
+  await analyzeSermon(true);
+}
+
+async function openHistoryModal() {
+  closeMenu();
+  document.getElementById('historyModal').style.display = 'flex';
+  document.getElementById('historyList').innerHTML = '<div style="font-size:13px;color:var(--gray);text-align:center;padding:2rem;">Loading...</div>';
+
+  const data = await historyCall('GET', 'load');
+  const list = document.getElementById('historyList');
+
+  if (!data || !data.analyses || data.analyses.length === 0) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--gray);text-align:center;padding:2rem;">No analysis history yet. Run your first analysis to get started.</div>';
+    return;
+  }
+
+  const modeColors = { outreach: '#C9A84C', discipleship: '#2563eb', custom: '#666' };
+  const modeLabels = { outreach: 'Outreach', discipleship: 'Discipleship', custom: 'Custom' };
+
+  list.innerHTML = '';
+  data.analyses.forEach(a => {
+    const publishedCount = (a.questions || []).filter(q => q.published && Object.keys(q.published).length > 0).length;
+    const card = document.createElement('div');
+    card.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:0.75rem;';
+    card.innerHTML = `
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;">
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:700;color:var(--black);margin-bottom:4px;">${a.sermon_title}</div>
+          <div style="font-size:12px;color:var(--gray);margin-bottom:6px;">${a.sermon_date}${a.speaker ? ' &nbsp;|&nbsp; ' + a.speaker : ''}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:${modeColors[a.clip_mode]}20;color:${modeColors[a.clip_mode]};border:1px solid ${modeColors[a.clip_mode]}40;">${modeLabels[a.clip_mode] || a.clip_mode}</span>
+            <span style="font-size:11px;color:var(--gray);">${a.slide_count} slides</span>
+            ${publishedCount > 0 ? '<span style="font-size:11px;color:green;">&#10003; ' + publishedCount + ' clip' + (publishedCount > 1 ? 's' : '') + ' published</span>' : ''}
+          </div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;">${new Date(a.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' })}</div>
+        </div>
+        <button onclick="loadHistoryEntry('${a.id}')" class="btn btn-sm" style="flex-shrink:0;white-space:nowrap;">Load</button>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function closeHistoryModal() {
+  document.getElementById('historyModal').style.display = 'none';
+}
+
+async function loadHistoryEntry(id) {
+  // Save current results before loading historical entry
+  if (currentQuestions && currentVideoId && !currentAnalysisId) {
+    const slideCount = document.getElementById('slideCount').value;
+    await autoSaveAnalysis(currentVideoId, slideCount);
+  }
+
+  closeHistoryModal();
+  setStatus('Loading from history...');
+  document.getElementById('statusBar').classList.add('visible');
+
+  const data = await historyCall('GET', 'get&id=' + id);
+  if (data && data.analysis) {
+    restoreAnalysis(data.analysis);
+  }
+
+  document.getElementById('statusBar').classList.remove('visible');
+}
+
+function restoreAnalysis(a) {
+  sermonTitle = a.sermon_title;
+  currentVideoId = a.video_id;
+  currentAnalysisId = a.id;
+  currentClipMode = a.clip_mode;
+  currentQuestions = a.questions || [];
+  currentSlides = a.slides || [];
+  currentSummary = a.summary || '';
+  currentCustomQ = a.custom_q || null;
+
+  // Restore clip mode card selection
+  selectClipMode(a.clip_mode);
+
+  // Restore speaker and date fields
+  if (a.sermon_date) document.getElementById('sermonDate').value = a.sermon_date;
+  if (a.speaker) {
+    const parts = a.speaker.split(' ');
+    if (parts.length >= 3) {
+      document.getElementById('speakerTitle').value = parts[0];
+      document.getElementById('speakerFirst').value = parts[1];
+      document.getElementById('speakerLast').value = parts.slice(2).join(' ');
+    }
+  }
+
+  renderResults(currentQuestions, currentSlides, currentSummary);
+  document.getElementById('resultsSection').classList.add('visible');
+
+  // Restore publish badges on clips
+  restorePublishBadges(a.questions || []);
+}
+
+function restorePublishBadges(questions) {
+  questions.forEach((q, i) => {
+    if (q.published && Object.keys(q.published).length > 0) {
+      const card = document.getElementById('opus-card-' + i);
+      if (!card) return;
+      const platforms = Object.keys(q.published);
+      const badgeDiv = document.createElement('div');
+      badgeDiv.style.cssText = 'margin-top:8px;';
+      platforms.forEach(platform => {
+        const pub = q.published[platform];
+        const date = new Date(pub.publishedAt).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+        const badge = document.createElement('div');
+        badge.style.cssText = 'display:inline-flex;align-items:center;gap:4px;font-size:11px;color:green;background:#f0fff0;border:1px solid #90ee90;border-radius:20px;padding:2px 8px;margin-right:4px;';
+        badge.textContent = '✓ Published to ' + platform + ' on ' + date;
+        badgeDiv.appendChild(badge);
+      });
+      card.appendChild(badgeDiv);
+    }
+  });
+}
+
+// ── PUBLISH TRACKING ──────────────────────────────────────────────────────
+
+async function trackPublish(clipIndex, platform, postId) {
+  if (!currentAnalysisId) return;
+  await historyCall('POST', 'publish', {
+    analysisId: currentAnalysisId,
+    clipIndex,
+    platform,
+    postId: postId || null
+  });
 }
 </script>
 </body>

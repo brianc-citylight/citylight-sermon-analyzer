@@ -17,7 +17,8 @@ export default async function handler(req, res) {
     slideCount,
     date,
     speaker,
-    customQuestion
+    customQuestion,
+    clipMode
   } = req.body;
 
   if (!transcript || !sermonTitle) {
@@ -32,6 +33,21 @@ export default async function handler(req, res) {
   const speakerName = speaker || 'the pastor';
   const sermonDate = date || '';
   const numSlides = parseInt(slideCount) || 3;
+
+  const clipModeInstruction = clipMode === 'discipleship'
+    ? `Find the TOP 5 moments in this sermon that would most help someone who already believes grow deeper in their faith. Look for theological depth, doctrinal content, practical application, moments that would fuel personal devotion or small group discussion, and passages that demand something of a believer's obedience or trust. These clips are for maturing disciples, not first-time seekers.
+
+For each clip format EXACTLY as one line:
+Q|[a compelling discipleship-focused insight or question]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence caption written for a believer who wants to grow — theologically honest, reflective, inviting depth, never shallow]`
+    : clipMode === 'custom'
+    ? \`Find the TOP 5 culturally resonant questions this sermon answers. Real questions people in 2026 are genuinely asking. No churchy language. Written for someone who may not attend church.
+
+For each question format EXACTLY as one line:
+Q|[sharp culturally relevant question]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence social media caption that intrigues a skeptic, not preachy]\`
+    : `Find the TOP 5 moments in this sermon that most directly speak to someone who does not yet believe. Look for moments where the gospel intersects with real questions, doubts, cultural tensions, or felt needs. These clips are for people outside the faith scrolling social media. What would make someone who has never set foot in a church stop and watch?
+
+For each question format EXACTLY as one line:
+Q|[sharp culturally relevant question that a skeptic or seeker would genuinely ask]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence caption written for someone outside the faith — intriguing, never preachy, speaks to a real felt need or cultural tension]`;
 
   const customQSection = customQuestion
     ? `\nCUSTOM SEEKER QUESTION CHECK
@@ -66,13 +82,10 @@ ${transcript.substring(0, 50000)}
 
 Produce THREE outputs. Do NOT use em dashes anywhere in your response. Use plain alternatives like "and", "to", or a comma instead. When referencing the speaker by name, use "${speakerName}" exactly as written.
 
-OUTPUT 1 - SEEKER QUESTIONS
-Identify the TOP 5 culturally resonant questions this sermon answers. Real questions people in 2026 are genuinely asking about suffering, identity, purpose, faith, doubt, relationships, meaning, or who Jesus is. No churchy language. Written for someone who may not attend church.
+OUTPUT 1 - SERMON CLIPS
+${clipModeInstruction}
 
-For each question format EXACTLY as one line:
-Q|[sharp culturally relevant question]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence social media caption that intrigues a skeptic, not preachy]
-
-IMPORTANT: Each clip window must be at least 60 seconds long. Choose timestamps that capture the full answer to the question, not just the hook. If the answer runs longer, let it run.
+IMPORTANT: Each clip window must be at least 60 seconds long. Choose timestamps that capture the full moment, not just the hook. If the answer runs longer, let it run.
 ${customQSection}
 
 OUTPUT 2 - SERMON NOTES SLIDES

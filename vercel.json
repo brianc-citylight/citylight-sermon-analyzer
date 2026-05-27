@@ -4,6 +4,7 @@
     "api/title.js": { "maxDuration": 10 },
     "api/transcript.js": { "maxDuration": 30 },
     "api/opus.js": { "maxDuration": 60 },
-    "api/config.js": { "maxDuration": 10 }
+    "api/config.js": { "maxDuration": 10 },
+    "api/history.js": { "maxDuration": 10 }
   }
 }
