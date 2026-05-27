@@ -1378,12 +1378,12 @@ function exportSlidesAsHtml() {
         <div style="font-family:'Arial Black',Arial,sans-serif;font-size:16px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:5px;">TAKEAWAY ${num ? num[0] : ''}</div>
         <div style="font-family:Arial,sans-serif;font-size:29px;font-weight:700;color:${TEXT};line-height:1.35;margin-bottom:29px;padding-bottom:24px;border-bottom:2px solid ${DIVIDER};">${fields['Subpoint'] || ''}</div>
         <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${SUBTEXT};margin-bottom:10px;">Key Takeaway</div>
-        <div style="font-family:Arial,sans-serif;font-size:20px;color:${SUBTEXT};line-height:1.6;margin-bottom:24px;">${fields['Key Takeaway'] || ''}</div>
+        <div style="font-family:Arial,sans-serif;font-size:24px;color:${SUBTEXT};line-height:1.6;margin-bottom:24px;">${fields['Key Takeaway'] || ''}</div>
         <div style="background:${TAKEAWAY_BG};border-left:4px solid ${REFL_BORDER};padding:14px 18px;border-radius:0 6px 6px 0;${scripture ? 'margin-bottom:16px;' : ''}">
-          <div style="font-family:Arial,sans-serif;font-size:14px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${REFL_LABEL};margin-bottom:7px;">Reflection</div>
-          <div style="font-family:Arial,sans-serif;font-size:19px;color:${TEXT};line-height:1.5;font-style:italic;">${fields['Key Reflection'] || ''}</div>
+          <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${REFL_LABEL};margin-bottom:7px;">Reflection</div>
+          <div style="font-family:Arial,sans-serif;font-size:23px;color:${TEXT};line-height:1.5;font-style:italic;">${fields['Key Reflection'] || ''}</div>
         </div>
-        ${scripture ? '<div style="font-family:Arial,sans-serif;font-size:17px;color:' + SCRIPTURE + ';font-weight:600;margin-top:14px;">' + scripture + '</div>' : ''}
+        ${scripture ? '<div style="font-family:Arial,sans-serif;font-size:21px;color:' + SCRIPTURE + ';font-weight:600;margin-top:14px;">' + scripture + '</div>' : ''}
       </div>`;
     }
 
@@ -1488,12 +1488,12 @@ function exportSingleSlide(slide) {
       <div style="font-family:'Arial Black',Arial,sans-serif;font-size:16px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:5px;">TAKEAWAY ${num ? num[0] : ''}</div>
       <div style="font-family:Arial,sans-serif;font-size:29px;font-weight:700;color:${TEXT};line-height:1.35;margin-bottom:29px;padding-bottom:24px;border-bottom:2px solid ${DIVIDER};">${fields['Subpoint'] || ''}</div>
       <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${SUBTEXT};margin-bottom:10px;">Key Takeaway</div>
-      <div style="font-family:Arial,sans-serif;font-size:20px;color:${SUBTEXT};line-height:1.6;margin-bottom:24px;">${fields['Key Takeaway'] || ''}</div>
+      <div style="font-family:Arial,sans-serif;font-size:24px;color:${SUBTEXT};line-height:1.6;margin-bottom:24px;">${fields['Key Takeaway'] || ''}</div>
       <div style="background:${TAKEAWAY_BG};border-left:4px solid ${REFL_BORDER};padding:14px 18px;border-radius:0 6px 6px 0;${scripture ? 'margin-bottom:16px;' : ''}">
-        <div style="font-family:Arial,sans-serif;font-size:14px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${REFL_LABEL};margin-bottom:7px;">Reflection</div>
-        <div style="font-family:Arial,sans-serif;font-size:19px;color:${TEXT};line-height:1.5;font-style:italic;">${fields['Key Reflection'] || ''}</div>
+        <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${REFL_LABEL};margin-bottom:7px;">Reflection</div>
+        <div style="font-family:Arial,sans-serif;font-size:23px;color:${TEXT};line-height:1.5;font-style:italic;">${fields['Key Reflection'] || ''}</div>
       </div>
-      ${scripture ? '<div style="font-family:Arial,sans-serif;font-size:17px;color:' + SCRIPTURE + ';font-weight:600;margin-top:14px;">' + scripture + '</div>' : ''}
+      ${scripture ? '<div style="font-family:Arial,sans-serif;font-size:21px;color:' + SCRIPTURE + ';font-weight:600;margin-top:14px;">' + scripture + '</div>' : ''}
     </div>`;
   }
 
@@ -1599,12 +1599,12 @@ async function downloadSlideAsPng(slide, btn) {
       <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:5px;">TAKEAWAY ${num ? num[0] : ''}</div>
       <div style="font-family:Arial,sans-serif;font-size:29px;font-weight:700;color:${TEXT};line-height:1.35;margin-bottom:29px;padding-bottom:24px;border-bottom:2px solid ${DIVIDER};">${fields['Subpoint'] || ''}</div>
       <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${SUBTEXT};margin-bottom:10px;">Key Takeaway</div>
-      <div style="font-family:Arial,sans-serif;font-size:20px;color:${SUBTEXT};line-height:1.6;margin-bottom:24px;">${fields['Key Takeaway'] || ''}</div>
+      <div style="font-family:Arial,sans-serif;font-size:24px;color:${SUBTEXT};line-height:1.6;margin-bottom:24px;">${fields['Key Takeaway'] || ''}</div>
       <div style="background:${TAKEAWAY_BG};border-left:4px solid ${REFL_BORDER};padding:14px 18px;border-radius:0 6px 6px 0;${scripture ? 'margin-bottom:16px;' : ''}">
-        <div style="font-family:Arial,sans-serif;font-size:14px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${REFL_LABEL};margin-bottom:7px;">Reflection</div>
-        <div style="font-family:Arial,sans-serif;font-size:19px;color:${TEXT};line-height:1.5;font-style:italic;">${fields['Key Reflection'] || ''}</div>
+        <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${REFL_LABEL};margin-bottom:7px;">Reflection</div>
+        <div style="font-family:Arial,sans-serif;font-size:23px;color:${TEXT};line-height:1.5;font-style:italic;">${fields['Key Reflection'] || ''}</div>
       </div>
-      ${scripture ? '<div style="font-family:Arial,sans-serif;font-size:17px;color:' + SCRIPTURE + ';font-weight:600;margin-top:14px;">' + scripture + '</div>' : ''}
+      ${scripture ? '<div style="font-family:Arial,sans-serif;font-size:21px;color:' + SCRIPTURE + ';font-weight:600;margin-top:14px;">' + scripture + '</div>' : ''}
     </div>`;
   }
 
