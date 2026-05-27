@@ -295,15 +295,15 @@
           </select>
         </div>
         <div class="option-group">
-          <label>Slide Theme</label>
+          <label>Sermon Notes Slide Theme</label>
           <div style="display:flex;gap:6px;align-items:center;" id="themeSelector">
-            <div onclick="selectTheme('1')" id="theme-opt-1" title="City Light" style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;width:48px;height:48px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
+            <div onclick="selectTheme('1')" id="theme-opt-1" title="City Light" style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;width:58px;height:58px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
         <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/Slide%20Templates/Cover%201.png" style="width:100%;height:100%;object-fit:cover;" alt="City Light" />
-      </div><div onclick="selectTheme('2')" id="theme-opt-2" title="Navy" style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;width:48px;height:48px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
+      </div><div onclick="selectTheme('2')" id="theme-opt-2" title="Navy" style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;width:58px;height:58px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
         <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/Slide%20Templates/Cover%202.png" style="width:100%;height:100%;object-fit:cover;" alt="Navy" />
-      </div><div onclick="selectTheme('3')" id="theme-opt-3" title="Warm Brown" style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;width:48px;height:48px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
+      </div><div onclick="selectTheme('3')" id="theme-opt-3" title="Warm Brown" style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;width:58px;height:58px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
         <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/Slide%20Templates/Cover%203.png" style="width:100%;height:100%;object-fit:cover;" alt="Warm Brown" />
-      </div><div onclick="selectTheme('4')" id="theme-opt-4" title="Slate" style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;width:48px;height:48px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
+      </div><div onclick="selectTheme('4')" id="theme-opt-4" title="Slate" style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;width:58px;height:58px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
         <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/Slide%20Templates/Cover%204.png" style="width:100%;height:100%;object-fit:cover;" alt="Slate" />
       </div>
           </div>
@@ -1151,7 +1151,7 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts) {
     if (expiredAccts.length > 0) {
       const expWarn = document.createElement('div');
       expWarn.style.cssText = 'background:#1a0000; border:1px solid #cc3333; border-radius:6px; padding:8px 10px; font-size:12px; color:#ff8888; margin-bottom:10px; line-height:1.5;';
-      expWarn.innerHTML = '<strong>Warning:</strong> Your ' + expiredAccts.map(a => a.platform === 'FACEBOOK_PAGE' ? 'Facebook' : 'Instagram').join(' and ') + ' connection may be expired. Go to your Opus Clip dashboard and reconnect your social accounts before publishing.';
+      expWarn.innerHTML = '<strong>Warning:</strong> Your ' + expiredAccts.map(a => a.platform === 'FACEBOOK_PAGE' ? 'Facebook' : a.platform === 'YOUTUBE' ? 'YouTube' : 'Instagram').join(' and ') + ' connection may be expired. Go to your Opus Clip dashboard and reconnect your social accounts before publishing.';
       panel.appendChild(expWarn);
     }
 
@@ -1159,7 +1159,7 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts) {
     btnRow.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap;';
 
     accounts.forEach(acct => {
-      const platformLabel = acct.platform === 'INSTAGRAM_BUSINESS' ? 'Instagram' : 'Facebook';
+      const platformLabel = acct.platform === 'INSTAGRAM_BUSINESS' ? 'Instagram' : acct.platform === 'YOUTUBE' ? 'YouTube Shorts' : 'Facebook';
       const name = acct.extUserName || platformLabel;
       const pubBtn = document.createElement('button');
       pubBtn.className = 'btn btn-sm btn-opus';
