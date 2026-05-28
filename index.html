@@ -224,10 +224,15 @@
       <!-- TAB 3 -->
       <div style="border-left:3px solid var(--gold);padding-left:12px;margin-bottom:0.75rem;">
         <div style="font-weight:700;color:var(--black);font-size:13px;margin-bottom:3px;">Sermon Clips tab</div>
-        <div>Five video clips from the sermon, each tied to a question or insight. For each clip you can:<br>
+        <div>Five video clips from the sermon, each between 30 and 90 seconds — the right length for Instagram Reels, Facebook Reels, and YouTube Shorts. For each clip you can:<br><br>
         &bull; <strong style="color:var(--black);">Copy Caption</strong> — copies the social media caption to paste when posting.<br>
-        &bull; <strong style="color:var(--black);">Create Clip</strong> — sends that moment to Opus Clip to cut the video. Send no more than 3 at a time.<br>
-        &bull; <strong style="color:var(--black);">Publish</strong> — when the clip is ready, publish directly to Instagram, Facebook, or YouTube Shorts. Always preview before publishing. Clips you have already published will show a green Published badge so you do not accidentally post the same clip twice.</div>
+        &bull; <strong style="color:var(--black);">Create Clip</strong> — sends that moment to Opus Clip to cut the video. Send no more than 3 clips at a time and wait for each to finish before sending more.<br>
+        &bull; <strong style="color:var(--black);">Publish Now</strong> — when the clip is ready, posts it immediately to Instagram, Facebook, or YouTube Shorts. Always preview in Opus Clip before publishing.<br>
+        &bull; <strong style="color:var(--black);">Schedule</strong> — picks a future date and time to post automatically. A date and time picker appears. The time uses your local timezone. Click Confirm to schedule it in Opus Clip.<br><br>
+        After publishing or scheduling, the button updates to show what happened:<br>
+        <span style="color:#166534;">&#10003; Green badge</span> — clip was published immediately, shows the date and time it was posted.<br>
+        <span style="color:#8B6914;">&#9200; Gold badge</span> — clip is scheduled, shows the date and time it will post.<br><br>
+        These badges appear even if you come back to this analysis later from your history, so you will never accidentally publish the same clip twice.</div>
       </div>
 
       <!-- HISTORY -->
@@ -1365,6 +1370,28 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts) {
       const statusSpan = document.createElement('div');
       statusSpan.style.cssText = 'font-size:12px;color:#aaa;margin-top:6px;display:none;';
 
+      // Declare schedBtn and schedPanel first so pubBtn.onclick can reference them
+      const schedBtn = document.createElement('button');
+      schedBtn.className = 'btn btn-sm';
+      schedBtn.style.cssText = 'font-size:12px;';
+      schedBtn.textContent = 'Schedule';
+
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+      const schedId = 'sched-' + clipIndex + '-' + acct.postAccountId;
+
+      const schedPanel = document.createElement('div');
+      schedPanel.style.cssText = 'display:none;margin-top:8px;padding:10px 12px;background:#f9f9f9;border:1px solid var(--border);border-radius:8px;width:100%;';
+      schedPanel.innerHTML =
+        '<div style="font-size:12px;font-weight:700;color:var(--black);margin-bottom:8px;">Schedule for ' + platformLabel + '</div>' +
+        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+        '<input type="date" id="' + schedId + '-date" value="' + tomorrowStr + '" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;" />' +
+        '<input type="time" id="' + schedId + '-time" value="10:00" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;" />' +
+        '<button id="' + schedId + '-confirm" class="btn btn-gold" style="font-size:12px;padding:6px 14px;">Confirm</button>' +
+        '</div>' +
+        '<div style="font-size:11px;color:var(--gray);margin-top:6px;">Scheduling in your local timezone: ' + Intl.DateTimeFormat().resolvedOptions().timeZone + '</div>';
+
       // ── Publish Now ───────────────────────────────────────────────────
       const pubBtn = document.createElement('button');
       pubBtn.className = 'btn btn-sm btn-opus';
@@ -1415,28 +1442,7 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts) {
         }
       };
 
-      // ── Schedule ──────────────────────────────────────────────────────
-      const schedBtn = document.createElement('button');
-      schedBtn.className = 'btn btn-sm';
-      schedBtn.style.cssText = 'font-size:12px;';
-      schedBtn.textContent = 'Schedule';
-
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowStr = tomorrow.toISOString().split('T')[0];
-      const schedId = 'sched-' + clipIndex + '-' + acct.postAccountId;
-
-      const schedPanel = document.createElement('div');
-      schedPanel.style.cssText = 'display:none;margin-top:8px;padding:10px 12px;background:#f9f9f9;border:1px solid var(--border);border-radius:8px;width:100%;';
-      schedPanel.innerHTML =
-        '<div style="font-size:12px;font-weight:700;color:var(--black);margin-bottom:8px;">Schedule for ' + platformLabel + '</div>' +
-        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
-        '<input type="date" id="' + schedId + '-date" value="' + tomorrowStr + '" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;" />' +
-        '<input type="time" id="' + schedId + '-time" value="10:00" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;" />' +
-        '<button id="' + schedId + '-confirm" class="btn btn-gold" style="font-size:12px;padding:6px 14px;">Confirm</button>' +
-        '</div>' +
-        '<div style="font-size:11px;color:var(--gray);margin-top:6px;">Scheduling in your local timezone: ' + Intl.DateTimeFormat().resolvedOptions().timeZone + '</div>';
-
+      // ── Schedule toggle ───────────────────────────────────────────────
       schedBtn.onclick = function() {
         schedPanel.style.display = schedPanel.style.display === 'none' ? 'block' : 'none';
       };
