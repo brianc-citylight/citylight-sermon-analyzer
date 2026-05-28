@@ -1293,9 +1293,9 @@ async function sendToOpus(i, btn) {
 
 function renderReviewPanel(card, clipIndex, q, clip, accounts) {
   const panel = document.createElement('div');
-  panel.style.cssText = 'margin-top:12px; padding:12px; background:#0a0a0a; border:1px solid #333; border-radius:8px;';
+  panel.style.cssText = 'margin-top:12px; padding:14px; background:#0a0a0a; border:1px solid #333; border-radius:8px;';
 
-  // Title section
+  // Title
   const titleLabel = document.createElement('div');
   titleLabel.style.cssText = 'color:var(--gold); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px;';
   titleLabel.textContent = 'Post Title';
@@ -1303,18 +1303,17 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts) {
   titleVal.style.cssText = 'color:#fff; font-size:13px; font-weight:600; margin-bottom:12px; line-height:1.4;';
   titleVal.textContent = q.question;
 
-  // Caption section
+  // Caption
   const capLabel = document.createElement('div');
   capLabel.style.cssText = 'color:var(--gold); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px;';
   capLabel.textContent = 'Post Caption';
   const capVal = document.createElement('div');
-  capVal.style.cssText = 'color:#ccc; font-size:13px; line-height:1.6; margin-bottom:12px;';
+  capVal.style.cssText = 'color:#ccc; font-size:13px; line-height:1.6; margin-bottom:10px;';
   capVal.textContent = q.caption;
 
-  // Copy caption button
   const copyCap = document.createElement('button');
   copyCap.className = 'btn btn-sm';
-  copyCap.style.cssText = 'font-size:11px; margin-bottom:14px;';
+  copyCap.style.cssText = 'font-size:11px; margin-bottom:16px;';
   copyCap.textContent = 'Copy Caption';
   copyCap.onclick = function() {
     navigator.clipboard.writeText(q.caption).then(() => {
@@ -1329,82 +1328,152 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts) {
   panel.appendChild(capVal);
   panel.appendChild(copyCap);
 
-  // Publish buttons per account
   if (accounts.length === 0) {
     const noAcct = document.createElement('div');
-    noAcct.style.cssText = 'font-size:12px; color:#888; margin-top:4px;';
-    noAcct.textContent = 'No Instagram or Facebook accounts found in Opus Clip. Connect them in your Opus Clip dashboard to enable auto-publishing.';
+    noAcct.style.cssText = 'font-size:12px; color:#888;';
+    noAcct.textContent = 'No social accounts found in Opus Clip. Connect them in your Opus Clip dashboard.';
     panel.appendChild(noAcct);
-  } else {
-    const pubLabel = document.createElement('div');
-    pubLabel.style.cssText = 'color:var(--gold); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;';
-    pubLabel.textContent = 'Publish To';
-    panel.appendChild(pubLabel);
+    card.appendChild(panel);
+    return;
+  }
 
-    // Check for expired tokens
-    const now = Math.floor(Date.now() / 1000);
-    const expiredAccts = accounts.filter(a => a.tokenExpiredTimeStampInSecond && a.tokenExpiredTimeStampInSecond < now);
-    if (expiredAccts.length > 0) {
-      const expWarn = document.createElement('div');
-      expWarn.style.cssText = 'background:#1a0000; border:1px solid #cc3333; border-radius:6px; padding:8px 10px; font-size:12px; color:#ff8888; margin-bottom:10px; line-height:1.5;';
-      expWarn.innerHTML = '<strong>Warning:</strong> Your ' + expiredAccts.map(a => a.platform === 'FACEBOOK_PAGE' ? 'Facebook' : a.platform === 'YOUTUBE' ? 'YouTube' : 'Instagram').join(' and ') + ' connection may be expired. Go to your Opus Clip dashboard and reconnect your social accounts before publishing.';
-      panel.appendChild(expWarn);
-    }
+  // Expired token warning
+  const nowSec = Math.floor(Date.now() / 1000);
+  const expired = accounts.filter(a => a.tokenExpiredTimeStampInSecond && a.tokenExpiredTimeStampInSecond < nowSec);
+  if (expired.length > 0) {
+    const warn = document.createElement('div');
+    warn.style.cssText = 'background:#1a0000; border:1px solid #cc3333; border-radius:6px; padding:8px 10px; font-size:12px; color:#ff8888; margin-bottom:12px; line-height:1.5;';
+    warn.innerHTML = '<strong>Warning:</strong> Your ' + expired.map(a => a.platform === 'FACEBOOK_PAGE' ? 'Facebook' : a.platform === 'YOUTUBE' ? 'YouTube' : 'Instagram').join(' and ') + ' connection may be expired. Reconnect in Opus Clip before publishing.';
+    panel.appendChild(warn);
+  }
 
+  const pubToLabel = document.createElement('div');
+  pubToLabel.style.cssText = 'color:var(--gold); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:12px;';
+  pubToLabel.textContent = 'Publish To';
+  panel.appendChild(pubToLabel);
+
+  accounts.forEach(function(acct) {
+    const platformLabel = acct.platform === 'INSTAGRAM_BUSINESS' ? 'Instagram' : acct.platform === 'YOUTUBE' ? 'YouTube Shorts' : 'Facebook';
+    const acctName = acct.extUserName || platformLabel;
+    const schedId = 'sched-' + clipIndex + '-' + acct.postAccountId;
+
+    // Platform section wrapper
+    const section = document.createElement('div');
+    section.style.cssText = 'margin-bottom:14px; padding:10px 12px; background:#111; border-radius:8px; border:1px solid #333;';
+
+    // Platform name
+    const platName = document.createElement('div');
+    platName.style.cssText = 'font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#aaa; margin-bottom:8px;';
+    platName.textContent = platformLabel + ' — ' + acctName;
+    section.appendChild(platName);
+
+    // Button row
     const btnRow = document.createElement('div');
-    btnRow.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap;';
+    btnRow.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px;';
 
-    accounts.forEach(acct => {
-      const platformLabel = acct.platform === 'INSTAGRAM_BUSINESS' ? 'Instagram' : acct.platform === 'YOUTUBE' ? 'YouTube Shorts' : 'Facebook';
-      const name = acct.extUserName || platformLabel;
+    const pubBtn = document.createElement('button');
+    pubBtn.className = 'btn btn-sm btn-opus';
+    pubBtn.style.cssText = 'font-size:12px;';
+    pubBtn.textContent = 'Publish Now';
 
-      // Platform header
-      const platformHeader = document.createElement('div');
-      platformHeader.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray);margin-bottom:6px;margin-top:10px;';
-      platformHeader.textContent = platformLabel + ' (' + name + ')';
-      panel.appendChild(platformHeader);
+    const schedBtn = document.createElement('button');
+    schedBtn.className = 'btn btn-sm';
+    schedBtn.style.cssText = 'font-size:12px;';
+    schedBtn.textContent = 'Schedule';
 
-      const acctBtnRow = document.createElement('div');
-      acctBtnRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;';
+    btnRow.appendChild(pubBtn);
+    btnRow.appendChild(schedBtn);
+    section.appendChild(btnRow);
 
-      const statusSpan = document.createElement('div');
-      statusSpan.style.cssText = 'font-size:12px;color:#aaa;margin-top:6px;display:none;';
+    // Status message
+    const statusDiv = document.createElement('div');
+    statusDiv.style.cssText = 'font-size:12px; color:#aaa; display:none; margin-top:4px;';
+    section.appendChild(statusDiv);
 
-      // Declare schedBtn and schedPanel first so pubBtn.onclick can reference them
-      const schedBtn = document.createElement('button');
-      schedBtn.className = 'btn btn-sm';
-      schedBtn.style.cssText = 'font-size:12px;';
-      schedBtn.textContent = 'Schedule';
+    // Schedule panel
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowStr = tomorrow.toISOString().split('T')[0];
-      const schedId = 'sched-' + clipIndex + '-' + acct.postAccountId;
+    const schedPanel = document.createElement('div');
+    schedPanel.style.cssText = 'display:none; margin-top:10px; padding:10px 12px; background:#1a1a1a; border:1px solid #444; border-radius:8px;';
+    schedPanel.innerHTML =
+      '<div style="font-size:12px; font-weight:700; color:#ddd; margin-bottom:8px;">Schedule for ' + platformLabel + '</div>' +
+      '<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">' +
+        '<input type="date" id="' + schedId + '-date" value="' + tomorrowStr + '" style="padding:6px 10px; border:1px solid #555; border-radius:6px; font-size:13px; font-family:inherit; background:#222; color:#fff;" />' +
+        '<input type="time" id="' + schedId + '-time" value="10:00" style="padding:6px 10px; border:1px solid #555; border-radius:6px; font-size:13px; font-family:inherit; background:#222; color:#fff;" />' +
+        '<button id="' + schedId + '-confirm" class="btn btn-gold" style="font-size:12px; padding:6px 14px;">Confirm</button>' +
+      '</div>' +
+      '<div style="font-size:11px; color:#888; margin-top:6px;">Your timezone: ' + Intl.DateTimeFormat().resolvedOptions().timeZone + '</div>';
+    section.appendChild(schedPanel);
 
-      const schedPanel = document.createElement('div');
-      schedPanel.style.cssText = 'display:none;margin-top:8px;padding:10px 12px;background:#f9f9f9;border:1px solid var(--border);border-radius:8px;width:100%;';
-      schedPanel.innerHTML =
-        '<div style="font-size:12px;font-weight:700;color:var(--black);margin-bottom:8px;">Schedule for ' + platformLabel + '</div>' +
-        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
-        '<input type="date" id="' + schedId + '-date" value="' + tomorrowStr + '" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;" />' +
-        '<input type="time" id="' + schedId + '-time" value="10:00" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;" />' +
-        '<button id="' + schedId + '-confirm" class="btn btn-gold" style="font-size:12px;padding:6px 14px;">Confirm</button>' +
-        '</div>' +
-        '<div style="font-size:11px;color:var(--gray);margin-top:6px;">Scheduling in your local timezone: ' + Intl.DateTimeFormat().resolvedOptions().timeZone + '</div>';
+    panel.appendChild(section);
 
-      // ── Publish Now ───────────────────────────────────────────────────
-      const pubBtn = document.createElement('button');
-      pubBtn.className = 'btn btn-sm btn-opus';
-      pubBtn.style.cssText = 'font-size:12px;';
-      pubBtn.textContent = 'Publish Now';
+    // ── Publish Now handler ───────────────────────────────────────────
+    pubBtn.onclick = async function() {
+      pubBtn.disabled = true;
+      pubBtn.textContent = 'Publishing...';
+      statusDiv.style.display = 'block';
+      statusDiv.style.color = '#aaa';
+      statusDiv.textContent = 'Sending to ' + platformLabel + '...';
+      try {
+        const r = await fetch('/api/opus?action=publish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId: clip.projectId || '',
+            clipId: clip.clipId,
+            postAccountId: acct.postAccountId,
+            subAccountId: acct.subAccountId || null,
+            title: q.question,
+            description: q.caption,
+            platform: acct.platform
+          })
+        });
+        const d = await r.json();
+        if (!r.ok || d.error) {
+          pubBtn.textContent = 'Failed — retry';
+          pubBtn.disabled = false;
+          statusDiv.style.color = '#ff6666';
+          statusDiv.textContent = 'Error: ' + (d.error || 'Unknown error');
+        } else {
+          const ts = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+          pubBtn.textContent = '✓ Published ' + ts;
+          pubBtn.style.borderColor = '#00cc88';
+          pubBtn.style.color = '#00cc88';
+          schedBtn.disabled = true;
+          schedPanel.style.display = 'none';
+          statusDiv.style.color = '#00cc88';
+          statusDiv.textContent = 'Published to ' + platformLabel + '.';
+          trackPublish(clipIndex, platformLabel, d.postId || null, 'immediate', null);
+        }
+      } catch(e) {
+        pubBtn.textContent = 'Failed — retry';
+        pubBtn.disabled = false;
+        statusDiv.style.color = '#ff6666';
+        statusDiv.textContent = 'Network error: ' + e.message;
+      }
+    };
 
-      pubBtn.onclick = async function() {
-        pubBtn.disabled = true;
-        pubBtn.textContent = 'Publishing...';
-        statusSpan.style.display = 'block';
-        statusSpan.textContent = 'Sending to ' + platformLabel + '...';
+    // ── Schedule toggle ───────────────────────────────────────────────
+    schedBtn.onclick = function() {
+      schedPanel.style.display = schedPanel.style.display === 'none' ? 'block' : 'none';
+    };
+
+    // ── Confirm schedule ──────────────────────────────────────────────
+    setTimeout(function() {
+      const confirmBtn = document.getElementById(schedId + '-confirm');
+      if (!confirmBtn) return;
+      confirmBtn.onclick = async function() {
+        const dateVal = document.getElementById(schedId + '-date').value;
+        const timeVal = document.getElementById(schedId + '-time').value;
+        if (!dateVal || !timeVal) { alert('Please select a date and time.'); return; }
+        const scheduledTimestamp = new Date(dateVal + 'T' + timeVal).getTime();
+        if (scheduledTimestamp <= Date.now()) { alert('Please choose a future date and time.'); return; }
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Scheduling...';
         try {
-          const res = await fetch('/api/opus?action=publish', {
+          const r = await fetch('/api/opus?action=schedule', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1414,102 +1483,37 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts) {
               subAccountId: acct.subAccountId || null,
               title: q.question,
               description: q.caption,
-              platform: acct.platform
+              platform: acct.platform,
+              scheduledTimestamp
             })
           });
-          const data = await res.json();
-          if (!res.ok || data.error) {
-            pubBtn.textContent = 'Failed — retry';
-            pubBtn.disabled = false;
-            statusSpan.style.color = '#ff6666';
-            statusSpan.textContent = 'Error: ' + (data.error || 'Unknown error');
-          } else {
-            const now = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
-            pubBtn.textContent = '✓ Published ' + now;
-            pubBtn.style.borderColor = '#00cc88';
-            pubBtn.style.color = '#00cc88';
-            schedBtn.disabled = true;
-            schedPanel.style.display = 'none';
-            statusSpan.style.color = '#00cc88';
-            statusSpan.textContent = 'Published to ' + platformLabel + '.';
-            trackPublish(clipIndex, platformLabel, data.postId || null, 'immediate', null);
-          }
-        } catch(e) {
-          pubBtn.textContent = 'Failed — retry';
-          pubBtn.disabled = false;
-          statusSpan.style.color = '#ff6666';
-          statusSpan.textContent = 'Network error: ' + e.message;
-        }
-      };
-
-      // ── Schedule toggle ───────────────────────────────────────────────
-      schedBtn.onclick = function() {
-        schedPanel.style.display = schedPanel.style.display === 'none' ? 'block' : 'none';
-      };
-
-      acctBtnRow.appendChild(pubBtn);
-      acctBtnRow.appendChild(schedBtn);
-      panel.appendChild(acctBtnRow);
-      panel.appendChild(schedPanel);
-      panel.appendChild(statusSpan);
-
-      // Wire confirm button after DOM insert
-      setTimeout(() => {
-        const confirmBtn = document.getElementById(schedId + '-confirm');
-        if (!confirmBtn) return;
-        confirmBtn.onclick = async function() {
-          const dateVal = document.getElementById(schedId + '-date').value;
-          const timeVal = document.getElementById(schedId + '-time').value;
-          if (!dateVal || !timeVal) { alert('Please select a date and time.'); return; }
-          const scheduledTimestamp = new Date(dateVal + 'T' + timeVal).getTime();
-          if (scheduledTimestamp <= Date.now()) { alert('Please choose a future date and time.'); return; }
-          confirmBtn.disabled = true;
-          confirmBtn.textContent = 'Scheduling...';
-          try {
-            const res = await fetch('/api/opus?action=schedule', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                projectId: clip.projectId || '',
-                clipId: clip.clipId,
-                postAccountId: acct.postAccountId,
-                subAccountId: acct.subAccountId || null,
-                title: q.question,
-                description: q.caption,
-                platform: acct.platform,
-                scheduledTimestamp
-              })
-            });
-            const data = await res.json();
-            if (!res.ok || data.error) {
-              confirmBtn.textContent = 'Failed — retry';
-              confirmBtn.disabled = false;
-              statusSpan.style.display = 'block';
-              statusSpan.style.color = '#ff6666';
-              statusSpan.textContent = 'Schedule error: ' + (data.error || 'Unknown error');
-            } else {
-              const schedDate = new Date(scheduledTimestamp).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
-              pubBtn.textContent = '⏰ Scheduled ' + schedDate;
-              pubBtn.style.borderColor = 'var(--gold)';
-              pubBtn.style.color = 'var(--gold)';
-              pubBtn.disabled = true;
-              schedBtn.disabled = true;
-              schedPanel.style.display = 'none';
-              statusSpan.style.display = 'block';
-              statusSpan.style.color = 'var(--gold)';
-              statusSpan.textContent = 'Scheduled for ' + platformLabel + ' on ' + schedDate + '.';
-              trackPublish(clipIndex, platformLabel, data.postId || null, 'scheduled', scheduledTimestamp);
-            }
-          } catch(e) {
+          const d = await r.json();
+          if (!r.ok || d.error) {
             confirmBtn.textContent = 'Failed — retry';
             confirmBtn.disabled = false;
+            statusDiv.style.display = 'block';
+            statusDiv.style.color = '#ff6666';
+            statusDiv.textContent = 'Schedule error: ' + (d.error || 'Unknown error');
+          } else {
+            const schedDate = new Date(scheduledTimestamp).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+            pubBtn.textContent = '⏰ Scheduled ' + schedDate;
+            pubBtn.style.borderColor = 'var(--gold)';
+            pubBtn.style.color = 'var(--gold)';
+            pubBtn.disabled = true;
+            schedBtn.disabled = true;
+            schedPanel.style.display = 'none';
+            statusDiv.style.display = 'block';
+            statusDiv.style.color = 'var(--gold)';
+            statusDiv.textContent = 'Scheduled for ' + platformLabel + ' on ' + schedDate + '.';
+            trackPublish(clipIndex, platformLabel, d.postId || null, 'scheduled', scheduledTimestamp);
           }
-        };
-      }, 100);
-
-      btnRow.appendChild(acctBtnRow);
-    });
-  }
+        } catch(e) {
+          confirmBtn.textContent = 'Failed — retry';
+          confirmBtn.disabled = false;
+        }
+      };
+    }, 100);
+  });
 
   card.appendChild(panel);
 }
