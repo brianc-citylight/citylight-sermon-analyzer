@@ -1,12 +1,14 @@
+// SermonReach — Opus Clip Integration
+// Handles clip creation, polling, social account fetching,
+// immediate publishing, and scheduled publishing
+// Reads OPUS_API_KEY from Vercel environment variables
+
 export default async function handler(req, res) {
-  // CORS headers for browser access
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
   const opusKey = process.env.OPUS_API_KEY;
   if (!opusKey) {
@@ -22,20 +24,25 @@ export default async function handler(req, res) {
   if (req.method === 'POST' && req.query.action === 'create') {
     const { videoUrl, startSec, endSec, question } = req.body;
 
-    const clipDuration = endSec - startSec;
-
-    // Enforce 30 second minimum clip length
-    // If the identified window is shorter than 30s, expand it symmetrically
     let adjustedStart = startSec;
     let adjustedEnd = endSec;
+    const clipDuration = endSec - startSec;
+
+    // Enforce 30 second minimum
     if (clipDuration < 30) {
       const deficit = 30 - clipDuration;
       adjustedStart = Math.max(0, startSec - Math.ceil(deficit / 2));
       adjustedEnd = endSec + Math.floor(deficit / 2);
     }
+
+    // Enforce 90 second maximum — hard cap for all platforms
+    if (adjustedEnd - adjustedStart > 90) {
+      adjustedEnd = adjustedStart + 90;
+    }
+
     const adjustedDuration = adjustedEnd - adjustedStart;
     const minDuration = Math.max(30, adjustedDuration - 5);
-    const maxDuration = adjustedDuration + 20;
+    const maxDuration = Math.min(90, adjustedDuration + 5);
 
     const body = {
       videoUrl,
@@ -70,11 +77,10 @@ export default async function handler(req, res) {
     const { projectId } = req.query;
     if (!projectId) return res.status(400).json({ error: 'Missing projectId' });
 
-    // Try both known Opus Clip endpoints
     const endpoints = [
-      `https://api.opus.pro/api/clips?projectId=${projectId}`,
-      `https://api.opus.pro/api/exportable-clips?q=findByProjectId&projectId=${projectId}`,
-      `https://api.opus.pro/api/clip-projects/${projectId}/clips`,
+      'https://api.opus.pro/api/clips?projectId=' + projectId,
+      'https://api.opus.pro/api/exportable-clips?q=findByProjectId&projectId=' + projectId,
+      'https://api.opus.pro/api/clip-projects/' + projectId + '/clips',
     ];
 
     const debugInfo = [];
@@ -91,7 +97,6 @@ export default async function handler(req, res) {
         let parsed;
         try { parsed = JSON.parse(raw); } catch(e) { continue; }
 
-        // Handle array response
         const clips = Array.isArray(parsed) ? parsed :
                       parsed.clips ? parsed.clips :
                       parsed.data ? parsed.data :
@@ -99,7 +104,6 @@ export default async function handler(req, res) {
 
         if (clips && clips.length > 0) {
           const clip = clips[0];
-          // Extract clean clipId — Opus uses formats like "PROJECTID.clipid" or just "clipid"
           const rawId = clip.id || clip.curationId || clip.clipId || '';
           const cleanClipId = rawId.includes('.') ? rawId.split('.').pop() : rawId;
           return res.status(200).json({
@@ -113,7 +117,6 @@ export default async function handler(req, res) {
           });
         }
 
-        // Single object response
         if (parsed && (parsed.id || parsed.curationId) && parsed.status === 'done') {
           const rawId = parsed.id || parsed.curationId;
           const cleanClipId = rawId.includes('.') ? rawId.split('.').pop() : rawId;
@@ -132,17 +135,13 @@ export default async function handler(req, res) {
       }
     }
 
-    // Nothing found — return debug info so we can see what Opus is returning
     return res.status(200).json({ ready: false, debug: debugInfo });
   }
 
   // ── GET SOCIAL ACCOUNTS ──────────────────────────────────────────────────
   if (req.method === 'GET' && req.query.action === 'accounts') {
     try {
-      const opusRes = await fetch(
-        'https://api.opus.pro/api/social-accounts?q=mine',
-        { headers: opusHeaders }
-      );
+      const opusRes = await fetch('https://api.opus.pro/api/social-accounts?q=mine', { headers: opusHeaders });
       const raw = await opusRes.text();
       let data;
       try { data = JSON.parse(raw); } catch(e) {
@@ -152,8 +151,6 @@ export default async function handler(req, res) {
         return res.status(opusRes.status).json({ error: data.message || data.error || 'Failed to fetch accounts' });
       }
       const allAccounts = data.accounts || data.data || data || [];
-      // Filter to City Light Church accounts only — exclude Mission Mississippi
-      // Includes Instagram, Facebook, and YouTube
       const accounts = allAccounts.filter(a =>
         (a.platform === 'INSTAGRAM_BUSINESS' || a.platform === 'FACEBOOK_PAGE' || a.platform === 'YOUTUBE') &&
         (a.extUserName === 'City Light Church' || a.platform === 'YOUTUBE')
@@ -164,9 +161,9 @@ export default async function handler(req, res) {
     }
   }
 
-  // ── PUBLISH CLIP ──────────────────────────────────────────────────────────
+  // ── PUBLISH NOW ───────────────────────────────────────────────────────────
   if (req.method === 'POST' && req.query.action === 'publish') {
-    const { projectId, clipId, postAccountId, subAccountId, title, description, platform } = req.body;
+    const { projectId, clipId, postAccountId, subAccountId, title, description } = req.body;
 
     if (!projectId || !clipId || !postAccountId || !title) {
       return res.status(400).json({ error: 'Missing required publish fields' });
@@ -175,35 +172,19 @@ export default async function handler(req, res) {
     const postDetail = {
       title: title.substring(0, 150),
       mediaType: 'video',
-      custom: {
-        description: description || '',
-        privacy: 'public'
-      }
+      custom: { description: description || '', privacy: 'public' }
     };
 
-    // Try both clipId formats — clean suffix only, and full composite
     const clipIdVariants = [clipId];
-    if (!clipId.includes('.') && projectId) {
-      clipIdVariants.push(projectId + '.' + clipId);
-    }
-    // Also try the raw composite if we only got the clean version
-    if (clipId.includes('.')) {
-      clipIdVariants.push(clipId.split('.').pop());
-    }
+    if (!clipId.includes('.') && projectId) clipIdVariants.push(projectId + '.' + clipId);
+    if (clipId.includes('.')) clipIdVariants.push(clipId.split('.').pop());
 
     let lastError = null;
     for (const tryClipId of clipIdVariants) {
-      const body = {
-        projectId,
-        clipId: tryClipId,
-        postAccountId,
-        postDetail
-      };
-
+      const body = { projectId, clipId: tryClipId, postAccountId, postDetail };
       if (subAccountId && subAccountId !== 'null' && subAccountId !== 'undefined') {
         body.subAccountId = subAccountId;
       }
-
       try {
         const opusRes = await fetch('https://api.opus.pro/api/post-tasks', {
           method: 'POST',
@@ -213,7 +194,6 @@ export default async function handler(req, res) {
         const raw = await opusRes.text();
         let data;
         try { data = JSON.parse(raw); } catch(e) { data = { raw }; }
-
         if (opusRes.ok) {
           return res.status(200).json({ success: true, postId: data.data?.postId || '', clipIdUsed: tryClipId });
         }
@@ -223,6 +203,56 @@ export default async function handler(req, res) {
       }
     }
     return res.status(400).json(lastError || { error: 'Publish failed' });
+  }
+
+  // ── SCHEDULE ──────────────────────────────────────────────────────────────
+  if (req.method === 'POST' && req.query.action === 'schedule') {
+    const { projectId, clipId, postAccountId, subAccountId, title, description, scheduledTimestamp } = req.body;
+
+    if (!projectId || !clipId || !postAccountId || !title || !scheduledTimestamp) {
+      return res.status(400).json({ error: 'Missing required schedule fields' });
+    }
+
+    const postDetail = {
+      title: title.substring(0, 150),
+      mediaType: 'video',
+      custom: { description: description || '', privacy: 'public' }
+    };
+
+    const clipIdVariants = [clipId];
+    if (!clipId.includes('.') && projectId) clipIdVariants.push(projectId + '.' + clipId);
+    if (clipId.includes('.')) clipIdVariants.push(clipId.split('.').pop());
+
+    let lastError = null;
+    for (const tryClipId of clipIdVariants) {
+      const body = {
+        projectId,
+        clipId: tryClipId,
+        postAccountId,
+        postDetail,
+        scheduledTime: scheduledTimestamp  // Unix timestamp in milliseconds
+      };
+      if (subAccountId && subAccountId !== 'null' && subAccountId !== 'undefined') {
+        body.subAccountId = subAccountId;
+      }
+      try {
+        const opusRes = await fetch('https://api.opus.pro/api/post-tasks', {
+          method: 'POST',
+          headers: opusHeaders,
+          body: JSON.stringify(body)
+        });
+        const raw = await opusRes.text();
+        let data;
+        try { data = JSON.parse(raw); } catch(e) { data = { raw }; }
+        if (opusRes.ok) {
+          return res.status(200).json({ success: true, postId: data.data?.postId || '', clipIdUsed: tryClipId, scheduledFor: scheduledTimestamp });
+        }
+        lastError = { error: data.message || data.errorName || data.error || 'Schedule failed', detail: data };
+      } catch (e) {
+        lastError = { error: e.message };
+      }
+    }
+    return res.status(400).json(lastError || { error: 'Schedule failed' });
   }
 
   return res.status(404).json({ error: 'Unknown action' });

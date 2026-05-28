@@ -1,6 +1,6 @@
-// City Light Church — Sermon Analyzer
+// City Light Church — SermonReach
 // Calls Claude API to produce three outputs from a sermon transcript:
-//   1. Top 5 seeker questions with timestamps and social media captions
+//   1. Top 5 sermon clips (Outreach, Discipleship, or Custom focus)
 //   2. Sermon notes slides (3-5 slides) for mature believers
 //   3. Sermon summary (500 words or less) for social media
 // Reads ANTHROPIC_API_KEY from Vercel environment variables
@@ -34,6 +34,9 @@ export default async function handler(req, res) {
   const sermonDate = date || '';
   const numSlides = parseInt(slideCount) || 3;
 
+  // 90-second maximum enforced in prompt — complete thought within 30 to 90 seconds
+  const clipWindowInstruction = 'IMPORTANT: Each clip window must be between 30 and 90 seconds. Find moments that are complete and land within that window — a tight illustration, a clear point with a strong landing, a question fully answered. Do not identify windows longer than 90 seconds. Do not cut a thought mid-sentence to hit the limit — choose moments that naturally conclude within 90 seconds.';
+
   const clipModeInstruction = clipMode === 'discipleship'
     ? `Find the TOP 5 moments in this sermon that would most help someone who already believes grow deeper in their faith. Look for theological depth, doctrinal content, practical application, moments that would fuel personal devotion or small group discussion, and passages that demand something of a believer's obedience or trust. These clips are for maturing disciples, not first-time seekers.
 
@@ -47,10 +50,7 @@ For each question format EXACTLY as one line:
 Q|[sharp culturally relevant question that a skeptic or seeker would genuinely ask]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence caption written for someone outside the faith — intriguing, never preachy, speaks to a real felt need or cultural tension]`;
 
   const customQSection = customQuestion
-    ? `\nCUSTOM SEEKER QUESTION CHECK
-The user has submitted this specific question: "${customQuestion}"
-After your top 5 questions, add one more line formatted as:
-CQ|[restate the question clearly]|[timestamp MM:SS-MM:SS or NONE if not addressed]|[explanation: either the timestamp range where this is answered, or a clear statement that this sermon does not directly address it]`
+    ? '\nCUSTOM SEEKER QUESTION CHECK\nThe user has submitted this specific question: "' + customQuestion + '"\nAfter your top 5 questions, add one more line formatted as:\nCQ|[restate the question clearly]|[timestamp MM:SS-MM:SS or NONE if not addressed]|[explanation: either the timestamp range where this is answered, or a clear statement that this sermon does not directly address it]'
     : '';
 
   const slide4 = numSlides > 3 ? `SLIDE_4
@@ -82,7 +82,7 @@ Produce THREE outputs. Do NOT use em dashes anywhere in your response. Use plain
 OUTPUT 1 - SERMON CLIPS
 ${clipModeInstruction}
 
-IMPORTANT: Each clip window must be at least 60 seconds long. Choose timestamps that capture the full moment, not just the hook. If the answer runs longer, let it run.
+${clipWindowInstruction}
 ${customQSection}
 
 OUTPUT 2 - SERMON NOTES SLIDES

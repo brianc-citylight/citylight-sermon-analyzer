@@ -194,10 +194,25 @@ export default async function handler(req, res) {
       if (!questions[clipIndex].published) {
         questions[clipIndex].published = {};
       }
-      questions[clipIndex].published[platform] = {
-        publishedAt: new Date().toISOString(),
-        postId: postId || null
-      };
+
+      const { type, scheduledFor } = req.body;
+
+      if (type === 'scheduled' && scheduledFor) {
+        // Scheduled post — record when it was scheduled and when it will post
+        questions[clipIndex].published[platform] = {
+          type: 'scheduled',
+          scheduledAt: new Date().toISOString(),
+          scheduledFor: new Date(scheduledFor).toISOString(),
+          postId: postId || null
+        };
+      } else {
+        // Immediate publish
+        questions[clipIndex].published[platform] = {
+          type: 'immediate',
+          publishedAt: new Date().toISOString(),
+          postId: postId || null
+        };
+      }
 
       await dbPatch(
         `sermon_analyses?id=eq.${analysisId}&user_id=eq.${userId}`,
