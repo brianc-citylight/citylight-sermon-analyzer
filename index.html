@@ -1352,21 +1352,30 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts) {
     accounts.forEach(acct => {
       const platformLabel = acct.platform === 'INSTAGRAM_BUSINESS' ? 'Instagram' : acct.platform === 'YOUTUBE' ? 'YouTube Shorts' : 'Facebook';
       const name = acct.extUserName || platformLabel;
+
+      // Platform header
+      const platformHeader = document.createElement('div');
+      platformHeader.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray);margin-bottom:6px;margin-top:10px;';
+      platformHeader.textContent = platformLabel + ' (' + name + ')';
+      panel.appendChild(platformHeader);
+
+      const acctBtnRow = document.createElement('div');
+      acctBtnRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;';
+
+      const statusSpan = document.createElement('div');
+      statusSpan.style.cssText = 'font-size:12px;color:#aaa;margin-top:6px;display:none;';
+
+      // ── Publish Now ───────────────────────────────────────────────────
       const pubBtn = document.createElement('button');
       pubBtn.className = 'btn btn-sm btn-opus';
       pubBtn.style.cssText = 'font-size:12px;';
-      pubBtn.textContent = 'Publish to ' + platformLabel + ' (' + name + ')';
-
-      const statusSpan = document.createElement('div');
-      statusSpan.style.cssText = 'font-size:12px; color:#aaa; margin-top:6px; display:none;';
-      panel.appendChild(statusSpan);
+      pubBtn.textContent = 'Publish Now';
 
       pubBtn.onclick = async function() {
         pubBtn.disabled = true;
         pubBtn.textContent = 'Publishing...';
         statusSpan.style.display = 'block';
         statusSpan.textContent = 'Sending to ' + platformLabel + '...';
-
         try {
           const res = await fetch('/api/opus?action=publish', {
             method: 'POST',
@@ -1388,13 +1397,15 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts) {
             statusSpan.style.color = '#ff6666';
             statusSpan.textContent = 'Error: ' + (data.error || 'Unknown error');
           } else {
-            pubBtn.textContent = 'Published to ' + platformLabel;
+            const now = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+            pubBtn.textContent = '✓ Published ' + now;
             pubBtn.style.borderColor = '#00cc88';
             pubBtn.style.color = '#00cc88';
+            schedBtn.disabled = true;
+            schedPanel.style.display = 'none';
             statusSpan.style.color = '#00cc88';
-            statusSpan.textContent = 'Successfully published to ' + platformLabel + '.';
-            // Track publish in history
-            trackPublish(clipIndex, platformLabel, data.postId || null);
+            statusSpan.textContent = 'Published to ' + platformLabel + '.';
+            trackPublish(clipIndex, platformLabel, data.postId || null, 'immediate', null);
           }
         } catch(e) {
           pubBtn.textContent = 'Failed — retry';
@@ -1404,8 +1415,93 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts) {
         }
       };
 
-      btnRow.appendChild(pubBtn);
-      panel.appendChild(btnRow);
+      // ── Schedule ──────────────────────────────────────────────────────
+      const schedBtn = document.createElement('button');
+      schedBtn.className = 'btn btn-sm';
+      schedBtn.style.cssText = 'font-size:12px;';
+      schedBtn.textContent = 'Schedule';
+
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+      const schedId = 'sched-' + clipIndex + '-' + acct.postAccountId;
+
+      const schedPanel = document.createElement('div');
+      schedPanel.style.cssText = 'display:none;margin-top:8px;padding:10px 12px;background:#f9f9f9;border:1px solid var(--border);border-radius:8px;width:100%;';
+      schedPanel.innerHTML =
+        '<div style="font-size:12px;font-weight:700;color:var(--black);margin-bottom:8px;">Schedule for ' + platformLabel + '</div>' +
+        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+        '<input type="date" id="' + schedId + '-date" value="' + tomorrowStr + '" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;" />' +
+        '<input type="time" id="' + schedId + '-time" value="10:00" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;" />' +
+        '<button id="' + schedId + '-confirm" class="btn btn-gold" style="font-size:12px;padding:6px 14px;">Confirm</button>' +
+        '</div>' +
+        '<div style="font-size:11px;color:var(--gray);margin-top:6px;">Scheduling in your local timezone: ' + Intl.DateTimeFormat().resolvedOptions().timeZone + '</div>';
+
+      schedBtn.onclick = function() {
+        schedPanel.style.display = schedPanel.style.display === 'none' ? 'block' : 'none';
+      };
+
+      acctBtnRow.appendChild(pubBtn);
+      acctBtnRow.appendChild(schedBtn);
+      panel.appendChild(acctBtnRow);
+      panel.appendChild(schedPanel);
+      panel.appendChild(statusSpan);
+
+      // Wire confirm button after DOM insert
+      setTimeout(() => {
+        const confirmBtn = document.getElementById(schedId + '-confirm');
+        if (!confirmBtn) return;
+        confirmBtn.onclick = async function() {
+          const dateVal = document.getElementById(schedId + '-date').value;
+          const timeVal = document.getElementById(schedId + '-time').value;
+          if (!dateVal || !timeVal) { alert('Please select a date and time.'); return; }
+          const scheduledTimestamp = new Date(dateVal + 'T' + timeVal).getTime();
+          if (scheduledTimestamp <= Date.now()) { alert('Please choose a future date and time.'); return; }
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = 'Scheduling...';
+          try {
+            const res = await fetch('/api/opus?action=schedule', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                projectId: clip.projectId || '',
+                clipId: clip.clipId,
+                postAccountId: acct.postAccountId,
+                subAccountId: acct.subAccountId || null,
+                title: q.question,
+                description: q.caption,
+                platform: acct.platform,
+                scheduledTimestamp
+              })
+            });
+            const data = await res.json();
+            if (!res.ok || data.error) {
+              confirmBtn.textContent = 'Failed — retry';
+              confirmBtn.disabled = false;
+              statusSpan.style.display = 'block';
+              statusSpan.style.color = '#ff6666';
+              statusSpan.textContent = 'Schedule error: ' + (data.error || 'Unknown error');
+            } else {
+              const schedDate = new Date(scheduledTimestamp).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+              pubBtn.textContent = '⏰ Scheduled ' + schedDate;
+              pubBtn.style.borderColor = 'var(--gold)';
+              pubBtn.style.color = 'var(--gold)';
+              pubBtn.disabled = true;
+              schedBtn.disabled = true;
+              schedPanel.style.display = 'none';
+              statusSpan.style.display = 'block';
+              statusSpan.style.color = 'var(--gold)';
+              statusSpan.textContent = 'Scheduled for ' + platformLabel + ' on ' + schedDate + '.';
+              trackPublish(clipIndex, platformLabel, data.postId || null, 'scheduled', scheduledTimestamp);
+            }
+          } catch(e) {
+            confirmBtn.textContent = 'Failed — retry';
+            confirmBtn.disabled = false;
+          }
+        };
+      }, 100);
+
+      btnRow.appendChild(acctBtnRow);
     });
   }
 
@@ -1904,13 +2000,19 @@ function restorePublishBadges(questions) {
       if (!card) return;
       const platforms = Object.keys(q.published);
       const badgeDiv = document.createElement('div');
-      badgeDiv.style.cssText = 'margin-top:8px;';
+      badgeDiv.style.cssText = 'margin-top:8px;display:flex;flex-wrap:wrap;gap:4px;';
       platforms.forEach(platform => {
         const pub = q.published[platform];
-        const date = new Date(pub.publishedAt).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
         const badge = document.createElement('div');
-        badge.style.cssText = 'display:inline-flex;align-items:center;gap:4px;font-size:11px;color:green;background:#f0fff0;border:1px solid #90ee90;border-radius:20px;padding:2px 8px;margin-right:4px;';
-        badge.textContent = '✓ Published to ' + platform + ' on ' + date;
+        if (pub.type === 'scheduled') {
+          const schedDate = new Date(pub.scheduledFor).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+          badge.style.cssText = 'display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#8B6914;background:#FFF8E8;border:1px solid #C9A84C;border-radius:20px;padding:3px 10px;';
+          badge.textContent = '⏰ Scheduled for ' + platform + ' — ' + schedDate;
+        } else {
+          const pubDate = new Date(pub.publishedAt).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+          badge.style.cssText = 'display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#166534;background:#f0fff4;border:1px solid #86efac;border-radius:20px;padding:3px 10px;';
+          badge.textContent = '✓ Published to ' + platform + ' — ' + pubDate;
+        }
         badgeDiv.appendChild(badge);
       });
       card.appendChild(badgeDiv);
@@ -1920,13 +2022,15 @@ function restorePublishBadges(questions) {
 
 // ── PUBLISH TRACKING ──────────────────────────────────────────────────────
 
-async function trackPublish(clipIndex, platform, postId) {
+async function trackPublish(clipIndex, platform, postId, type = 'immediate', scheduledFor = null) {
   if (!currentAnalysisId) return;
   await historyCall('POST', 'publish', {
     analysisId: currentAnalysisId,
     clipIndex,
     platform,
-    postId: postId || null
+    postId: postId || null,
+    type,
+    scheduledFor: scheduledFor || null
   });
 }
 </script>
