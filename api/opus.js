@@ -45,6 +45,7 @@ export default async function handler(req, res) {
     const maxDuration = Math.min(90, adjustedDuration + 5);
 
     const body = {
+      title: question.substring(0, 100),
       videoUrl,
       curationPref: {
         range: { startSec: adjustedStart, endSec: adjustedEnd },
