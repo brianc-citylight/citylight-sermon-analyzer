@@ -282,8 +282,13 @@
       overflow: clip;
       overflow-clip-margin: 0px;
     }
-    body.mobile .clip-modes-scroll {
+    /* Base scroll container — flex row on desktop */
+    .clip-modes-scroll {
       display: flex;
+      gap: 8px;
+    }
+
+    body.mobile .clip-modes-scroll {
       gap: 12px;
       overflow-x: auto;
       scroll-snap-type: x mandatory;
@@ -763,7 +768,8 @@
       </div>
       <div style="margin-top:1rem;">
         <label style="display:block;font-size:13px;font-weight:600;color:var(--gray);margin-bottom:8px;">Sermon Clip Focus</label>
-        <div style="display:flex;gap:8px;">
+        <div id="themeClipModeRow" style="overflow:hidden;">
+        <div class="clip-modes-scroll">
           <button class="clip-mode-card active" id="clipmode-outreach" onclick="selectClipMode('outreach')" style="background-image:url('https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/SermonAppOutreachCard.jpg');">
             <div class="clip-mode-inner">
               <span class="clip-mode-icon">&#127758;</span>
@@ -785,7 +791,8 @@
               <span class="clip-mode-desc">Check a specific question from your community</span>
             </div>
           </button>
-        </div>
+        </div><!-- end clip-modes-scroll -->
+        </div><!-- end themeClipModeRow -->
         <div id="customQuestionField" style="display:none;margin-top:0.75rem;">
           <input type="text" id="customQuestion" placeholder="Enter your specific question..." style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;" />
         </div>
@@ -907,7 +914,10 @@ function mobileNav(section) {
 
 function openMobileAccount() {
   const panel = document.getElementById('mobileAccountPanel');
-  if (panel) panel.classList.add('open');
+  if (panel) {
+    // Small delay prevents the same click from triggering the backdrop close
+    setTimeout(() => panel.classList.add('open'), 10);
+  }
 }
 
 function closeMobileAccount() {
@@ -919,7 +929,10 @@ function closeMobileAccount() {
 document.addEventListener('click', function(e) {
   const panel = document.getElementById('mobileAccountPanel');
   const inner = document.getElementById('mobileAccountInner');
-  if (panel && panel.classList.contains('open') && !inner.contains(e.target)) {
+  const navBtn = document.getElementById('nav-account');
+  // Ignore clicks on the account nav button — openMobileAccount handles those
+  if (navBtn && navBtn.contains(e.target)) return;
+  if (panel && panel.classList.contains('open') && inner && !inner.contains(e.target)) {
     panel.classList.remove('open');
   }
 });
