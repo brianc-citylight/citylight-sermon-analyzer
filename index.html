@@ -264,8 +264,8 @@
     body.mobile .card { border-radius: 0; border-left: none; border-right: none; margin-bottom: 0; border-bottom: 1px solid var(--border); }
 
     /* Mobile form — full width everything */
-    body.mobile .options-row { flex-direction: column; gap: 1rem; padding: 0 1rem; }
-    body.mobile .option-group { width: 100%; }
+    body.mobile .options-row { flex-direction: column; gap: 1rem; padding: 0 1rem; overflow: visible; }
+    body.mobile .option-group { width: 100%; overflow: visible; }
     body.mobile .option-group select { width: 100%; }
     body.mobile .input-group { padding: 0 1rem; }
     body.mobile .card-label { padding: 0 1rem; }
@@ -280,8 +280,7 @@
     /* Mobile clip mode — horizontal scroll */
     body.mobile #themeClipModeRow {
       padding: 0;
-      overflow: clip;
-      overflow-clip-margin: 0px;
+      width: 100%;
     }
     /* Base scroll container — flex row on desktop */
     .clip-modes-scroll {
@@ -297,11 +296,13 @@
     }
 
     body.mobile .clip-modes-scroll {
+      display: flex;
       gap: 12px;
       overflow-x: auto;
+      overflow-y: visible;
       scroll-snap-type: x mandatory;
       -webkit-overflow-scrolling: touch;
-      padding: 4px 1rem 12px;
+      padding: 4px 0 12px;
       margin: 0;
       scrollbar-width: none;
       -ms-overflow-style: none;
@@ -312,14 +313,16 @@
 
     /* Mobile theme scroll */
     body.mobile #themeScrollWrapper {
-      overflow: hidden;
+      overflow: clip;
       width: 100%;
     }
     body.mobile .theme-scroll {
+      display: flex;
       overflow-x: auto;
+      overflow-y: visible;
       scroll-snap-type: x mandatory;
       -webkit-overflow-scrolling: touch;
-      padding: 4px 1rem 8px;
+      padding: 4px 0 8px;
       margin: 0;
       scrollbar-width: none;
       -ms-overflow-style: none;
@@ -748,14 +751,15 @@
       </div><div onclick="selectTheme('4')" id="theme-opt-4" title="Slate" style="cursor:pointer;border:2px solid transparent;border-radius:8px;overflow:hidden;width:90px;height:90px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
         <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/Slide%20Templates/Cover%204.png" style="width:100%;height:100%;object-fit:cover;" alt="Slate" />
       </div>
-          </div>
-        </div>
-      </div>
+          </div><!-- end theme-scroll -->
+          </div><!-- end themeScrollWrapper -->
+        </div><!-- end option-group -->
+      </div><!-- end options-row -->
       <div style="margin-top:1rem;">
         <div class="option-group" style="width:100%;margin-bottom:0.5rem;">
           <label>Sermon Clip Focus</label>
         </div>
-        <div id="themeClipModeRow" style="overflow:hidden;">
+        <div id="themeClipModeRow">
         <div class="clip-modes-scroll">
           <button class="clip-mode-card active" id="clipmode-outreach" onclick="selectClipMode('outreach')" style="background-image:url('https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/SermonAppOutreachCard.jpg');">
             <div class="clip-mode-inner">
