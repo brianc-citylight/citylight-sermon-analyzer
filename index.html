@@ -144,9 +144,9 @@
     .clip-mode-card.active { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 8px 24px rgba(201,168,76,0.2); }
     .clip-mode-card.active::before { background:rgba(0,0,0,0.42); }
     .clip-mode-inner { position:relative; z-index:1; padding:16px 14px; height:100%; display:flex; flex-direction:column; justify-content:flex-end; min-height:130px; }
-    .clip-mode-icon { font-size:20px; margin-bottom:6px; display:block; }
-    .clip-mode-title { font-size:12px; font-weight:900; color:var(--white); display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.1em; text-shadow:0 1px 4px rgba(0,0,0,0.8); }
-    .clip-mode-desc { font-size:10px; color:rgba(255,255,255,0.8); display:block; line-height:1.4; text-shadow:0 1px 3px rgba(0,0,0,0.9); }
+    .clip-mode-icon { display:none; }
+    .clip-mode-title { font-size:15px; font-weight:900; color:var(--white); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em; text-shadow:0 1px 4px rgba(0,0,0,0.8); text-align:center; }
+    .clip-mode-desc { font-size:11px; color:rgba(255,255,255,0.85); display:block; line-height:1.45; text-shadow:0 1px 3px rgba(0,0,0,0.9); text-align:center; }
     .clip-mode-card.active .clip-mode-title { color:var(--gold); }
 
     /* ── SUMMARY ── */
@@ -278,8 +278,9 @@
 
     /* Mobile clip mode — horizontal scroll */
     body.mobile #themeClipModeRow {
-      padding: 0 1rem;
-      overflow: hidden;
+      padding: 0;
+      overflow: clip;
+      overflow-clip-margin: 0px;
     }
     body.mobile .clip-modes-scroll {
       display: flex;
@@ -288,7 +289,6 @@
       scroll-snap-type: x mandatory;
       -webkit-overflow-scrolling: touch;
       padding: 4px 1rem 12px;
-      margin: 0 -1rem;
       scrollbar-width: none;
       -ms-overflow-style: none;
     }
@@ -299,7 +299,12 @@
       scroll-snap-align: start;
       border-radius: 14px;
     }
-    body.mobile .clip-mode-inner { min-height: 160px; }
+    body.mobile .clip-mode-inner {
+      min-height: 160px;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
     body.mobile .clip-mode-card.active { transform: scale(1.02); }
 
     /* Mobile main section — pad bottom for nav bar, no phantom height */
@@ -320,17 +325,17 @@
 
     /* Mobile swipe deck */
     body.mobile .tab-deck {
-      display: flex;
-      overflow: hidden;
+      display: block;
       touch-action: pan-y;
     }
     body.mobile .tab-content {
-      display: block !important;
-      flex: 0 0 100%;
-      transition: transform 0.3s ease;
+      display: none;
       padding: 0 1rem;
       max-width: 100vw;
       overflow-x: hidden;
+    }
+    body.mobile .tab-content.active {
+      display: block !important;
     }
     body.mobile .tab-dots {
       display: flex;
@@ -412,8 +417,9 @@
       overflow: hidden;
     }
     body.mobile .nav-icon { font-size: 20px; line-height: 1; }
-    body.mobile .nav-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray); }
-    body.mobile .nav-item.active .nav-icon { transform: scale(1.1); }
+    body.mobile .nav-icon { color: var(--text-dim); }
+    body.mobile .nav-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); }
+    body.mobile .nav-item.active .nav-icon { transform: scale(1.1); color: var(--gold); }
     body.mobile .nav-item.active .nav-label { color: var(--gold); }
 
     /* Mobile account panel */
@@ -971,24 +977,28 @@ function initSwipeDeck() {
 function setMobileTab(index) {
   mobileCurrentTab = index;
 
-  // Update visible tab content
+  // Show only the active tab panel, hide others
   TAB_IDS.forEach((id, i) => {
     const el = document.getElementById('tab-' + id);
-    if (el) el.classList.toggle('active', i === index);
+    if (el) {
+      el.classList.toggle('active', i === index);
+    }
   });
 
-  // Update dots
+  // Update dot indicators
   for (let i = 0; i < 3; i++) {
     const dot = document.getElementById('dot-' + i);
     if (dot) dot.classList.toggle('active', i === index);
   }
 
-  // Update label
+  // Update tab label
   const label = document.getElementById('tabLabel');
   if (label) label.textContent = TAB_NAMES[index];
 
-  // Also update desktop tab buttons for consistency
-  switchTab(TAB_IDS[index]);
+  // Update desktop tab button active states
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', i === index);
+  });
 }
 
 // ── SUPABASE AUTH ────────────────────────────────────────────────────────
@@ -1257,6 +1267,12 @@ const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'nume
 
 
 function switchTab(tab) {
+  const index = TAB_IDS.indexOf(tab);
+  if (IS_MOBILE && index !== -1) {
+    setMobileTab(index);
+    return;
+  }
+  // Desktop — update buttons and panels normally
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
     b.classList.toggle('active',
       (i===0&&tab==='summary')||(i===1&&tab==='notes')||(i===2&&tab==='clips'));
