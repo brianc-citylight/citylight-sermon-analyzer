@@ -288,6 +288,13 @@
       gap: 8px;
     }
 
+    /* Base theme scroll — flex row on desktop */
+    .theme-scroll {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
     body.mobile .clip-modes-scroll {
       gap: 12px;
       overflow-x: auto;
@@ -298,6 +305,25 @@
       -ms-overflow-style: none;
     }
     body.mobile .clip-modes-scroll::-webkit-scrollbar { display: none; }
+
+    /* Mobile theme scroll */
+    body.mobile #themeScrollWrapper {
+      overflow: hidden;
+    }
+    body.mobile .theme-scroll {
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      padding: 4px 1rem 8px;
+      margin: 0 -1rem;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    body.mobile .theme-scroll::-webkit-scrollbar { display: none; }
+    body.mobile .theme-opt {
+      scroll-snap-align: start;
+      flex-shrink: 0;
+    }
     body.mobile .clip-mode-card {
       flex: 0 0 200px;
       min-height: 160px;
@@ -440,9 +466,8 @@
     body.mobile #mobileAccountInner {
       background: var(--surface);
       border-radius: 20px 20px 0 0;
-      padding: 1.5rem;
+      padding: 1.5rem 1.5rem calc(64px + env(safe-area-inset-bottom) + 1rem);
       width: 100%;
-      padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
     }
 
     /* Prevent any element from causing horizontal overflow on mobile */
@@ -705,7 +730,8 @@
         </div>
         <div class="option-group">
           <label>Sermon Notes Slide Theme</label>
-          <div style="display:flex;gap:6px;align-items:center;" id="themeSelector">
+          <div id="themeScrollWrapper" style="overflow:hidden;">
+          <div style="display:flex;gap:6px;align-items:center;" id="themeSelector" class="theme-scroll">
             <div onclick="selectTheme('1')" id="theme-opt-1" title="City Light" style="cursor:pointer;border:2px solid transparent;border-radius:8px;overflow:hidden;width:90px;height:90px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
         <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/Slide%20Templates/Cover%201.png" style="width:100%;height:100%;object-fit:cover;" alt="City Light" />
       </div><div onclick="selectTheme('2')" id="theme-opt-2" title="Navy" style="cursor:pointer;border:2px solid transparent;border-radius:8px;overflow:hidden;width:90px;height:90px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
@@ -719,7 +745,9 @@
         </div>
       </div>
       <div style="margin-top:1rem;">
-        <label style="display:block;font-size:13px;font-weight:600;color:var(--gray);margin-bottom:8px;">Sermon Clip Focus</label>
+        <div class="option-group" style="width:100%;margin-bottom:0.5rem;">
+          <label>Sermon Clip Focus</label>
+        </div>
         <div id="themeClipModeRow" style="overflow:hidden;">
         <div class="clip-modes-scroll">
           <button class="clip-mode-card active" id="clipmode-outreach" onclick="selectClipMode('outreach')" style="background-image:url('https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/SermonAppOutreachCard.jpg');">
