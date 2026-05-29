@@ -259,6 +259,7 @@
       width: 100%;
       max-width: 100vw;
       overflow-x: hidden;
+      box-sizing: border-box;
     }
     body.mobile .card { border-radius: 0; border-left: none; border-right: none; margin-bottom: 0; border-bottom: 1px solid var(--border); }
 
@@ -301,23 +302,29 @@
       scroll-snap-type: x mandatory;
       -webkit-overflow-scrolling: touch;
       padding: 4px 1rem 12px;
+      margin: 0;
       scrollbar-width: none;
       -ms-overflow-style: none;
+      width: 100%;
+      box-sizing: border-box;
     }
     body.mobile .clip-modes-scroll::-webkit-scrollbar { display: none; }
 
     /* Mobile theme scroll */
     body.mobile #themeScrollWrapper {
       overflow: hidden;
+      width: 100%;
     }
     body.mobile .theme-scroll {
       overflow-x: auto;
       scroll-snap-type: x mandatory;
       -webkit-overflow-scrolling: touch;
       padding: 4px 1rem 8px;
-      margin: 0 -1rem;
+      margin: 0;
       scrollbar-width: none;
       -ms-overflow-style: none;
+      width: 100%;
+      box-sizing: border-box;
     }
     body.mobile .theme-scroll::-webkit-scrollbar { display: none; }
     body.mobile .theme-opt {
@@ -432,6 +439,9 @@
       box-sizing: border-box;
     }
     body.mobile .nav-item {
+      flex: 1;
+      max-width: none;
+      min-width: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -442,9 +452,6 @@
       border: none;
       background: none;
       font-family: inherit;
-      flex: 1 1 25%;
-      max-width: 25%;
-      min-width: 0;
       overflow: hidden;
     }
     body.mobile .nav-icon { font-size:1.35rem; line-height: 1; }
