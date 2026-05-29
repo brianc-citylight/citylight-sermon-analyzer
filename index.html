@@ -32,8 +32,8 @@
 
     /* ── HEADER ── */
     .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1.1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
-    .church-name { font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); }
-    .app-name { font-size: 13px; font-weight: 700; color: var(--gold); letter-spacing: 0.18em; text-transform: uppercase; }
+    .church-name { font-size:0.75rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); }
+    .app-name { font-size:0.9rem; font-weight: 700; color: var(--gold); letter-spacing: 0.18em; text-transform: uppercase; }
 
     /* ── LAYOUT ── */
     .container { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem; }
@@ -41,9 +41,9 @@
     /* ── LOGIN ── */
     .login-wrapper { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: var(--black); }
     .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 420px; text-align: center; box-shadow: 0 24px 80px rgba(0,0,0,0.6); }
-    .login-card h2 { font-size: 22px; font-weight: 800; margin-bottom: 0.4rem; color: var(--white); letter-spacing: -0.02em; }
-    .login-card p { font-size: 14px; color: var(--text-dim); margin-bottom: 1.5rem; }
-    .login-error { font-size: 13px; color: #ff6b6b; margin-bottom: 0.75rem; min-height: 20px; }
+    .login-card h2 { font-size:1.5rem; font-weight: 800; margin-bottom: 0.4rem; color: var(--white); letter-spacing: -0.02em; }
+    .login-card p { font-size:0.95rem; color: var(--text-dim); margin-bottom: 1.5rem; }
+    .login-error { font-size:0.9rem; color: #ff6b6b; margin-bottom: 0.75rem; min-height: 20px; }
 
     /* ── MAIN ── */
     .main { display: none; }
@@ -51,60 +51,60 @@
 
     /* ── CARDS ── */
     .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; margin-bottom: 1.5rem; }
-    .card-label { font-size: 10px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 1rem; }
+    .card-label { font-size:0.7rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 1rem; }
 
     /* ── INPUTS ── */
     .input-group { margin-bottom: 1rem; }
-    .input-group label { display: block; font-size: 11px; font-weight: 700; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .input-group label { display: block; font-size:0.75rem; font-weight: 700; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.08em; }
     .input-group input[type="text"],
     .input-group input[type="password"],
     .input-group input[type="email"],
     .input-group textarea {
       width: 100%; padding: 10px 14px; border: 1px solid var(--border-light); border-radius: 8px;
-      font-size: 14px; outline: none; font-family: inherit; color: var(--text); background: var(--surface2);
+      font-size:0.95rem; outline: none; font-family: inherit; color: var(--text); background: var(--surface2);
       transition: border-color 0.15s;
     }
     .input-group input:focus, .input-group textarea:focus { border-color: var(--gold); background: var(--surface3); }
-    .input-group textarea { height: 130px; resize: vertical; font-size: 13px; }
+    .input-group textarea { height: 130px; resize: vertical; font-size:0.9rem; }
     .options-row { display: flex; gap: 1.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
-    .option-group label { display: block; font-size: 11px; font-weight: 700; color: var(--text-dim); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.08em; }
-    .option-group select { padding: 8px 12px; border: 1px solid var(--border-light); border-radius: 8px; font-size: 14px; background: var(--surface2); color: var(--text); outline: none; font-family: inherit; }
+    .option-group label { display: block; font-size:0.75rem; font-weight: 700; color: var(--text-dim); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .option-group select { padding: 8px 12px; border: 1px solid var(--border-light); border-radius: 8px; font-size:0.95rem; background: var(--surface2); color: var(--text); outline: none; font-family: inherit; }
     .option-group select:focus { border-color: var(--gold); }
-    .transcript-toggle { font-size: 12px; color: var(--gold); cursor: pointer; text-decoration: underline; margin-bottom: 0.75rem; display: inline-block; }
+    .transcript-toggle { font-size:0.825rem; color: var(--gold); cursor: pointer; text-decoration: underline; margin-bottom: 0.75rem; display: inline-block; }
     .transcript-box { display: none; margin-bottom: 1rem; }
     .transcript-box.visible { display: block; }
 
     /* ── BUTTONS ── */
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1px solid var(--border-light); transition: all 0.15s; background: var(--surface2); color: var(--text); font-family: inherit; letter-spacing: 0.02em; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 18px; border-radius: 8px; font-size:0.9rem; font-weight: 700; cursor: pointer; border: 1px solid var(--border-light); transition: all 0.15s; background: var(--surface2); color: var(--text); font-family: inherit; letter-spacing: 0.02em; }
     .btn:active { transform: scale(0.97); }
     .btn:disabled { opacity: 0.35; cursor: not-allowed; }
-    .btn-gold { background: var(--gold); color: var(--black); border-color: var(--gold); width: 100%; font-size: 14px; font-weight: 800; padding: 13px; letter-spacing: 0.04em; }
+    .btn-gold { background: var(--gold); color: var(--black); border-color: var(--gold); width: 100%; font-size:0.95rem; font-weight: 800; padding: 13px; letter-spacing: 0.04em; }
     .btn-gold:hover:not(:disabled) { background: var(--gold-light); border-color: var(--gold-light); }
-    .btn-sm { font-size: 11px; padding: 6px 12px; }
+    .btn-sm { font-size:0.75rem; padding: 6px 12px; }
     .btn:hover:not(:disabled):not(.btn-gold) { background: var(--surface3); border-color: var(--border-light); color: var(--white); }
     .btn-opus { background: var(--surface2); color: var(--gold); border-color: var(--gold); }
     .btn-opus:hover:not(:disabled) { background: var(--gold-dim); }
-    .api-note { font-size: 12px; color: var(--text-dim); text-align: center; margin-top: 0.75rem; }
+    .api-note { font-size:0.825rem; color: var(--text-dim); text-align: center; margin-top: 0.75rem; }
     .copied { color: var(--gold) !important; border-color: var(--gold) !important; }
 
     /* ── STATUS ── */
-    .status-bar { background: var(--surface2); border: 1px solid var(--border-light); border-radius: 10px; padding: 12px 16px; font-size: 13px; color: var(--text-dim); margin-bottom: 1.5rem; display: none; align-items: center; gap: 10px; }
+    .status-bar { background: var(--surface2); border: 1px solid var(--border-light); border-radius: 10px; padding: 12px 16px; font-size:0.9rem; color: var(--text-dim); margin-bottom: 1.5rem; display: none; align-items: center; gap: 10px; }
     .status-bar.visible { display: flex; }
     .spinner { width: 16px; height: 16px; border: 2px solid var(--border-light); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .error-card { background: rgba(192,57,43,0.15); border: 1px solid rgba(192,57,43,0.4); border-radius: 8px; padding: 1rem; font-size: 14px; color: #ff6b6b; margin-bottom: 1rem; display: none; }
+    .error-card { background: rgba(192,57,43,0.15); border: 1px solid rgba(192,57,43,0.4); border-radius: 8px; padding: 1rem; font-size:0.95rem; color: #ff6b6b; margin-bottom: 1rem; display: none; }
     .error-card.visible { display: block; }
 
     /* ── RESULTS ── */
     .results-section { display: none; }
     .results-section.visible { display: block; }
     .sermon-bar { background: linear-gradient(135deg, var(--surface2), var(--surface3)); border: 1px solid var(--border-light); border-left: 3px solid var(--gold); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; }
-    .sermon-bar .stitle { font-size: 14px; font-weight: 800; color: var(--white); letter-spacing: -0.01em; }
-    .sermon-bar .sdate { font-size: 12px; color: var(--gold); margin-top: 2px; }
+    .sermon-bar .stitle { font-size:0.95rem; font-weight: 800; color: var(--white); letter-spacing: -0.01em; }
+    .sermon-bar .sdate { font-size:0.825rem; color: var(--gold); margin-top: 2px; }
 
     /* ── TABS ── */
     .tab-row { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; gap: 4px; }
-    .tab-btn { padding: 10px 18px; font-size: 12px; font-weight: 700; border: none; background: none; color: var(--gray); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; font-family: inherit; text-transform: uppercase; letter-spacing: 0.08em; transition: color 0.15s; }
+    .tab-btn { padding: 10px 18px; font-size:0.825rem; font-weight: 700; border: none; background: none; color: var(--gray); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; font-family: inherit; text-transform: uppercase; letter-spacing: 0.08em; transition: color 0.15s; }
     .tab-btn:hover { color: var(--text); }
     .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
     .tab-content { display: none; }
@@ -114,23 +114,23 @@
     .question-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; transition: border-color 0.15s; }
     .question-card:hover { border-color: var(--border-light); }
     .q-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-    .q-number { font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
-    .q-timestamp { font-size: 11px; color: var(--text-dim); background: var(--surface2); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-light); }
-    .q-question { font-size: 15px; font-weight: 700; color: var(--white); margin-bottom: 10px; line-height: 1.45; }
-    .q-caption-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 5px; }
-    .q-caption { font-size: 13px; color: var(--text-dim); line-height: 1.6; padding: 10px 14px; background: var(--surface2); border-radius: 8px; border-left: 3px solid var(--gold); margin-bottom: 8px; }
+    .q-number { font-size:0.7rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+    .q-timestamp { font-size:0.75rem; color: var(--text-dim); background: var(--surface2); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-light); }
+    .q-question { font-size:1rem; font-weight: 700; color: var(--white); margin-bottom: 10px; line-height: 1.45; }
+    .q-caption-label { font-size:0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 5px; }
+    .q-caption { font-size:0.9rem; color: var(--text-dim); line-height: 1.6; padding: 10px 14px; background: var(--surface2); border-radius: 8px; border-left: 3px solid var(--gold); margin-bottom: 8px; }
 
     /* ── SLIDE CARDS ── */
     .slide-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
     .slide-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 6px; }
-    .slide-label-text { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--gold); }
+    .slide-label-text { font-size:0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--gold); }
     .slide-field { margin-bottom: 10px; }
-    .slide-field-key { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 4px; }
-    .slide-field-val { font-size: 13px; color: var(--text); line-height: 1.55; padding: 8px 12px; background: var(--surface2); border-radius: 7px; border: 1px solid var(--border); }
+    .slide-field-key { font-size:0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 4px; }
+    .slide-field-val { font-size:0.9rem; color: var(--text); line-height: 1.55; padding: 8px 12px; background: var(--surface2); border-radius: 7px; border: 1px solid var(--border); }
 
     /* ── CANVA BANNER ── */
     .canva-banner { background: linear-gradient(135deg, var(--surface2), var(--surface3)); border: 1px solid var(--border-light); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-    .canva-banner p { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+    .canva-banner p { font-size:0.9rem; color: var(--text-dim); line-height: 1.5; }
     .canva-banner p strong { color: var(--white); }
 
     /* ── ACTION ROW ── */
@@ -145,30 +145,30 @@
     .clip-mode-card.active::before { background:rgba(0,0,0,0.42); }
     .clip-mode-inner { position:relative; z-index:1; padding:16px 14px; height:100%; display:flex; flex-direction:column; justify-content:flex-end; min-height:130px; }
     .clip-mode-icon { display:none; }
-    .clip-mode-title { font-size:15px; font-weight:900; color:var(--white); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em; text-shadow:0 1px 4px rgba(0,0,0,0.8); text-align:center; }
-    .clip-mode-desc { font-size:11px; color:rgba(255,255,255,0.85); display:block; line-height:1.45; text-shadow:0 1px 3px rgba(0,0,0,0.9); text-align:center; }
+    .clip-mode-title { font-size:1rem; font-weight:900; color:var(--white); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em; text-shadow:0 1px 4px rgba(0,0,0,0.8); text-align:center; }
+    .clip-mode-desc { font-size:0.75rem; color:rgba(255,255,255,0.85); display:block; line-height:1.45; text-shadow:0 1px 3px rgba(0,0,0,0.9); text-align:center; }
     .clip-mode-card.active .clip-mode-title { color:var(--gold); }
 
     /* ── SUMMARY ── */
-    .summary-body { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; font-size: 14px; line-height: 1.85; color: var(--text); }
+    .summary-body { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; font-size:0.95rem; line-height: 1.85; color: var(--text); }
     .summary-body p { margin-bottom: 1rem; }
-    .summary-body strong { font-size: 14px; font-weight: 800; color: var(--gold); display: block; margin-top: 1.25rem; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .summary-body strong { font-size:0.95rem; font-weight: 800; color: var(--gold); display: block; margin-top: 1.25rem; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.06em; }
     .summary-body p:first-child strong { margin-top: 0; }
 
     /* ── OPUS BANNER ── */
     .opus-banner { background: var(--surface2); border: 1px solid var(--border-light); border-left: 3px solid var(--gold); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
-    .opus-banner p { font-size: 13px; color: var(--text-dim); margin-bottom: 0.5rem; }
+    .opus-banner p { font-size:0.9rem; color: var(--text-dim); margin-bottom: 0.5rem; }
 
     /* ── OPUS STATUS ── */
-    .opus-status { font-size: 12px; padding: 4px 10px; border-radius: 6px; display: inline-block; margin-top: 4px; font-weight: 600; }
+    .opus-status { font-size:0.825rem; padding: 4px 10px; border-radius: 6px; display: inline-block; margin-top: 4px; font-weight: 600; }
     .opus-status.queued { background: rgba(204,204,0,0.12); color: #cccc00; border: 1px solid rgba(204,204,0,0.3); }
     .opus-status.processing { background: rgba(0,204,136,0.1); color: #00cc88; border: 1px solid rgba(0,204,136,0.3); }
     .opus-status.done { background: rgba(0,170,255,0.1); color: #00aaff; border: 1px solid rgba(0,170,255,0.3); }
     .opus-status.error { background: rgba(255,102,102,0.1); color: #ff6666; border: 1px solid rgba(255,102,102,0.3); }
     .opus-clip-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
-    .opus-clip-q { font-size: 14px; font-weight: 700; color: var(--white); margin-bottom: 6px; }
-    .opus-clip-ts { font-size: 11px; color: var(--text-dim); background: var(--surface2); padding: 3px 8px; border-radius: 6px; display: inline-block; margin-bottom: 10px; border: 1px solid var(--border-light); }
-    .opus-clip-status { font-size: 13px; color: var(--text-dim); margin-top: 8px; }
+    .opus-clip-q { font-size:0.95rem; font-weight: 700; color: var(--white); margin-bottom: 6px; }
+    .opus-clip-ts { font-size:0.75rem; color: var(--text-dim); background: var(--surface2); padding: 3px 8px; border-radius: 6px; display: inline-block; margin-bottom: 10px; border: 1px solid var(--border-light); }
+    .opus-clip-status { font-size:0.9rem; color: var(--text-dim); margin-top: 8px; }
 
     /* ── MENU DROPDOWN ── */
     #menuDropdown { background: var(--surface); border: 1px solid var(--border-light); box-shadow: 0 16px 48px rgba(0,0,0,0.7); }
@@ -237,17 +237,17 @@
       background: var(--black);
     }
     body.mobile .login-card img { height: 52px; margin-bottom: 1.25rem; }
-    body.mobile .login-card h2 { font-size: 28px; margin-bottom: 0.5rem; }
-    body.mobile .login-card p { font-size: 15px; margin-bottom: 2rem; }
+    body.mobile .login-card h2 { font-size:1.875rem; margin-bottom: 0.5rem; }
+    body.mobile .login-card p { font-size:1rem; margin-bottom: 2rem; }
     body.mobile #emailForm { width: 100%; }
-    body.mobile .login-card .btn-gold { font-size: 16px; min-height: 52px; }
-    body.mobile #googleSignInBtn { min-height: 52px; font-size: 15px; width: 100%; }
-    body.mobile #forgotBtn { font-size: 14px; }
+    body.mobile .login-card .btn-gold { font-size:1.05rem; min-height: 52px; }
+    body.mobile #googleSignInBtn { min-height: 52px; font-size:1rem; width: 100%; }
+    body.mobile #forgotBtn { font-size:0.95rem; }
 
     /* Mobile header */
     body.mobile .header { padding: 0.85rem 1rem; position: sticky; top: 0; z-index: 100; }
     body.mobile #userEmail { display: none !important; }
-    body.mobile .app-name { font-size: 11px; }
+    body.mobile .app-name { font-size:0.75rem; }
     body.mobile .header img { height: 28px; }
 
     /* Mobile container */
@@ -268,7 +268,7 @@
     body.mobile .option-group select { width: 100%; }
     body.mobile .input-group { padding: 0 1rem; }
     body.mobile .card-label { padding: 0 1rem; }
-    body.mobile .btn-gold { min-height: 52px; font-size: 16px; margin: 0 1rem; width: calc(100% - 2rem); }
+    body.mobile .btn-gold { min-height: 52px; font-size:1.05rem; margin: 0 1rem; width: calc(100% - 2rem); }
     body.mobile .api-note { padding: 0 1rem; }
     body.mobile .transcript-toggle { padding: 0 1rem; display: block; }
 
@@ -361,7 +361,7 @@
     }
     body.mobile .tab-label {
       text-align: center;
-      font-size: 10px;
+      font-size:0.7rem;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.12em;
@@ -421,9 +421,9 @@
       min-width: 0;
       overflow: hidden;
     }
-    body.mobile .nav-icon { font-size: 20px; line-height: 1; }
+    body.mobile .nav-icon { font-size:1.35rem; line-height: 1; }
     body.mobile .nav-icon { color: var(--text-dim); }
-    body.mobile .nav-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); }
+    body.mobile .nav-label { font-size:0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); }
     body.mobile .nav-item.active .nav-icon { transform: scale(1.1); color: var(--gold); }
     body.mobile .nav-item.active .nav-label { color: var(--gold); }
 
@@ -519,79 +519,31 @@
       <h3 style="font-size:18px;font-weight:800;color:var(--white);">Help</h3>
       <button onclick="closeHelpModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray);">&#x2715;</button>
     </div>
-    <div style="font-size:13px;color:var(--text-dim);line-height:1.8;max-height:65vh;overflow-y:auto;padding-right:6px;">
-
-      <p style="margin-bottom:1rem;color:var(--black);font-size:13px;">Welcome to SermonReach. This tool helps you turn Sunday sermons into social media content. Here is everything you need to know to use it.</p>
-
-      <!-- STEP 1 -->
-      <div style="background:var(--light);border-radius:8px;padding:12px 14px;margin-bottom:0.75rem;">
-        <div style="font-weight:700;color:var(--black);font-size:13px;margin-bottom:4px;">Step 1 &nbsp;&#8212;&nbsp; Fill in the sermon details</div>
-        <div>At the top of the page, enter the speaker title (Pastor, Reverend, etc.), their first name, last name, and the date the sermon was preached. The date is required. Then paste the YouTube link for the sermon.</div>
-      </div>
-
-      <!-- STEP 2 -->
-      <div style="background:var(--light);border-radius:8px;padding:12px 14px;margin-bottom:0.75rem;">
-        <div style="font-weight:700;color:var(--black);font-size:13px;margin-bottom:4px;">Step 2 &nbsp;&#8212;&nbsp; Choose your clip focus</div>
-        <div>Select one of three options before analyzing:<br>
-        <strong style="color:var(--black);">Outreach</strong> — finds clips for people outside the faith, good for evangelism posts.<br>
-        <strong style="color:var(--black);">Discipleship</strong> — finds clips for believers who want to grow deeper.<br>
-        <strong style="color:var(--black);">Custom</strong> — lets you type a specific question you want the sermon to answer.</div>
-      </div>
-
-      <!-- STEP 3 -->
-      <div style="background:var(--light);border-radius:8px;padding:12px 14px;margin-bottom:0.75rem;">
-        <div style="font-weight:700;color:var(--black);font-size:13px;margin-bottom:4px;">Step 3 &nbsp;&#8212;&nbsp; Click Analyze Sermon</div>
-        <div>The app will automatically fetch the sermon transcript from YouTube. If it cannot get it automatically, a toggle will appear — click it, go to YouTube, click the three dots under the video, click Show transcript, copy it, and paste it in. Then click Analyze Sermon and wait about 30 to 45 seconds.</div>
-      </div>
-
-      <!-- ALREADY DONE NOTICE -->
-      <div style="background:#fffdf5;border:1px solid var(--gold);border-radius:8px;padding:12px 14px;margin-bottom:0.75rem;">
-        <div style="font-weight:700;color:var(--gold);font-size:13px;margin-bottom:4px;">&#9432;&nbsp; Already done this sermon before?</div>
-        <div style="color:var(--black);">SermonReach remembers your last 10 analyses. If you try to analyze the same sermon with the same settings, it will ask if you want to load the saved version instead. This saves time and avoids running the same analysis twice. Click Load from History to use the saved version, or Run New Analysis if you want a fresh result.</div>
-      </div>
-
-      <!-- TAB 1 -->
-      <div style="border-left:3px solid var(--gold);padding-left:12px;margin-bottom:0.75rem;">
-        <div style="font-weight:700;color:var(--black);font-size:13px;margin-bottom:3px;">Sermon Summary tab</div>
-        <div>A short written summary of the sermon — 500 words or less. Use this as a text post on Instagram or Facebook, especially when slides are not ready. Click Copy Summary to copy it, or Download to save it as a file.</div>
-      </div>
-
-      <!-- TAB 2 -->
-      <div style="border-left:3px solid var(--gold);padding-left:12px;margin-bottom:0.75rem;">
-        <div style="font-weight:700;color:var(--black);font-size:13px;margin-bottom:3px;">Sermon Notes Slides tab</div>
-        <div>Branded slide images for Instagram carousels. Pick a color theme using the four small thumbnails. Click Generate Slide Images to download the full set as a file you open in your browser and screenshot. Or use Download PNG on any individual slide to save just that one as an image.</div>
-      </div>
-
-      <!-- TAB 3 -->
-      <div style="border-left:3px solid var(--gold);padding-left:12px;margin-bottom:0.75rem;">
-        <div style="font-weight:700;color:var(--black);font-size:13px;margin-bottom:3px;">Sermon Clips tab</div>
-        <div>Five video clips from the sermon, each between 30 and 90 seconds — the right length for Instagram Reels, Facebook Reels, and YouTube Shorts. For each clip you can:<br><br>
-        &bull; <strong style="color:var(--black);">Copy Caption</strong> — copies the social media caption to paste when posting.<br>
-        &bull; <strong style="color:var(--black);">Create Clip</strong> — sends that moment to Opus Clip to cut the video. Send no more than 3 clips at a time and wait for each to finish before sending more.<br>
-        &bull; <strong style="color:var(--black);">Publish Now</strong> — when the clip is ready, posts it immediately to Instagram, Facebook, or YouTube Shorts. Always preview in Opus Clip before publishing.<br>
-        &bull; <strong style="color:var(--black);">Schedule</strong> — picks a future date and time to post automatically. A date and time picker appears. The time uses your local timezone. Click Confirm to schedule it in Opus Clip.<br><br>
-        After publishing or scheduling, the button updates to show what happened:<br>
-        <span style="color:#166534;">&#10003; Green badge</span> — clip was published immediately, shows the date and time it was posted.<br>
-        <span style="color:#8B6914;">&#9200; Gold badge</span> — clip is scheduled, shows the date and time it will post.<br><br>
-        These badges appear even if you come back to this analysis later from your history, so you will never accidentally publish the same clip twice.</div>
-      </div>
-
-      <!-- HISTORY -->
-      <div style="border-left:3px solid var(--gold);padding-left:12px;margin-bottom:0.75rem;">
-        <div style="font-weight:700;color:var(--black);font-size:13px;margin-bottom:3px;">Analysis History</div>
-        <div>Click the hamburger menu in the top right and choose Analysis History to see your last 10 analyses. Click Load on any entry to bring it back up. The app saves your current work first so you can always get back to it.</div>
-      </div>
-
-      <!-- ACCOUNT -->
-      <div style="border-left:3px solid var(--gold);padding-left:12px;margin-bottom:1rem;">
-        <div style="font-weight:700;color:var(--black);font-size:13px;margin-bottom:3px;">My Account and Sign Out</div>
-        <div>Click the hamburger menu in the top right. Choose My Account to update your password, or Sign Out to log out.</div>
-      </div>
-
-      <div style="padding-top:0.75rem;border-top:1px solid var(--border);font-size:12px;">
-        <strong style="color:var(--black);">Questions?</strong> Contact Brian at brianc@citylightvicksburg.org
-      </div>
-    </div>
+<div id="helpContentDesktop" style="font-size:1rem;color:var(--text-dim);line-height:1.85;max-height:65vh;overflow-y:auto;padding-right:6px;">
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:0;">Welcome to SermonReach</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Turn any Sunday sermon into a full week of social media content. Fill in the sermon details, paste the YouTube link, choose your clip focus, and click Analyze Sermon. Results appear in three tabs below.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Start Here</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Fill in the speaker title, first name, last name, and the sermon date. The sermon date is required. Paste the YouTube link. SermonReach will fetch the transcript automatically. If it fails, click Paste transcript manually, go to YouTube, click the three dots under the video, click Show Transcript, copy it, and paste it here.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Sermon Clip Focus</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Choose one before analyzing. Outreach finds five clips for people outside the faith. Discipleship finds five clips for growing believers. Custom lets you enter a specific question your community is asking.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Sermon Summary Tab</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">A 500 word narrative summary ready to post as a text caption on Instagram, Facebook, or YouTube. Use Copy Summary or Download to save it.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Sermon Notes Slides Tab</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Choose a theme from the four thumbnails. Click Generate Slide Images to export the full deck as an HTML file you can screenshot. Use Download PNG on any individual slide for a single image. All slides are 1080x1080 for Instagram carousel.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Sermon Clips Tab</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Five video clips with timestamps and captions. Edit the caption before creating the clip. Click Create Clip to send that moment to Opus Clip. Send no more than 3 clips at a time. When the clip is ready, click Publish Now to post immediately or Schedule to pick a future date and time. Green badge means published. Gold badge means scheduled.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Analysis History</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Click the hamburger menu at the top right and select Analysis History to see your last 10 analyses. Click Load on any entry to restore the full results instantly.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">My Account and Sign Out</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Click the hamburger menu at the top right. Choose My Account to update your password or Sign Out to log out.</p>
+  <div style="padding-top:0.75rem;border-top:1px solid var(--border);margin-top:1rem;font-size:0.875rem;">
+    <strong style="color:var(--white);">Questions?</strong> Contact Brian at brianc@citylightvicksburg.org
+  </div>
+</div>
+<div id="helpContentMobile" style="font-size:1rem;color:var(--text-dim);line-height:1.85;max-height:65vh;overflow-y:auto;padding-right:4px;">
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:0;">Welcome to SermonReach</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Turn any Sunday sermon into social media content. Fill in the sermon details, pick your clip focus, and tap Analyze Sermon.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Getting Around</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Use the bar at the bottom of the screen to navigate. Start Here is your input form. Results shows your analysis. History shows past analyses. Account gives you settings and sign out.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Before You Analyze</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Fill in the speaker name and sermon date at the top of Start Here. Paste the YouTube link. Swipe through the three focus cards and tap one: Outreach, Discipleship, or Custom. Tap Analyze Sermon and wait about 30 to 45 seconds.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Viewing Your Results</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">After the analysis finishes, the app switches to Results automatically. Swipe left and right to move between Sermon Summary, Sermon Notes Slides, and Sermon Clips.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Sermon Clips</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Each clip has a caption you can edit before creating it. Tap Create Clip to send it to Opus Clip. When it is ready, tap Publish Now to post immediately or Schedule to pick a date and time. Green badge means published. Gold badge means scheduled.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Analysis History</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Tap History in the bottom bar to see your last 10 analyses. Tap Load to bring any of them back up instantly.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Account and Sign Out</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Tap Account in the bottom bar. From there you can open My Account, get Help, or Sign Out.</p>
+  <div style="padding-top:0.75rem;border-top:1px solid var(--border);margin-top:1rem;font-size:0.875rem;">
+    <strong style="color:var(--white);">Questions?</strong> Contact Brian at brianc@citylightvicksburg.org
+  </div>
+</div>
     <button class="btn" onclick="closeHelpModal()" style="margin-top:1rem;width:100%;">Close</button>
   </div>
 </div>
@@ -735,6 +687,13 @@
         <label>YouTube Sermon Link</label>
         <input type="text" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." />
       </div>
+      <span class="transcript-toggle" onclick="toggleTranscript()">+ Paste transcript manually (use if auto-fetch fails)</span>
+      <div class="transcript-box" id="transcriptBox">
+        <div class="input-group" style="margin-top:0.75rem; margin-bottom:0;">
+          <label>Sermon Transcript</label>
+          <textarea id="transcriptInput" placeholder="Go to YouTube, click the three dots under the video, click Show Transcript, copy and paste here."></textarea>
+        </div>
+      </div>
       <div class="options-row" style="align-items:flex-end;">
         <div class="option-group">
           <label>Sermon Notes Slides</label>
@@ -747,23 +706,16 @@
         <div class="option-group">
           <label>Sermon Notes Slide Theme</label>
           <div style="display:flex;gap:6px;align-items:center;" id="themeSelector">
-            <div onclick="selectTheme('1')" id="theme-opt-1" title="City Light" style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;width:58px;height:58px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
+            <div onclick="selectTheme('1')" id="theme-opt-1" title="City Light" style="cursor:pointer;border:2px solid transparent;border-radius:8px;overflow:hidden;width:90px;height:90px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
         <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/Slide%20Templates/Cover%201.png" style="width:100%;height:100%;object-fit:cover;" alt="City Light" />
-      </div><div onclick="selectTheme('2')" id="theme-opt-2" title="Navy" style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;width:58px;height:58px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
+      </div><div onclick="selectTheme('2')" id="theme-opt-2" title="Navy" style="cursor:pointer;border:2px solid transparent;border-radius:8px;overflow:hidden;width:90px;height:90px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
         <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/Slide%20Templates/Cover%202.png" style="width:100%;height:100%;object-fit:cover;" alt="Navy" />
-      </div><div onclick="selectTheme('3')" id="theme-opt-3" title="Warm Brown" style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;width:58px;height:58px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
+      </div><div onclick="selectTheme('3')" id="theme-opt-3" title="Warm Brown" style="cursor:pointer;border:2px solid transparent;border-radius:8px;overflow:hidden;width:90px;height:90px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
         <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/Slide%20Templates/Cover%203.png" style="width:100%;height:100%;object-fit:cover;" alt="Warm Brown" />
-      </div><div onclick="selectTheme('4')" id="theme-opt-4" title="Slate" style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;width:58px;height:58px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
+      </div><div onclick="selectTheme('4')" id="theme-opt-4" title="Slate" style="cursor:pointer;border:2px solid transparent;border-radius:8px;overflow:hidden;width:90px;height:90px;flex-shrink:0;transition:border-color 0.15s;" class="theme-opt">
         <img src="https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/Slide%20Templates/Cover%204.png" style="width:100%;height:100%;object-fit:cover;" alt="Slate" />
       </div>
           </div>
-        </div>
-      </div>
-      <span class="transcript-toggle" onclick="toggleTranscript()">+ Paste transcript manually (recommended for accuracy)</span>
-      <div class="transcript-box" id="transcriptBox">
-        <div class="input-group" style="margin-top:0.75rem; margin-bottom:0;">
-          <label>Sermon Transcript</label>
-          <textarea id="transcriptInput" placeholder="Go to the YouTube video → click '...' → Show transcript → copy and paste here."></textarea>
         </div>
       </div>
       <div style="margin-top:1rem;">
@@ -1198,6 +1150,11 @@ async function updatePassword() {
 
 function openHelpModal() {
   closeMenu();
+  // Show the right help content for the current device context
+  const desktop = document.getElementById('helpContentDesktop');
+  const mobile = document.getElementById('helpContentMobile');
+  if (desktop) desktop.style.display = IS_MOBILE ? 'none' : 'block';
+  if (mobile) mobile.style.display = IS_MOBILE ? 'block' : 'none';
   document.getElementById('helpModal').style.display = 'flex';
 }
 
