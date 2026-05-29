@@ -138,12 +138,16 @@
     .action-row .btn { flex: 1; min-width: 120px; }
 
     /* ── CLIP MODE CARDS ── */
-    .clip-mode-card { flex:1; border:1px solid var(--border-light); border-radius:12px; padding:14px 12px; cursor:pointer; transition:all 0.15s; background:var(--surface2); text-align:left; font-family:inherit; }
-    .clip-mode-card:hover { border-color: var(--gold); background: var(--surface3); }
-    .clip-mode-card.active { border-color: var(--gold); background: var(--gold-dim); box-shadow: 0 0 0 1px var(--gold); }
-    .clip-mode-icon { font-size:22px; margin-bottom:6px; display:block; }
-    .clip-mode-title { font-size:12px; font-weight:800; color:var(--white); display:block; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.06em; }
-    .clip-mode-desc { font-size:11px; color:var(--text-dim); display:block; line-height:1.4; }
+    .clip-mode-card { flex:1; border:2px solid transparent; border-radius:14px; padding:0; cursor:pointer; transition:all 0.2s; background:var(--surface2); text-align:left; font-family:inherit; overflow:hidden; min-height:130px; position:relative; background-size:cover; background-position:center; }
+    .clip-mode-card::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.58); transition:background 0.2s; border-radius:12px; }
+    .clip-mode-card:hover::before { background:rgba(0,0,0,0.45); }
+    .clip-mode-card.active { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 8px 24px rgba(201,168,76,0.2); }
+    .clip-mode-card.active::before { background:rgba(0,0,0,0.42); }
+    .clip-mode-inner { position:relative; z-index:1; padding:16px 14px; height:100%; display:flex; flex-direction:column; justify-content:flex-end; min-height:130px; }
+    .clip-mode-icon { font-size:20px; margin-bottom:6px; display:block; }
+    .clip-mode-title { font-size:12px; font-weight:900; color:var(--white); display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.1em; text-shadow:0 1px 4px rgba(0,0,0,0.8); }
+    .clip-mode-desc { font-size:10px; color:rgba(255,255,255,0.8); display:block; line-height:1.4; text-shadow:0 1px 3px rgba(0,0,0,0.9); }
+    .clip-mode-card.active .clip-mode-title { color:var(--gold); }
 
     /* ── SUMMARY ── */
     .summary-body { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; font-size: 14px; line-height: 1.85; color: var(--text); }
@@ -177,6 +181,217 @@
     /* ── GOOGLE BUTTON ── */
     #googleSignInBtn { background: var(--surface2); border: 1px solid var(--border-light); color: var(--text); }
     #googleSignInBtn:hover { background: var(--surface3); border-color: var(--border-light); color: var(--white); }
+
+    /* ── DESKTOP REFINEMENTS (apply to all) ── */
+    .btn { min-height: 44px; }
+    .btn-sm { min-height: 36px; }
+    .input-group input[type="text"],
+    .input-group input[type="password"],
+    .input-group input[type="email"],
+    .input-group textarea { padding: 12px 14px; }
+    .clip-mode-card { min-height: 150px; }
+    .clip-mode-inner { min-height: 150px; padding: 18px 16px; }
+    .slide-header { flex-wrap: wrap; gap: 6px; }
+    .action-row .btn { min-height: 40px; }
+
+    /* ── MOBILE STYLES ── */
+    body.mobile .gold-bar { display: none; }
+
+    /* Mobile login — full screen */
+    body.mobile .login-wrapper { align-items: flex-start; padding: 0; min-height: 100vh; }
+    body.mobile .login-card {
+      max-width: 100%;
+      min-height: 100vh;
+      border-radius: 0;
+      border: none;
+      padding: 3rem 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: none;
+      background: var(--black);
+    }
+    body.mobile .login-card img { height: 52px; margin-bottom: 1.25rem; }
+    body.mobile .login-card h2 { font-size: 28px; margin-bottom: 0.5rem; }
+    body.mobile .login-card p { font-size: 15px; margin-bottom: 2rem; }
+    body.mobile #emailForm { width: 100%; }
+    body.mobile .login-card .btn-gold { font-size: 16px; min-height: 52px; }
+    body.mobile #googleSignInBtn { min-height: 52px; font-size: 15px; width: 100%; }
+    body.mobile #forgotBtn { font-size: 14px; }
+
+    /* Mobile header */
+    body.mobile .header { padding: 0.85rem 1rem; position: sticky; top: 0; z-index: 100; }
+    body.mobile #userEmail { display: none !important; }
+    body.mobile .app-name { font-size: 11px; }
+    body.mobile .header img { height: 28px; }
+
+    /* Mobile container */
+    body.mobile .container { padding: 1rem 0; }
+    body.mobile .card { border-radius: 0; border-left: none; border-right: none; margin-bottom: 0; border-bottom: 1px solid var(--border); }
+
+    /* Mobile form — full width everything */
+    body.mobile .options-row { flex-direction: column; gap: 1rem; padding: 0 1rem; }
+    body.mobile .option-group { width: 100%; }
+    body.mobile .option-group select { width: 100%; }
+    body.mobile .input-group { padding: 0 1rem; }
+    body.mobile .card-label { padding: 0 1rem; }
+    body.mobile .btn-gold { min-height: 52px; font-size: 16px; margin: 0 1rem; width: calc(100% - 2rem); }
+    body.mobile .api-note { padding: 0 1rem; }
+    body.mobile .transcript-toggle { padding: 0 1rem; display: block; }
+
+    /* Mobile speaker fields — two per row */
+    body.mobile .speaker-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; padding: 0 1rem; }
+    body.mobile .speaker-row .input-group { padding: 0; margin-bottom: 0; }
+
+    /* Mobile clip mode — horizontal scroll */
+    body.mobile #themeClipModeRow { padding: 0 1rem; }
+    body.mobile .clip-modes-scroll {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      padding: 4px 1rem 12px;
+      margin: 0 -1rem;
+      scrollbar-width: none;
+    }
+    body.mobile .clip-modes-scroll::-webkit-scrollbar { display: none; }
+    body.mobile .clip-mode-card {
+      flex: 0 0 200px;
+      min-height: 160px;
+      scroll-snap-align: start;
+      border-radius: 14px;
+    }
+    body.mobile .clip-mode-inner { min-height: 160px; }
+    body.mobile .clip-mode-card.active { transform: scale(1.02); }
+
+    /* Mobile main section — pad bottom for nav bar */
+    body.mobile .main { padding-bottom: 70px; }
+
+    /* Mobile status bar */
+    body.mobile .status-bar { margin: 0.5rem 1rem; border-radius: 10px; }
+    body.mobile .error-card { margin: 0.5rem 1rem; }
+
+    /* Mobile sermon bar */
+    body.mobile .sermon-bar { margin: 0.75rem 1rem; border-radius: 10px; }
+
+    /* Mobile tabs — hidden, replaced by swipe */
+    body.mobile .tab-row { display: none; }
+
+    /* Mobile swipe deck */
+    body.mobile .tab-deck {
+      display: flex;
+      overflow: hidden;
+      touch-action: pan-y;
+    }
+    body.mobile .tab-content {
+      display: block !important;
+      flex: 0 0 100%;
+      transition: transform 0.3s ease;
+      padding: 0 1rem;
+    }
+    body.mobile .tab-dots {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 0.75rem 0 0.5rem;
+    }
+    body.mobile .tab-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--border-light);
+      transition: all 0.2s;
+    }
+    body.mobile .tab-dot.active {
+      background: var(--gold);
+      width: 20px;
+      border-radius: 3px;
+    }
+    body.mobile .tab-label {
+      text-align: center;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--gold);
+      padding-bottom: 0.75rem;
+    }
+
+    /* Mobile question cards */
+    body.mobile .question-card { border-radius: 10px; }
+    body.mobile .slide-card { border-radius: 10px; }
+
+    /* Mobile canva banner */
+    body.mobile .canva-banner { flex-direction: column; align-items: flex-start; border-radius: 10px; }
+
+    /* Mobile action row */
+    body.mobile .action-row { flex-wrap: wrap; }
+    body.mobile .action-row .btn { flex: 1 1 calc(50% - 0.375rem); }
+
+    /* Mobile modals — full screen */
+    body.mobile #accountModal > div,
+    body.mobile #helpModal > div { max-width: 100%; margin: 0; border-radius: 20px 20px 0 0; position: fixed; bottom: 0; left: 0; right: 0; max-height: 90vh; overflow-y: auto; }
+    body.mobile #accountModal,
+    body.mobile #helpModal { align-items: flex-end; }
+    body.mobile #historyModal { padding-top: 0; align-items: flex-end; }
+    body.mobile #historyModal > div { max-width: 100%; margin: 0; border-radius: 20px 20px 0 0; max-height: 90vh; width: 100%; }
+
+    /* Mobile bottom navigation */
+    body.mobile #mobileNav {
+      display: flex;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: var(--surface);
+      border-top: 1px solid var(--border-light);
+      z-index: 200;
+      align-items: center;
+      justify-content: space-around;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    body.mobile .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 8px 16px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-family: inherit;
+      flex: 1;
+    }
+    body.mobile .nav-icon { font-size: 20px; line-height: 1; }
+    body.mobile .nav-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray); }
+    body.mobile .nav-item.active .nav-icon { transform: scale(1.1); }
+    body.mobile .nav-item.active .nav-label { color: var(--gold); }
+
+    /* Mobile account panel */
+    body.mobile #mobileAccountPanel {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 2000;
+      align-items: flex-end;
+    }
+    body.mobile #mobileAccountPanel.open { display: flex; }
+    body.mobile #mobileAccountInner {
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      padding: 1.5rem;
+      width: 100%;
+      padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+    }
+
+    /* Desktop — hide mobile-only elements */
+    body.desktop #mobileNav { display: none; }
+    body.desktop .tab-dots { display: none; }
+    body.desktop .tab-deck { display: block; }
+    body.desktop #mobileAccountPanel { display: none !important; }
   </style>
 </head>
 <body>
@@ -342,6 +557,37 @@
   </div>
 </div>
 
+<!-- Mobile Bottom Navigation -->
+<div id="mobileNav" style="display:none;">
+  <button class="nav-item active" id="nav-home" onclick="mobileNav('home')">
+    <span class="nav-icon">&#8962;</span>
+    <span class="nav-label">Start Here</span>
+  </button>
+  <button class="nav-item" id="nav-results" onclick="mobileNav('results')">
+    <span class="nav-icon">&#9654;</span>
+    <span class="nav-label">Results</span>
+  </button>
+  <button class="nav-item" id="nav-history" onclick="openHistoryModal()">
+    <span class="nav-icon">&#128337;</span>
+    <span class="nav-label">History</span>
+  </button>
+  <button class="nav-item" id="nav-account" onclick="openMobileAccount()">
+    <span class="nav-icon">&#9881;</span>
+    <span class="nav-label">Account</span>
+  </button>
+</div>
+
+<!-- Mobile Account Panel -->
+<div id="mobileAccountPanel">
+  <div id="mobileAccountInner">
+    <div style="width:40px;height:4px;background:var(--border-light);border-radius:2px;margin:0 auto 1.5rem;"></div>
+    <div id="mobileAccountEmail" style="font-size:13px;color:var(--text-dim);margin-bottom:1.5rem;text-align:center;"></div>
+    <button onclick="openAccountModal();closeMobileAccount();" style="width:100%;text-align:left;padding:14px 16px;border:none;background:var(--surface2);color:var(--text);font-size:15px;font-family:inherit;border-radius:10px;margin-bottom:10px;cursor:pointer;">&#128100; My Account</button>
+    <button onclick="openHelpModal();closeMobileAccount();" style="width:100%;text-align:left;padding:14px 16px;border:none;background:var(--surface2);color:var(--text);font-size:15px;font-family:inherit;border-radius:10px;margin-bottom:10px;cursor:pointer;">&#63; Help</button>
+    <button onclick="signOut();closeMobileAccount();" style="width:100%;text-align:left;padding:14px 16px;border:none;background:var(--surface2);color:#ff6b6b;font-size:15px;font-family:inherit;border-radius:10px;cursor:pointer;">&#8594; Sign Out</button>
+  </div>
+</div>
+
 <div class="container">
 
   <div class="login-wrapper" id="loginWrapper">
@@ -400,24 +646,24 @@
 
   <div class="main" id="mainSection">
 
-    <div class="card">
+    <div class="card" id="startHereCard">
       <div class="card-label">Start Here</div>
-      <div class="options-row" style="margin-bottom:1rem;">
-        <div class="input-group" style="flex:2; margin-bottom:0;">
-          <label>Speaker First Name</label>
-          <input type="text" id="speakerFirst" placeholder="Brian" />
-        </div>
-        <div class="input-group" style="flex:2; margin-bottom:0;">
-          <label>Speaker Last Name</label>
-          <input type="text" id="speakerLast" placeholder="Last name" />
-        </div>
-        <div class="input-group" style="flex:2; margin-bottom:0;">
+      <div class="speaker-row" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
+        <div class="input-group" style="margin-bottom:0;">
           <label>Speaker Title</label>
           <input type="text" id="speakerTitle" placeholder="Pastor" />
         </div>
-        <div class="input-group" style="flex:2; margin-bottom:0;">
-          <label>Sermon Date</label>
-          <input type="text" id="sermonDate" placeholder="May 18, 2026 (required)" />
+        <div class="input-group" style="margin-bottom:0;">
+          <label>Sermon Date <span style="color:#ff6b6b;">*</span></label>
+          <input type="text" id="sermonDate" placeholder="May 18, 2026" />
+        </div>
+        <div class="input-group" style="margin-bottom:0;">
+          <label>First Name</label>
+          <input type="text" id="speakerFirst" placeholder="Brian" />
+        </div>
+        <div class="input-group" style="margin-bottom:0;">
+          <label>Last Name</label>
+          <input type="text" id="speakerLast" placeholder="Last name" />
         </div>
       </div>
       <div class="input-group">
@@ -458,20 +704,26 @@
       <div style="margin-top:1rem;">
         <label style="display:block;font-size:13px;font-weight:600;color:var(--gray);margin-bottom:8px;">Sermon Clip Focus</label>
         <div style="display:flex;gap:8px;">
-          <button class="clip-mode-card active" id="clipmode-outreach" onclick="selectClipMode('outreach')">
-            <span class="clip-mode-icon">&#127758;</span>
-            <span class="clip-mode-title">Outreach</span>
-            <span class="clip-mode-desc">5 clips for reaching people outside the faith</span>
+          <button class="clip-mode-card active" id="clipmode-outreach" onclick="selectClipMode('outreach')" style="background-image:url('https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/SermonAppOutreachCard.jpg');">
+            <div class="clip-mode-inner">
+              <span class="clip-mode-icon">&#127758;</span>
+              <span class="clip-mode-title">Outreach</span>
+              <span class="clip-mode-desc">5 clips for reaching people outside the faith</span>
+            </div>
           </button>
-          <button class="clip-mode-card" id="clipmode-discipleship" onclick="selectClipMode('discipleship')">
-            <span class="clip-mode-icon">&#128214;</span>
-            <span class="clip-mode-title">Discipleship</span>
-            <span class="clip-mode-desc">5 clips for growing people inside the faith</span>
+          <button class="clip-mode-card" id="clipmode-discipleship" onclick="selectClipMode('discipleship')" style="background-image:url('https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/SermonAppDiscipleshipCard.jpg');">
+            <div class="clip-mode-inner">
+              <span class="clip-mode-icon">&#128214;</span>
+              <span class="clip-mode-title">Discipleship</span>
+              <span class="clip-mode-desc">5 clips for growing people inside the faith</span>
+            </div>
           </button>
-          <button class="clip-mode-card" id="clipmode-custom" onclick="selectClipMode('custom')">
-            <span class="clip-mode-icon">&#9998;</span>
-            <span class="clip-mode-title">Custom</span>
-            <span class="clip-mode-desc">Check a specific question from your community</span>
+          <button class="clip-mode-card" id="clipmode-custom" onclick="selectClipMode('custom')" style="background-image:url('https://raw.githubusercontent.com/brianc-citylight/citylight-sermon-analyzer/main/images/SermonAppCustomQuestionCard.jpg');">
+            <div class="clip-mode-inner">
+              <span class="clip-mode-icon">&#9998;</span>
+              <span class="clip-mode-title">Custom</span>
+              <span class="clip-mode-desc">Check a specific question from your community</span>
+            </div>
           </button>
         </div>
         <div id="customQuestionField" style="display:none;margin-top:0.75rem;">
@@ -500,6 +752,16 @@
         <button class="tab-btn" onclick="switchTab('notes')">Sermon Notes Slides</button>
         <button class="tab-btn" onclick="switchTab('clips')">Sermon Clips</button>
       </div>
+      <!-- Mobile tab dots indicator -->
+      <div class="tab-dots" id="tabDots" style="display:none;">
+        <div class="tab-dot active" id="dot-0"></div>
+        <div class="tab-dot" id="dot-1"></div>
+        <div class="tab-dot" id="dot-2"></div>
+      </div>
+      <div class="tab-label" id="tabLabel" style="display:none;">Sermon Summary</div>
+      <!-- MOBILE SWIPE DECK WRAPPER -->
+      <div class="tab-deck" id="tabDeck">
+
       <!-- SERMON SUMMARY TAB -->
       <div class="tab-content active" id="tab-summary">
         <div id="summaryContainer">
@@ -543,6 +805,131 @@
   </div>
 </div>
 <script>
+// ── DEVICE DETECTION — locked at load, never re-evaluates ───────────────
+const IS_MOBILE = window.matchMedia('(max-width: 767px)').matches;
+if (IS_MOBILE) {
+  document.body.classList.add('mobile');
+} else {
+  document.body.classList.add('desktop');
+}
+
+// ── MOBILE NAVIGATION ─────────────────────────────────────────────────────
+let mobileCurrentSection = 'home';
+let mobileCurrentTab = 0;
+const TAB_NAMES = ['Sermon Summary', 'Sermon Notes Slides', 'Sermon Clips'];
+const TAB_IDS = ['summary', 'notes', 'clips'];
+
+function mobileNav(section) {
+  if (!IS_MOBILE) return;
+  mobileCurrentSection = section;
+
+  // Update nav active state
+  ['home','results','history','account'].forEach(s => {
+    const el = document.getElementById('nav-' + s);
+    if (el) el.classList.toggle('active', s === section);
+  });
+
+  // Show/hide sections
+  const startHere = document.getElementById('startHereCard');
+  const resultsSection = document.getElementById('resultsSection');
+
+  if (section === 'home') {
+    if (startHere) startHere.style.display = 'block';
+    if (resultsSection) resultsSection.style.display = 'none';
+  } else if (section === 'results') {
+    if (startHere) startHere.style.display = 'none';
+    if (resultsSection) {
+      resultsSection.style.display = 'block';
+      resultsSection.classList.add('visible');
+    }
+  }
+}
+
+function openMobileAccount() {
+  const panel = document.getElementById('mobileAccountPanel');
+  if (panel) panel.classList.add('open');
+}
+
+function closeMobileAccount() {
+  const panel = document.getElementById('mobileAccountPanel');
+  if (panel) panel.classList.remove('open');
+}
+
+// Close mobile account panel on backdrop tap
+document.addEventListener('click', function(e) {
+  const panel = document.getElementById('mobileAccountPanel');
+  const inner = document.getElementById('mobileAccountInner');
+  if (panel && panel.classList.contains('open') && !inner.contains(e.target)) {
+    panel.classList.remove('open');
+  }
+});
+
+// ── MOBILE SWIPE DECK ──────────────────────────────────────────────────────
+let touchStartX = 0;
+let touchStartY = 0;
+let isSwiping = false;
+
+function initSwipeDeck() {
+  if (!IS_MOBILE) return;
+
+  const deck = document.getElementById('tabDeck');
+  const dots = document.getElementById('tabDots');
+  const label = document.getElementById('tabLabel');
+  if (!deck) return;
+
+  // Show dots and label on mobile
+  if (dots) dots.style.display = 'flex';
+  if (label) label.style.display = 'block';
+
+  deck.addEventListener('touchstart', function(e) {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    isSwiping = false;
+  }, { passive: true });
+
+  deck.addEventListener('touchmove', function(e) {
+    const dx = Math.abs(e.touches[0].clientX - touchStartX);
+    const dy = Math.abs(e.touches[0].clientY - touchStartY);
+    if (dx > dy && dx > 10) isSwiping = true;
+  }, { passive: true });
+
+  deck.addEventListener('touchend', function(e) {
+    if (!isSwiping) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) < 50) return;
+
+    if (dx < 0 && mobileCurrentTab < 2) {
+      setMobileTab(mobileCurrentTab + 1);
+    } else if (dx > 0 && mobileCurrentTab > 0) {
+      setMobileTab(mobileCurrentTab - 1);
+    }
+    isSwiping = false;
+  }, { passive: true });
+}
+
+function setMobileTab(index) {
+  mobileCurrentTab = index;
+
+  // Update visible tab content
+  TAB_IDS.forEach((id, i) => {
+    const el = document.getElementById('tab-' + id);
+    if (el) el.classList.toggle('active', i === index);
+  });
+
+  // Update dots
+  for (let i = 0; i < 3; i++) {
+    const dot = document.getElementById('dot-' + i);
+    if (dot) dot.classList.toggle('active', i === index);
+  }
+
+  // Update label
+  const label = document.getElementById('tabLabel');
+  if (label) label.textContent = TAB_NAMES[index];
+
+  // Also update desktop tab buttons for consistency
+  switchTab(TAB_IDS[index]);
+}
+
 // ── SUPABASE AUTH ────────────────────────────────────────────────────────
 // Supabase URL and anon key are read from meta tags injected by the server
 // or from window globals set by the api/config endpoint
@@ -604,6 +991,20 @@ function onSignedIn(user) {
   document.getElementById('userEmail').textContent = user.email;
   document.getElementById('menuEmail').textContent = user.email;
   document.getElementById('accountEmail').value = user.email;
+
+  // Mobile-specific setup
+  if (IS_MOBILE) {
+    document.getElementById('mobileNav').style.display = 'flex';
+    document.getElementById('mobileAccountEmail').textContent = user.email;
+    // Hide hamburger on mobile — replaced by bottom nav
+    document.getElementById('hamburgerBtn').style.display = 'none';
+    document.getElementById('userEmail').style.display = 'none';
+    // Initialize swipe deck
+    setTimeout(initSwipeDeck, 100);
+    // Hide start here card until results arrive
+    const startHere = document.getElementById('startHereCard');
+    if (startHere) startHere.style.display = 'block';
+  }
 }
 
 function onSignedOut() {
@@ -1049,6 +1450,14 @@ function renderResults(questions, slides, summary) {
   renderClipsTab(questions);
 
   document.getElementById('resultsSection').classList.add('visible');
+
+  // On mobile, switch to results section automatically
+  if (IS_MOBILE) {
+    mobileNav('results');
+    document.getElementById('nav-results').classList.add('active');
+    document.getElementById('nav-home').classList.remove('active');
+    setMobileTab(0); // Start on Summary tab
+  }
 }
 
 function renderClipsTab(questions) {
@@ -2080,6 +2489,14 @@ function restoreAnalysis(a) {
 
   renderResults(currentQuestions, currentSlides, currentSummary);
   document.getElementById('resultsSection').classList.add('visible');
+
+  // On mobile, switch to results section automatically
+  if (IS_MOBILE) {
+    mobileNav('results');
+    document.getElementById('nav-results').classList.add('active');
+    document.getElementById('nav-home').classList.remove('active');
+    setMobileTab(0); // Start on Summary tab
+  }
 
   // Restore publish badges on clips
   restorePublishBadges(a.questions || []);
