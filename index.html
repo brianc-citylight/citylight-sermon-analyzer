@@ -1445,30 +1445,79 @@ async function analyzeSermon(skipDuplicateCheck = false) {
       document.getElementById('analyzeBtn').disabled = false;
       return;
     }
-    // For uploaded files, currentUploadId is the Supabase public URL
     currentVideoId = currentUploadId;
     videoId = currentUploadId;
-    sermonTitle = selectedVideoFile ? selectedVideoFile.name.replace(/\.[^.]+$/, '') : 'Uploaded Sermon';
+    sermonTitle = 'Uploaded Sermon';
 
-    // Skip duplicate check for now - uploaded files skip YouTube title/transcript fetch
-    setStatus('Analyzing uploaded sermon...');
-    // Go straight to Claude analysis with no transcript auto-fetch
+    // STEP 1: Submit Google Drive URL to AssemblyAI for transcription
+    setStatus('Submitting video to AssemblyAI for transcription...');
+    let transcriptId = null;
     try {
-      const slideCount = document.getElementById('slideCount').value;
-      const speakerFirst = document.getElementById('speakerFirst').value.trim();
-      const speakerLast = document.getElementById('speakerLast').value.trim();
-      const speakerTitle = document.getElementById('speakerTitle').value.trim();
-      const speakerFull = [speakerTitle, speakerFirst, speakerLast].filter(Boolean).join(' ');
-      const sermonDateRaw = document.getElementById('sermonDate').value.trim();
-      const customQuestion = currentClipMode === 'custom' ? (document.getElementById('customQuestion').value.trim()) : '';
-      const manualTranscript = document.getElementById('transcriptInput')?.value?.trim() || '';
-
-      if (!manualTranscript) {
-        showError('Please paste the sermon transcript manually when using file upload.');
+      const submitRes = await fetch('/api/transcript-drive?action=submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audioUrl: currentUploadId })
+      });
+      const submitData = await submitRes.json();
+      if (!submitRes.ok || submitData.error) {
+        showError('Transcription submit failed: ' + (submitData.error || 'Unknown error'));
         document.getElementById('analyzeBtn').disabled = false;
         document.getElementById('statusBar').classList.remove('visible');
         return;
       }
+      transcriptId = submitData.transcriptId;
+    } catch(e) {
+      showError('Network error submitting for transcription: ' + e.message);
+      document.getElementById('analyzeBtn').disabled = false;
+      document.getElementById('statusBar').classList.remove('visible');
+      return;
+    }
+
+    // STEP 2: Poll AssemblyAI every 10 seconds until complete
+    setStatus('Transcribing sermon audio... this takes a few minutes for a full service.');
+    let driveTranscript = null;
+    let pollAttempts = 0;
+    const maxPollAttempts = 60;
+
+    while (pollAttempts < maxPollAttempts) {
+      await new Promise(r => setTimeout(r, 10000));
+      pollAttempts++;
+      try {
+        const pollRes = await fetch('/api/transcript-drive?action=poll&id=' + encodeURIComponent(transcriptId));
+        const pollData = await pollRes.json();
+        if (pollData.status === 'completed') {
+          driveTranscript = pollData.text;
+          break;
+        } else if (pollData.status === 'error') {
+          showError('Transcription failed: ' + (pollData.error || 'Unknown error'));
+          document.getElementById('analyzeBtn').disabled = false;
+          document.getElementById('statusBar').classList.remove('visible');
+          return;
+        }
+        const elapsed = Math.round(pollAttempts * 10 / 60);
+        setStatus('Transcribing sermon audio... (' + elapsed + ' min elapsed, please wait)');
+      } catch(e) {
+        console.warn('Poll attempt ' + pollAttempts + ' failed:', e.message);
+      }
+    }
+
+    if (!driveTranscript) {
+      showError('Transcription timed out after 10 minutes. Try again or use a YouTube link instead.');
+      document.getElementById('analyzeBtn').disabled = false;
+      document.getElementById('statusBar').classList.remove('visible');
+      return;
+    }
+
+    // STEP 3: Run Claude analysis with the transcript
+    setStatus('Transcription complete. Claude is analyzing the sermon...');
+    try {
+      const slideCount = document.getElementById('slideCount').value;
+      const speakerFirst = document.getElementById('speakerFirst').value.trim();
+      const speakerLast = document.getElementById('speakerLast').value.trim();
+      const speakerTitleVal = document.getElementById('speakerTitle').value.trim();
+      const speakerFull = [speakerTitleVal, speakerFirst, speakerLast].filter(Boolean).join(' ');
+      const sermonDateRaw = document.getElementById('sermonDate').value.trim();
+      const customQuestion = currentClipMode === 'custom' ? (document.getElementById('customQuestion').value.trim()) : '';
 
       const response = await fetch('/api/analyze', {
         method: 'POST',
@@ -1476,7 +1525,7 @@ async function analyzeSermon(skipDuplicateCheck = false) {
         body: JSON.stringify({
           sermonTitle,
           url: '',
-          transcript: manualTranscript,
+          transcript: driveTranscript,
           slideCount,
           date: sermonDateRaw,
           speaker: speakerFull,
@@ -1489,7 +1538,6 @@ async function analyzeSermon(skipDuplicateCheck = false) {
 
       const result = data.result || '';
       const slidesSplit = result.split('---SLIDES---');
-      const summarySplit = slidesSplit[0] ? slidesSplit[0].split('---SUMMARY---') : ['', ''];
 
       const seekerRaw = (slidesSplit[0] || '').split('---SUMMARY---')[0];
       const seekerLines = seekerRaw.split('\n').map(l => l.trim()).filter(Boolean);
