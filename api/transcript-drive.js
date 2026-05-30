@@ -28,7 +28,7 @@ export default async function handler(req, res) {
       const r = await fetch(submitUrl, {
         method: 'POST',
         headers: aaiHeaders,
-        body: JSON.stringify({ audio_url: audioUrl, speech_models: 'universal-2', 'universal-3-pro', language_detection: true })
+        body: JSON.stringify({ audio_url: audioUrl, speech_models: ['universal-2'], language_detection: true })
       });
       const data = await r.json();
       if (!r.ok) return res.status(r.status).json({ error: data.error || 'AssemblyAI submit failed' });
