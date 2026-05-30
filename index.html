@@ -1430,6 +1430,7 @@ async function analyzeSermon(skipDuplicateCheck = false) {
     : '';
   const speakerFull = [speakerTitle, speakerFirst, speakerLast].filter(Boolean).join(' ') || 'the pastor';
   const sermonDateDisplay2 = sermonDateInput;
+  let videoId = null; // declared here so both YouTube and upload modes can use it
 
   // Date is required for both modes
   if (!sermonDateInput) { showError('Please enter the sermon date. This ensures accurate dating of all outputs.'); return; }
@@ -1535,7 +1536,7 @@ async function analyzeSermon(skipDuplicateCheck = false) {
   // -- YOUTUBE SOURCE MODE (existing logic continues below) --------------
   // Validate YouTube URL now that we know we are in YouTube mode
   if (!url) { showError('Please enter a YouTube link.'); document.getElementById('analyzeBtn').disabled = false; return; }
-  const videoId = extractVideoId(url);
+  videoId = extractVideoId(url);
   if (!videoId) { showError('Could not parse a YouTube video ID. Please check the URL.'); document.getElementById('analyzeBtn').disabled = false; return; }
 
   // Store videoId globally for history use
