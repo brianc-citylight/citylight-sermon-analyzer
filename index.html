@@ -1465,10 +1465,8 @@ async function analyzeSermon(skipDuplicateCheck = false) {
   const speakerFull = [speakerTitle, speakerFirst, speakerLast].filter(Boolean).join(' ') || 'the pastor';
   const sermonDateDisplay2 = sermonDateInput;
 
-  if (!url) { showError('Please enter a YouTube link.'); return; }
+  // Date is required for both modes
   if (!sermonDateInput) { showError('Please enter the sermon date. This ensures accurate dating of all outputs.'); return; }
-  const videoId = extractVideoId(url);
-  if (!videoId) { showError('Could not parse a YouTube video ID. Please check the URL.'); return; }
 
   document.getElementById('analyzeBtn').disabled = true;
   document.getElementById('resultsSection').classList.remove('visible');
@@ -1580,6 +1578,11 @@ async function analyzeSermon(skipDuplicateCheck = false) {
   }
 
   // -- YOUTUBE SOURCE MODE (existing logic continues below) --------------
+  // Validate YouTube URL now that we know we are in YouTube mode
+  if (!url) { showError('Please enter a YouTube link.'); document.getElementById('analyzeBtn').disabled = false; return; }
+  const videoId = extractVideoId(url);
+  if (!videoId) { showError('Could not parse a YouTube video ID. Please check the URL.'); document.getElementById('analyzeBtn').disabled = false; return; }
+
   // Store videoId globally for history use
   currentVideoId = videoId;
 
@@ -2042,7 +2045,8 @@ async function sendToOpus(i, btn) {
   const youtubeUrl = document.getElementById('youtubeUrl').value.trim();
   const statusEl = document.getElementById('opus-status-' + i);
 
-  if (!youtubeUrl) { statusEl.textContent = 'No YouTube URL found.'; return; }
+  if (!youtubeUrl && currentSourceMode !== 'upload') { statusEl.textContent = 'No YouTube URL found.'; return; }
+  if (currentSourceMode === 'upload' && !currentUploadId) { statusEl.textContent = 'No uploaded video found. Please re-upload the file.'; return; }
 
   btn.disabled = true;
   statusEl.innerHTML = '<span class="opus-status queued">Sending to Opus Clip...</span>';
