@@ -108,7 +108,8 @@ export default async function handler(req, res) {
     if (req.method === 'POST' && action === 'save') {
       const {
         videoId, sermonTitle, sermonDate, clipMode,
-        slideCount, speaker, questions, slides, summary, customQ
+        slideCount, speaker, questions, slides, summary, customQ,
+        sourceType
       } = req.body;
 
       if (!videoId || !sermonTitle || !clipMode) {
@@ -134,6 +135,7 @@ export default async function handler(req, res) {
             slides: slides || [],
             summary: summary || '',
             custom_q: customQ || null,
+            source_type: sourceType || 'youtube',
             created_at: new Date().toISOString()
           }
         );
@@ -151,7 +153,8 @@ export default async function handler(req, res) {
           questions: questions || [],
           slides: slides || [],
           summary: summary || '',
-          custom_q: customQ || null
+          custom_q: customQ || null,
+          source_type: sourceType || 'youtube' 
         });
         savedId = inserted && inserted[0] ? inserted[0].id : null;
       }

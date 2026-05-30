@@ -20,6 +20,47 @@ export default async function handler(req, res) {
     'Content-Type': 'application/json'
   };
 
+  // ── UPLOAD LINK ───────────────────────────────────────────────────────────
+  if (req.method === 'POST' && req.query.action === 'upload-link') {
+    try {
+      const opusRes = await fetch('https://api.opus.pro/api/upload-links', {
+        method: 'POST',
+        headers: { ...opusHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ video: { usecase: 'LocalUpload' } })
+      });
+      const data = await opusRes.json();
+      if (!opusRes.ok) {
+        return res.status(opusRes.status).json({ error: data.message || data.error || 'Failed to get upload link' });
+      }
+      return res.status(200).json({ url: data.url, uploadId: data.uploadId });
+    } catch(e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── UPLOAD INIT (start resumable GCS session) ─────────────────────────────
+  if (req.method === 'POST' && req.query.action === 'upload-init') {
+    const { gcsUrl } = req.body;
+    if (!gcsUrl) return res.status(400).json({ error: 'Missing gcsUrl' });
+    try {
+      const initRes = await fetch(gcsUrl, {
+        method: 'POST',
+        headers: {
+          'x-goog-resumable': 'start',
+          'Content-Length': '0'
+        }
+      });
+      // The resumable upload location is in the Location response header
+      const location = initRes.headers.get('location') || initRes.headers.get('Location');
+      if (!location) {
+        return res.status(500).json({ error: 'No location header returned from GCS' });
+      }
+      return res.status(200).json({ location });
+    } catch(e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
   // ── CREATE PROJECT ────────────────────────────────────────────────────────
   if (req.method === 'POST' && req.query.action === 'create') {
     const { videoUrl, startSec, endSec, question } = req.body;
