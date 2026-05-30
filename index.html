@@ -718,16 +718,46 @@
           <input type="text" id="speakerLast" placeholder="Last name" />
         </div>
       </div>
-      <div class="input-group">
+      <!-- Source toggle -->
+      <div style="display:flex;gap:8px;margin-bottom:0.75rem;">
+        <button id="srcYouTubeBtn" onclick="setSourceMode('youtube')" class="btn btn-sm" style="flex:1;border-color:var(--gold);color:var(--gold);font-size:0.825rem;">&#9654; YouTube Link</button>
+        <button id="srcUploadBtn" onclick="setSourceMode('upload')" class="btn btn-sm" style="flex:1;font-size:0.825rem;">&#8679; Upload Video File</button>
+      </div>
+
+      <!-- YouTube URL input -->
+      <div id="youtubeInputGroup" class="input-group">
         <label>YouTube Sermon Link</label>
         <input type="text" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." />
       </div>
-      <span class="transcript-toggle" onclick="toggleTranscript()">+ Paste transcript manually (use if auto-fetch fails)</span>
+      <span id="transcriptToggleBtn" class="transcript-toggle" onclick="toggleTranscript()">+ Paste transcript manually (use if auto-fetch fails)</span>
       <div class="transcript-box" id="transcriptBox">
         <div class="input-group" style="margin-top:0.75rem; margin-bottom:0;">
           <label>Sermon Transcript</label>
           <textarea id="transcriptInput" placeholder="Go to YouTube, click the three dots under the video, click Show Transcript, copy and paste here."></textarea>
         </div>
+      </div>
+
+      <!-- Upload video input -->
+      <div id="uploadInputGroup" style="display:none;">
+        <div class="input-group">
+          <label>Sermon Video File</label>
+          <div id="uploadDropZone" style="border:2px dashed var(--border-light);border-radius:10px;padding:2rem 1rem;text-align:center;cursor:pointer;background:var(--surface2);transition:border-color 0.15s;" onclick="document.getElementById('videoFileInput').click()">
+            <div id="uploadDropText" style="font-size:0.9rem;color:var(--text-dim);line-height:1.6;">
+              <div style="font-size:1.5rem;margin-bottom:0.5rem;">&#8679;</div>
+              <div>Tap to select a video file</div>
+              <div style="font-size:0.75rem;margin-top:0.25rem;">MP4, MOV, or M4V</div>
+            </div>
+            <div id="uploadFileName" style="display:none;font-size:0.9rem;color:var(--gold);font-weight:600;"></div>
+          </div>
+          <input type="file" id="videoFileInput" accept="video/mp4,video/quicktime,video/x-m4v,video/*" style="display:none;" onchange="handleVideoFileSelect(this)" />
+        </div>
+        <div id="uploadProgress" style="display:none;margin-top:0.5rem;">
+          <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+            <div id="uploadProgressBar" style="height:100%;background:var(--gold);width:0%;transition:width 0.3s;border-radius:2px;"></div>
+          </div>
+          <div id="uploadProgressText" style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;"></div>
+        </div>
+        <div id="uploadedIdDisplay" style="display:none;font-size:0.75rem;color:#00cc88;margin-top:4px;">&#10003; Video uploaded to Opus Clip</div>
       </div>
       <div class="options-row" style="align-items:flex-end;">
         <div class="option-group">
@@ -863,7 +893,7 @@
   </div>
 </div>
 <script>
-// ── DEVICE DETECTION — locked at load, never re-evaluates ───────────────
+// -- DEVICE DETECTION - locked at load, never re-evaluates ---------------
 const IS_MOBILE = window.matchMedia('(max-width: 767px)').matches;
 if (IS_MOBILE) {
   document.body.classList.add('mobile');
@@ -871,7 +901,7 @@ if (IS_MOBILE) {
   document.body.classList.add('desktop');
 }
 
-// ── MOBILE NAVIGATION ─────────────────────────────────────────────────────
+// -- MOBILE NAVIGATION -----------------------------------------------------
 let mobileCurrentSection = 'home';
 let mobileCurrentTab = 0;
 const TAB_NAMES = ['Sermon Summary', 'Sermon Notes Slides', 'Sermon Clips'];
@@ -921,14 +951,14 @@ document.addEventListener('click', function(e) {
   const panel = document.getElementById('mobileAccountPanel');
   const inner = document.getElementById('mobileAccountInner');
   const navBtn = document.getElementById('nav-account');
-  // Ignore clicks on the account nav button — openMobileAccount handles those
+  // Ignore clicks on the account nav button - openMobileAccount handles those
   if (navBtn && navBtn.contains(e.target)) return;
   if (panel && panel.classList.contains('open') && inner && !inner.contains(e.target)) {
     panel.classList.remove('open');
   }
 });
 
-// ── MOBILE SWIPE DECK ──────────────────────────────────────────────────────
+// -- MOBILE SWIPE DECK ------------------------------------------------------
 let touchStartX = 0;
 let touchStartY = 0;
 let isSwiping = false;
@@ -1005,7 +1035,7 @@ function setMobileTab(index) {
   });
 }
 
-// ── SUPABASE AUTH ────────────────────────────────────────────────────────
+// -- SUPABASE AUTH --------------------------------------------------------
 // Supabase URL and anon key are read from meta tags injected by the server
 // or from window globals set by the api/config endpoint
 let supabaseClient = null;
@@ -1078,7 +1108,7 @@ function onSignedIn(user) {
   if (IS_MOBILE) {
     document.getElementById('mobileNav').style.display = 'flex';
     document.getElementById('mobileAccountEmail').textContent = user.email;
-    // Hide hamburger on mobile — replaced by bottom nav
+    // Hide hamburger on mobile - replaced by bottom nav
     document.getElementById('hamburgerBtn').style.display = 'none';
     document.getElementById('userEmail').style.display = 'none';
     // Initialize swipe deck
@@ -1142,7 +1172,7 @@ async function handlePasswordReset() {
   else { msgEl.textContent = 'Reset email sent. Check your inbox.'; msgEl.style.color = 'green'; }
 }
 
-// ── MENU ─────────────────────────────────────────────────────────────────
+// -- MENU -----------------------------------------------------------------
 function toggleMenu() {
   const menu = document.getElementById('menuDropdown');
   menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
@@ -1214,7 +1244,10 @@ let currentCustomQ = null;
 let currentTheme = '1';
 let currentClipMode = 'outreach';
 let currentAnalysisId = null; // Supabase record ID for current analysis
-let currentVideoId = null;    // YouTube video ID for current analysis
+let currentVideoId = null;    // YouTube video ID or Opus uploadId for current analysis
+let currentSourceMode = 'youtube'; // 'youtube' | 'upload'
+let currentUploadId = null;   // Opus uploadId when source is uploaded file
+let selectedVideoFile = null; // The File object when user selects a file
 let sermonTitle = '';
 
 // Helper: get current user ID from Supabase session
@@ -1252,6 +1285,110 @@ const THEMES = {
   '4': { bg:'#686868', text:'#FFFFFF', subtext:'#e0e0e0', accent:'#FFFFFF', accentBar:'#111111', takeawayBg:'rgba(255,255,255,0.1)', reflBorder:'#FFFFFF', reflLabel:'#e0e0e0', scripture:'#e0e0e0', divider:'rgba(255,255,255,0.2)', name:'Slate' }
 };
 
+// -- SOURCE MODE TOGGLE ----------------------------------------------------
+function setSourceMode(mode) {
+  currentSourceMode = mode;
+  const ytBtn = document.getElementById('srcYouTubeBtn');
+  const upBtn = document.getElementById('srcUploadBtn');
+  const ytGroup = document.getElementById('youtubeInputGroup');
+  const upGroup = document.getElementById('uploadInputGroup');
+  const transcriptBtn = document.getElementById('transcriptToggleBtn');
+  const transcriptBox = document.getElementById('transcriptBox');
+
+  if (mode === 'youtube') {
+    ytBtn.style.borderColor = 'var(--gold)';
+    ytBtn.style.color = 'var(--gold)';
+    upBtn.style.borderColor = 'var(--border-light)';
+    upBtn.style.color = 'var(--text)';
+    ytGroup.style.display = 'block';
+    upGroup.style.display = 'none';
+    transcriptBtn.style.display = 'inline-block';
+  } else {
+    upBtn.style.borderColor = 'var(--gold)';
+    upBtn.style.color = 'var(--gold)';
+    ytBtn.style.borderColor = 'var(--border-light)';
+    ytBtn.style.color = 'var(--text)';
+    ytGroup.style.display = 'none';
+    upGroup.style.display = 'block';
+    transcriptBox.style.display = 'none';
+    transcriptBtn.style.display = 'none';
+  }
+}
+
+function handleVideoFileSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  selectedVideoFile = file;
+  currentUploadId = null; // reset any prior upload
+
+  const nameEl = document.getElementById('uploadFileName');
+  const dropText = document.getElementById('uploadDropText');
+  const sizeStr = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+
+  dropText.style.display = 'none';
+  nameEl.style.display = 'block';
+  nameEl.textContent = file.name + ' (' + sizeStr + ')';
+  document.getElementById('uploadedIdDisplay').style.display = 'none';
+  document.getElementById('uploadProgress').style.display = 'none';
+}
+
+async function uploadVideoToOpus(file) {
+  // Step 1: Get upload link from Opus
+  setStatus('Getting Opus upload link...');
+  const linkRes = await fetch('/api/opus?action=upload-link', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  if (!linkRes.ok) throw new Error('Failed to get upload link');
+  const linkData = await linkRes.json();
+  const { url: gcsUrl, uploadId } = linkData;
+
+  // Step 2: Initiate resumable upload session via our proxy
+  setStatus('Initiating upload session...');
+  const initRes = await fetch('/api/opus?action=upload-init', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ gcsUrl })
+  });
+  if (!initRes.ok) throw new Error('Failed to initiate upload session');
+  const initData = await initRes.json();
+  const { location } = initData;
+
+  // Step 3: Upload file directly to GCS resumable location
+  setStatus('Uploading video... this may take a moment.');
+  document.getElementById('uploadProgress').style.display = 'block';
+
+  await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', location);
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+
+    xhr.upload.onprogress = function(e) {
+      if (e.lengthComputable) {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        document.getElementById('uploadProgressBar').style.width = pct + '%';
+        document.getElementById('uploadProgressText').textContent = 'Uploading: ' + pct + '%';
+      }
+    };
+
+    xhr.onload = function() {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve();
+      } else {
+        reject(new Error('Upload failed: ' + xhr.status));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Upload network error'));
+    xhr.send(file);
+  });
+
+  document.getElementById('uploadProgressBar').style.width = '100%';
+  document.getElementById('uploadProgressText').textContent = 'Upload complete';
+  document.getElementById('uploadedIdDisplay').style.display = 'block';
+
+  return uploadId;
+}
+
 function selectClipMode(mode) {
   currentClipMode = mode;
   ['outreach','discipleship','custom'].forEach(m => {
@@ -1281,7 +1418,7 @@ function switchTab(tab) {
     setMobileTab(index);
     return;
   }
-  // Desktop — update buttons and panels normally
+  // Desktop - update buttons and panels normally
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
     b.classList.toggle('active',
       (i===0&&tab==='summary')||(i===1&&tab==='notes')||(i===2&&tab==='clips'));
@@ -1336,6 +1473,113 @@ async function analyzeSermon(skipDuplicateCheck = false) {
   document.getElementById('analyzeBtn').disabled = true;
   document.getElementById('resultsSection').classList.remove('visible');
 
+  // -- HANDLE UPLOAD SOURCE MODE -----------------------------------------
+  if (currentSourceMode === 'upload') {
+    if (!selectedVideoFile && !currentUploadId) {
+      showError('Please select a video file to upload.');
+      document.getElementById('analyzeBtn').disabled = false;
+      return;
+    }
+    // Upload the file if not already uploaded
+    if (!currentUploadId && selectedVideoFile) {
+      try {
+        currentUploadId = await uploadVideoToOpus(selectedVideoFile);
+      } catch(e) {
+        showError('Video upload failed: ' + e.message);
+        document.getElementById('analyzeBtn').disabled = false;
+        document.getElementById('statusBar').classList.remove('visible');
+        return;
+      }
+    }
+    // For uploaded files, use uploadId as the video identifier
+    currentVideoId = currentUploadId;
+    videoId = currentUploadId;
+    sermonTitle = selectedVideoFile ? selectedVideoFile.name.replace(/\.[^.]+$/, '') : 'Uploaded Sermon';
+
+    // Skip duplicate check for now - uploaded files skip YouTube title/transcript fetch
+    setStatus('Analyzing uploaded sermon...');
+    // Go straight to Claude analysis with no transcript auto-fetch
+    try {
+      const slideCount = document.getElementById('slideCount').value;
+      const speakerFirst = document.getElementById('speakerFirst').value.trim();
+      const speakerLast = document.getElementById('speakerLast').value.trim();
+      const speakerTitle = document.getElementById('speakerTitle').value.trim();
+      const speakerFull = [speakerTitle, speakerFirst, speakerLast].filter(Boolean).join(' ');
+      const sermonDateRaw = document.getElementById('sermonDate').value.trim();
+      const customQuestion = currentClipMode === 'custom' ? (document.getElementById('customQuestion').value.trim()) : '';
+      const manualTranscript = document.getElementById('transcriptInput')?.value?.trim() || '';
+
+      if (!manualTranscript) {
+        showError('Please paste the sermon transcript manually when using file upload.');
+        document.getElementById('analyzeBtn').disabled = false;
+        document.getElementById('statusBar').classList.remove('visible');
+        return;
+      }
+
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sermonTitle,
+          url: '',
+          transcript: manualTranscript,
+          slideCount,
+          date: sermonDateRaw,
+          speaker: speakerFull,
+          customQuestion,
+          clipMode: currentClipMode
+        })
+      });
+      const data = await response.json();
+      if (!response.ok || data.error) { showError('Analysis error: ' + (data.error || 'Unknown')); document.getElementById('analyzeBtn').disabled = false; document.getElementById('statusBar').classList.remove('visible'); return; }
+
+      const result = data.result || '';
+      const slidesSplit = result.split('---SLIDES---');
+      const summarySplit = slidesSplit[0] ? slidesSplit[0].split('---SUMMARY---') : ['', ''];
+
+      const seekerRaw = (slidesSplit[0] || '').split('---SUMMARY---')[0];
+      const seekerLines = seekerRaw.split('\n').map(l => l.trim()).filter(Boolean);
+
+      currentQuestions = seekerLines.filter(l => l.startsWith('Q|')).map(line => {
+        const parts = line.split('|');
+        return { question: parts[1] || '', timestamp: parts[2] || '', caption: parts[3] || '', isCustom: false };
+      });
+
+      const customLine = seekerLines.find(l => l.startsWith('CQ|'));
+      if (customLine) {
+        const cp = customLine.split('|');
+        currentCustomQ = { question: cp[1] || '', timestamp: cp[2] || '', explanation: cp[3] || '' };
+      }
+
+      const slidesRaw = slidesSplit[1] || '';
+      currentSlides = [];
+      const slideBlocks = slidesRaw.split(/\n(?=TITLE_SLIDE|INTRO_SLIDE|SLIDE_\d)/).filter(Boolean);
+      slideBlocks.forEach(block => {
+        const lines = block.trim().split('\n');
+        const header = lines[0].trim();
+        const fields = {};
+        lines.slice(1).forEach(l => {
+          const colonIdx = l.indexOf(':');
+          if (colonIdx > 0) { fields[l.substring(0, colonIdx).trim()] = l.substring(colonIdx + 1).trim(); }
+        });
+        currentSlides.push({ header, fields });
+      });
+
+      let rawSummary = (slidesSplit[1] ? result.split('---SUMMARY---')[1] : '') || '';
+      rawSummary = rawSummary.replace(/^(OUTPUT\s*3\s*[-:]\s*)?SERMON\s*SUMMARY\s*[-:]?\s*/i, '').trim();
+      rawSummary = rawSummary.replace(/^OUTPUT\s*3\s*[-:]?\s*/i, '').trim();
+      currentSummary = rawSummary;
+
+      renderResults(currentQuestions, currentSlides, currentSummary);
+      autoSaveAnalysis(currentUploadId, slideCount, 'upload');
+
+    } catch(e) { showError('Network error: ' + e.message); }
+    document.getElementById('analyzeBtn').disabled = false;
+    document.getElementById('statusBar').classList.remove('visible');
+    return; // Exit early - upload path complete
+  }
+
+  // -- YOUTUBE SOURCE MODE (existing logic continues below) --------------
   // Store videoId globally for history use
   currentVideoId = videoId;
 
@@ -1374,14 +1618,14 @@ async function analyzeSermon(skipDuplicateCheck = false) {
         transcript = tData.transcript;
         setStatus('Transcript fetched. Analyzing sermon...');
       }
-    } catch(e) { /* silent fail — will use fallback */ }
+    } catch(e) { /* silent fail - will use fallback */ }
     if (!transcript) {
       setStatus('Transcript unavailable. Paste manually for best results.');
       transcript = '[No transcript available. For best results, paste the YouTube transcript manually using the toggle above.]';
     }
   }
 
-  setStatus('Claude is analyzing the sermon — about 30 to 45 seconds...');
+  setStatus('Claude is analyzing the sermon - about 30 to 45 seconds...');
 
   try {
     const response = await fetch('/api/analyze', {
@@ -1426,7 +1670,7 @@ async function analyzeSermon(skipDuplicateCheck = false) {
     renderResults(currentQuestions, currentSlides, currentSummary);
 
     // Auto-save to history
-    autoSaveAnalysis(videoId, slideCount);
+    autoSaveAnalysis(videoId, slideCount, 'youtube');
 
   } catch(e) {
     showError('Network error: ' + e.message);
@@ -1436,7 +1680,8 @@ async function analyzeSermon(skipDuplicateCheck = false) {
   document.getElementById('statusBar').classList.remove('visible');
 }
 
-async function autoSaveAnalysis(videoId, slideCount) {
+async function autoSaveAnalysis(videoId, slideCount, sourceType) {
+  const srcType = sourceType || currentSourceMode || 'youtube';
   const data = await historyCall('POST', 'save', {
     videoId,
     sermonTitle,
@@ -1451,7 +1696,8 @@ async function autoSaveAnalysis(videoId, slideCount) {
     questions: currentQuestions,
     slides: currentSlides,
     summary: currentSummary,
-    customQ: currentCustomQ || null
+    customQ: currentCustomQ || null,
+    sourceType: srcType
   });
   if (data && data.id) {
     currentAnalysisId = data.id;
@@ -1618,7 +1864,7 @@ function renderClipsTab(questions) {
         : `<div class="q-caption-label" style="margin-top:8px;">Social media caption <span style="font-weight:400;color:var(--text-dim);font-size:10px;">(editable before creating clip)</span></div>
            <textarea id="caption-edit-${i}" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;color:var(--text);font-size:13px;line-height:1.6;font-family:inherit;resize:vertical;min-height:80px;margin-bottom:8px;">${q.caption}</textarea>`
       }
-      ${hasClip ? '<div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">&#9654; Clip stored in Opus — validating...</div>' : ''}
+      ${hasClip ? '<div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">&#9654; Clip stored in Opus - validating...</div>' : ''}
       <div class="opus-clip-status" id="opus-status-${i}" style="margin-top:4px;"></div>
     `;
 
@@ -1641,7 +1887,7 @@ function renderClipsTab(questions) {
       btnRow.appendChild(copyBtn);
     }
 
-    // Create Clip button — only if clip has a timestamp
+    // Create Clip button - only if clip has a timestamp
     if (q.timestamp && !notAddressed) {
       const clipBtn = document.createElement('button');
       clipBtn.className = 'btn btn-sm btn-opus';
@@ -1730,7 +1976,7 @@ function downloadSlides() {
   download(text, `${slugify(sermonTitle)}_slides.txt`);
 }
 
-// ── OPUS CLIP INTEGRATION ────────────────────────────────────────────────
+// -- OPUS CLIP INTEGRATION ------------------------------------------------
 
 function timestampToSeconds(ts) {
   const parts = ts.split('-').map(s => s.trim());
@@ -1744,7 +1990,7 @@ function timestampToSeconds(ts) {
 }
 
 async function pollForCompletion(projectId, statusEl, maxAttempts = 24) {
-  // Poll via our serverless function every 15 seconds — no CORS issues
+  // Poll via our serverless function every 15 seconds - no CORS issues
   // opusKey captured at send time so field changes don't break polling
   let consecutiveErrors = 0;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -1757,8 +2003,8 @@ async function pollForCompletion(projectId, statusEl, maxAttempts = 24) {
         consecutiveErrors++;
         const elapsed = Math.round(((attempt + 1) * 15) / 60 * 10) / 10;
         if (consecutiveErrors >= 3) {
-          // Serverless function not reachable — tell user to check dashboard
-          statusEl.innerHTML = '<span class="opus-status error">Cannot reach poll endpoint (HTTP ' + res.status + '). Your clip may be ready — check your Opus Clip dashboard directly. Project ID: ' + projectId + '</span>';
+          // Serverless function not reachable - tell user to check dashboard
+          statusEl.innerHTML = '<span class="opus-status error">Cannot reach poll endpoint (HTTP ' + res.status + '). Your clip may be ready - check your Opus Clip dashboard directly. Project ID: ' + projectId + '</span>';
           return null;
         }
         statusEl.innerHTML = '<span class="opus-status processing">Polling... (' + elapsed + ' min, retrying)</span>';
@@ -1774,7 +2020,7 @@ async function pollForCompletion(projectId, statusEl, maxAttempts = 24) {
         continue;
       }
       const elapsed = Math.round(((attempt + 1) * 15) / 60 * 10) / 10;
-      statusEl.innerHTML = '<span class="opus-status processing">Processing... (' + elapsed + ' min elapsed) — check console for debug info</span>';
+      statusEl.innerHTML = '<span class="opus-status processing">Processing... (' + elapsed + ' min elapsed) - check console for debug info</span>';
     } catch(e) {
       consecutiveErrors++;
       if (consecutiveErrors >= 3) {
@@ -1805,13 +2051,18 @@ async function sendToOpus(i, btn) {
 
   // STAGE 1: Create project via serverless function
   try {
+    // Use uploadId if source is uploaded file, otherwise use YouTube URL
+    const opusVideoUrl = (currentSourceMode === 'upload' && currentUploadId)
+      ? currentUploadId
+      : youtubeUrl;
+
     const projRes = await fetch('/api/opus?action=create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        videoUrl: youtubeUrl,
+        videoUrl: opusVideoUrl,
         startSec,
         endSec,
         question: q.question
@@ -1833,7 +2084,7 @@ async function sendToOpus(i, btn) {
     if (clip) clip.projectId = projectId; // attach for publish step
 
     if (!clip) {
-      statusEl.innerHTML = '<span class="opus-status error">Timed out. Check your Opus Clip dashboard — the clip may still be processing.</span>';
+      statusEl.innerHTML = '<span class="opus-status error">Timed out. Check your Opus Clip dashboard - the clip may still be processing.</span>';
       btn.disabled = false;
       return;
     }
@@ -1875,7 +2126,7 @@ async function sendToOpus(i, btn) {
   }
 }
 
-// ── REVIEW AND PUBLISH ───────────────────────────────────────────────────
+// -- REVIEW AND PUBLISH ---------------------------------------------------
 
 function renderReviewPanel(card, clipIndex, q, clip, accounts) {
   const panel = document.createElement('div');
@@ -1953,7 +2204,7 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts) {
     // Platform name
     const platName = document.createElement('div');
     platName.style.cssText = 'font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#aaa; margin-bottom:8px;';
-    platName.textContent = platformLabel + ' — ' + acctName;
+    platName.textContent = platformLabel + ' - ' + acctName;
     section.appendChild(platName);
 
     // Button row
@@ -1998,7 +2249,7 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts) {
 
     panel.appendChild(section);
 
-    // ── Publish Now handler ───────────────────────────────────────────
+    // -- Publish Now handler -------------------------------------------
     pubBtn.onclick = async function() {
       pubBtn.disabled = true;
       pubBtn.textContent = 'Publishing...';
@@ -2021,13 +2272,13 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts) {
         });
         const d = await r.json();
         if (!r.ok || d.error) {
-          pubBtn.textContent = 'Failed — retry';
+          pubBtn.textContent = 'Failed - retry';
           pubBtn.disabled = false;
           statusDiv.style.color = '#ff6666';
           statusDiv.textContent = 'Error: ' + (d.error || 'Unknown error');
         } else {
           const ts = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
-          pubBtn.textContent = '✓ Published ' + ts;
+          pubBtn.textContent = 'Clip Published ' + ts;
           pubBtn.style.borderColor = '#00cc88';
           pubBtn.style.color = '#00cc88';
           schedBtn.disabled = true;
@@ -2037,19 +2288,19 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts) {
           trackPublish(clipIndex, platformLabel, d.postId || null, 'immediate', null);
         }
       } catch(e) {
-        pubBtn.textContent = 'Failed — retry';
+        pubBtn.textContent = 'Failed - retry';
         pubBtn.disabled = false;
         statusDiv.style.color = '#ff6666';
         statusDiv.textContent = 'Network error: ' + e.message;
       }
     };
 
-    // ── Schedule toggle ───────────────────────────────────────────────
+    // -- Schedule toggle -----------------------------------------------
     schedBtn.onclick = function() {
       schedPanel.style.display = schedPanel.style.display === 'none' ? 'block' : 'none';
     };
 
-    // ── Confirm schedule ──────────────────────────────────────────────
+    // -- Confirm schedule ----------------------------------------------
     setTimeout(function() {
       const confirmBtn = document.getElementById(schedId + '-confirm');
       if (!confirmBtn) return;
@@ -2078,14 +2329,14 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts) {
           });
           const d = await r.json();
           if (!r.ok || d.error) {
-            confirmBtn.textContent = 'Failed — retry';
+            confirmBtn.textContent = 'Failed - retry';
             confirmBtn.disabled = false;
             statusDiv.style.display = 'block';
             statusDiv.style.color = '#ff6666';
             statusDiv.textContent = 'Schedule error: ' + (d.error || 'Unknown error');
           } else {
             const schedDate = new Date(scheduledTimestamp).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
-            pubBtn.textContent = '⏰ Scheduled ' + schedDate;
+            pubBtn.textContent = 'Scheduled ' + schedDate;
             pubBtn.style.borderColor = 'var(--gold)';
             pubBtn.style.color = 'var(--gold)';
             pubBtn.disabled = true;
@@ -2097,7 +2348,7 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts) {
             trackPublish(clipIndex, platformLabel, d.postId || null, 'scheduled', scheduledTimestamp);
           }
         } catch(e) {
-          confirmBtn.textContent = 'Failed — retry';
+          confirmBtn.textContent = 'Failed - retry';
           confirmBtn.disabled = false;
         }
       };
@@ -2107,11 +2358,11 @@ function renderReviewPanel(card, clipIndex, q, clip, accounts) {
   card.appendChild(panel);
 }
 
-// ── SLIDE IMAGE GENERATION (handled by exportSlidesAsHtml and downloadSlideAsPng) ──
+// -- SLIDE IMAGE GENERATION (handled by exportSlidesAsHtml and downloadSlideAsPng) --
 
 
 
-// ── HTML SLIDE EXPORT ───────────────────────────────────────────────────────
+// -- HTML SLIDE EXPORT -------------------------------------------------------
 
 function exportSlidesAsHtml() {
   if (!currentSlides || currentSlides.length === 0) return;
@@ -2201,7 +2452,7 @@ function exportSlidesAsHtml() {
 <html>
 <head>
 <meta charset="UTF-8"/>
-<title>${sermonTitle} — Sermon Notes Slides</title>
+<title>${sermonTitle} - Sermon Notes Slides</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:#111; font-family:Arial,sans-serif; padding:20px; }
@@ -2225,7 +2476,7 @@ ${slidesHtml}
   a.click();
 }
 
-// ── EXPORT SINGLE SLIDE ──────────────────────────────────────────────────
+// -- EXPORT SINGLE SLIDE --------------------------------------------------
 function exportSingleSlide(slide) {
   if (!slide) return;
 
@@ -2304,7 +2555,7 @@ function exportSingleSlide(slide) {
 <html>
 <head>
 <meta charset="UTF-8"/>
-<title>${sermonTitle} — ${slug}</title>
+<title>${sermonTitle} - ${slug}</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:#111; display:flex; justify-content:center; padding:20px; }
@@ -2328,7 +2579,7 @@ body { background:#111; display:flex; justify-content:center; padding:20px; }
   a.click();
 }
 
-// ── DOWNLOAD SLIDE AS PNG ────────────────────────────────────────────────
+// -- DOWNLOAD SLIDE AS PNG ------------------------------------------------
 async function downloadSlideAsPng(slide, btn) {
   const orig = btn.textContent;
   btn.disabled = true;
@@ -2445,7 +2696,7 @@ async function downloadSlideAsPng(slide, btn) {
     btn.classList.add('copied');
     setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); btn.disabled = false; }, 2000);
   } catch(e) {
-    btn.textContent = 'Failed — try Export Slide instead';
+    btn.textContent = 'Failed - try Export Slide instead';
     btn.disabled = false;
     console.error('PNG export error:', e);
     setTimeout(() => { btn.textContent = orig; }, 3000);
@@ -2454,7 +2705,7 @@ async function downloadSlideAsPng(slide, btn) {
   }
 }
 
-// ── HISTORY ──────────────────────────────────────────────────────────────
+// -- HISTORY --------------------------------------------------------------
 
 let pendingDuplicateMatch = null;
 let pendingVideoId = null;
@@ -2599,12 +2850,12 @@ function restoreAnalysis(a) {
   // Restore publish badges on clips
   restorePublishBadges(a.questions || []);
 
-  // Validate stored clip data against Opus — clips expire over time
+  // Validate stored clip data against Opus - clips expire over time
   validateStoredClips(currentQuestions);
 }
 
 async function validateStoredClips(questions) {
-  // Fire all checks in parallel — fast, server-side, no CORS
+  // Fire all checks in parallel - fast, server-side, no CORS
   const checks = questions.map(async (q, i) => {
     if (!q.projectId || !q.clipId) return; // no clip stored, nothing to check
 
@@ -2617,7 +2868,7 @@ async function validateStoredClips(questions) {
       if (!card) return;
 
       if (data.ready) {
-        // Clip still exists — show ready state
+        // Clip still exists - show ready state
         const statusEl = document.getElementById('opus-status-' + i);
         if (statusEl && !statusEl.querySelector('.opus-status.done')) {
           const dashboardUrl = 'https://www.opus.pro/app/clip-projects/' + q.projectId;
@@ -2639,13 +2890,13 @@ async function validateStoredClips(questions) {
           }
         }
       } else {
-        // Clip expired or not found — clear stored data
+        // Clip expired or not found - clear stored data
         currentQuestions[i].projectId = null;
         currentQuestions[i].clipId = null;
         currentQuestions[i].previewUrl = null;
       }
     } catch(e) {
-      // Silent fail — clip check not critical, do not block UI
+      // Silent fail - clip check not critical, do not block UI
     }
   });
 
@@ -2666,11 +2917,11 @@ function restorePublishBadges(questions) {
         if (pub.type === 'scheduled') {
           const schedDate = new Date(pub.scheduledFor).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
           badge.style.cssText = 'display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#8B6914;background:#FFF8E8;border:1px solid #C9A84C;border-radius:20px;padding:3px 10px;';
-          badge.textContent = '⏰ Scheduled for ' + platform + ' — ' + schedDate;
+          badge.textContent = 'Scheduled for ' + platform + ' - ' + schedDate;
         } else {
           const pubDate = new Date(pub.publishedAt).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
           badge.style.cssText = 'display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#166534;background:#f0fff4;border:1px solid #86efac;border-radius:20px;padding:3px 10px;';
-          badge.textContent = '✓ Published to ' + platform + ' — ' + pubDate;
+          badge.textContent = 'Clip Published to ' + platform + ' - ' + pubDate;
         }
         badgeDiv.appendChild(badge);
       });
@@ -2679,7 +2930,7 @@ function restorePublishBadges(questions) {
   });
 }
 
-// ── PUBLISH TRACKING ──────────────────────────────────────────────────────
+// -- PUBLISH TRACKING ------------------------------------------------------
 
 async function trackPublish(clipIndex, platform, postId, type = 'immediate', scheduledFor = null) {
   if (!currentAnalysisId) return;
