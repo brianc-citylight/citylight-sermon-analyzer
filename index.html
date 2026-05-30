@@ -737,27 +737,16 @@
         </div>
       </div>
 
-      <!-- Upload video input -->
+      <!-- Upload video input — Google Drive link -->
       <div id="uploadInputGroup" style="display:none;">
         <div class="input-group">
-          <label>Sermon Video File</label>
-          <div id="uploadDropZone" style="border:2px dashed var(--border-light);border-radius:10px;padding:2rem 1rem;text-align:center;cursor:pointer;background:var(--surface2);transition:border-color 0.15s;" onclick="document.getElementById('videoFileInput').click()">
-            <div id="uploadDropText" style="font-size:0.9rem;color:var(--text-dim);line-height:1.6;">
-              <div style="font-size:1.5rem;margin-bottom:0.5rem;">&#8679;</div>
-              <div>Tap to select a video file</div>
-              <div style="font-size:0.75rem;margin-top:0.25rem;">MP4, MOV, or M4V</div>
-            </div>
-            <div id="uploadFileName" style="display:none;font-size:0.9rem;color:var(--gold);font-weight:600;"></div>
-          </div>
-          <input type="file" id="videoFileInput" accept="video/mp4,video/quicktime,video/x-m4v,video/*" style="display:none;" onchange="handleVideoFileSelect(this)" />
+          <label>Google Drive Video Link</label>
+          <input type="text" id="driveUrl" placeholder="https://drive.google.com/file/d/FILE_ID/view?usp=sharing" oninput="handleDriveUrlInput(this.value)" />
         </div>
-        <div id="uploadProgress" style="display:none;margin-top:0.5rem;">
-          <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
-            <div id="uploadProgressBar" style="height:100%;background:var(--gold);width:0%;transition:width 0.3s;border-radius:2px;"></div>
-          </div>
-          <div id="uploadProgressText" style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;"></div>
+        <div id="driveUrlStatus" style="display:none;font-size:0.825rem;margin-top:4px;padding:6px 10px;border-radius:6px;"></div>
+        <div style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;line-height:1.5;">
+          In Google Drive: right-click the video file, click Share, set to Anyone with the link, click Copy link, paste above.
         </div>
-        <div id="uploadedIdDisplay" style="display:none;font-size:0.75rem;color:#00cc88;margin-top:4px;">&#10003; Video uploaded to Opus Clip</div>
       </div>
       <div class="options-row" style="align-items:flex-end;">
         <div class="option-group">
@@ -1316,80 +1305,54 @@ function setSourceMode(mode) {
 }
 
 function handleVideoFileSelect(input) {
-  const file = input.files[0];
-  if (!file) return;
-  selectedVideoFile = file;
-  currentUploadId = null; // reset any prior upload
-
-  const nameEl = document.getElementById('uploadFileName');
-  const dropText = document.getElementById('uploadDropText');
-  const sizeStr = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
-
-  dropText.style.display = 'none';
-  nameEl.style.display = 'block';
-  nameEl.textContent = file.name + ' (' + sizeStr + ')';
-  document.getElementById('uploadedIdDisplay').style.display = 'none';
-  document.getElementById('uploadProgress').style.display = 'none';
+  // No longer used - replaced by Google Drive link input
 }
 
-async function uploadVideoToOpus(file) {
-  // Upload to Supabase Storage (CORS-friendly), get a public URL,
-  // then pass that URL to Opus as videoUrl — same as YouTube but for uploaded files
+function extractDriveId(url) {
+  const patterns = [
+    /\/file\/d\/([a-zA-Z0-9_-]+)/,
+    /[?&]id=([a-zA-Z0-9_-]+)/,
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
 
-  // Step 1: Get Supabase credentials
-  setStatus('Connecting to storage...');
-  const cfgRes = await fetch('/api/config');
-  if (!cfgRes.ok) throw new Error('Failed to get config');
-  const cfg = await cfgRes.json();
-  const { supabaseUrl, supabaseAnonKey } = cfg;
-  if (!supabaseUrl || !supabaseAnonKey) throw new Error('Missing Supabase config');
+function driveIdToDirectUrl(fileId) {
+  return 'https://drive.google.com/uc?export=download&id=' + fileId + '&confirm=1';
+}
 
-  // Step 2: Upload directly to Supabase Storage via REST API (browser-safe, CORS enabled)
-  setStatus('Uploading video to storage...');
-  document.getElementById('uploadProgress').style.display = 'block';
+function handleDriveUrlInput(val) {
+  const statusEl = document.getElementById('driveUrlStatus');
+  const trimmed = val.trim();
+  if (!trimmed) {
+    statusEl.style.display = 'none';
+    currentUploadId = null;
+    return;
+  }
+  const fileId = extractDriveId(trimmed);
+  if (fileId) {
+    currentUploadId = driveIdToDirectUrl(fileId);
+    statusEl.style.display = 'block';
+    statusEl.style.background = 'rgba(0,204,136,0.1)';
+    statusEl.style.border = '1px solid rgba(0,204,136,0.3)';
+    statusEl.style.color = '#00cc88';
+    statusEl.textContent = 'Drive link recognized. Ready to analyze.';
+  } else {
+    currentUploadId = null;
+    statusEl.style.display = 'block';
+    statusEl.style.background = 'rgba(255,107,107,0.1)';
+    statusEl.style.border = '1px solid rgba(255,107,107,0.3)';
+    statusEl.style.color = '#ff6b6b';
+    statusEl.textContent = 'Could not parse a Google Drive file ID. Please check the link.';
+  }
+}
 
-  const fileName = Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const uploadUrl = supabaseUrl + '/storage/v1/object/sermons/' + fileName;
-
-  await new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', uploadUrl);
-    xhr.setRequestHeader('Authorization', 'Bearer ' + supabaseAnonKey);
-    xhr.setRequestHeader('x-upsert', 'true');
-
-    xhr.upload.onprogress = function(e) {
-      if (e.lengthComputable) {
-        const pct = Math.round((e.loaded / e.total) * 100);
-        document.getElementById('uploadProgressBar').style.width = pct + '%';
-        document.getElementById('uploadProgressText').textContent = 'Uploading: ' + pct + '%';
-      }
-    };
-
-    xhr.onload = function() {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve();
-      } else {
-        try {
-          const err = JSON.parse(xhr.responseText);
-          reject(new Error(err.message || err.error || 'Storage upload failed: ' + xhr.status));
-        } catch(e) {
-          reject(new Error('Storage upload failed: ' + xhr.status));
-        }
-      }
-    };
-    xhr.onerror = () => reject(new Error('Upload network error - check your connection'));
-    xhr.send(file);
-  });
-
-  // Step 3: Get the public URL for this file
-  const publicUrl = supabaseUrl + '/storage/v1/object/public/sermons/' + fileName;
-
-  document.getElementById('uploadProgressBar').style.width = '100%';
-  document.getElementById('uploadProgressText').textContent = 'Upload complete';
-  document.getElementById('uploadedIdDisplay').style.display = 'block';
-
-  // Return the public URL — this is what gets passed to Opus as videoUrl
-  return publicUrl;
+async function uploadVideoToOpus() {
+  if (currentUploadId) return currentUploadId;
+  throw new Error('No Google Drive link found. Please paste a valid Drive link.');
 }
 
 function selectClipMode(mode) {
@@ -1476,21 +1439,10 @@ async function analyzeSermon(skipDuplicateCheck = false) {
 
   // -- HANDLE UPLOAD SOURCE MODE -----------------------------------------
   if (currentSourceMode === 'upload') {
-    if (!selectedVideoFile && !currentUploadId) {
-      showError('Please select a video file to upload.');
+    if (!currentUploadId) {
+      showError('Please paste a Google Drive link to your sermon video.');
       document.getElementById('analyzeBtn').disabled = false;
       return;
-    }
-    // Upload the file if not already uploaded
-    if (!currentUploadId && selectedVideoFile) {
-      try {
-        currentUploadId = await uploadVideoToOpus(selectedVideoFile);
-      } catch(e) {
-        showError('Video upload failed: ' + e.message);
-        document.getElementById('analyzeBtn').disabled = false;
-        document.getElementById('statusBar').classList.remove('visible');
-        return;
-      }
     }
     // For uploaded files, currentUploadId is the Supabase public URL
     currentVideoId = currentUploadId;
@@ -2049,7 +2001,7 @@ async function sendToOpus(i, btn) {
   const statusEl = document.getElementById('opus-status-' + i);
 
   if (!youtubeUrl && currentSourceMode !== 'upload') { statusEl.textContent = 'No YouTube URL found.'; return; }
-  if (currentSourceMode === 'upload' && !currentUploadId) { statusEl.textContent = 'No uploaded video found. Please re-upload the file.'; return; }
+  if (currentSourceMode === 'upload' && !currentUploadId) { statusEl.textContent = 'No Google Drive link found. Please paste one in Start Here.'; return; }
 
   btn.disabled = true;
   statusEl.innerHTML = '<span class="opus-status queued">Sending to Opus Clip...</span>';
