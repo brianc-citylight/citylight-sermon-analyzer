@@ -1333,35 +1333,29 @@ function handleVideoFileSelect(input) {
 }
 
 async function uploadVideoToOpus(file) {
-  // Step 1: Get upload link from Opus
-  setStatus('Getting Opus upload link...');
-  const linkRes = await fetch('/api/opus?action=upload-link', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' }
-  });
-  if (!linkRes.ok) throw new Error('Failed to get upload link');
-  const linkData = await linkRes.json();
-  const { url: gcsUrl, uploadId } = linkData;
+  // Upload to Supabase Storage (CORS-friendly), get a public URL,
+  // then pass that URL to Opus as videoUrl — same as YouTube but for uploaded files
 
-  // Step 2: Initiate resumable upload session via our proxy
-  setStatus('Initiating upload session...');
-  const initRes = await fetch('/api/opus?action=upload-init', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ gcsUrl })
-  });
-  if (!initRes.ok) throw new Error('Failed to initiate upload session');
-  const initData = await initRes.json();
-  const { location } = initData;
+  // Step 1: Get Supabase credentials
+  setStatus('Connecting to storage...');
+  const cfgRes = await fetch('/api/config');
+  if (!cfgRes.ok) throw new Error('Failed to get config');
+  const cfg = await cfgRes.json();
+  const { supabaseUrl, supabaseAnonKey } = cfg;
+  if (!supabaseUrl || !supabaseAnonKey) throw new Error('Missing Supabase config');
 
-  // Step 3: Upload file directly to GCS resumable location
-  setStatus('Uploading video... this may take a moment.');
+  // Step 2: Upload directly to Supabase Storage via REST API (browser-safe, CORS enabled)
+  setStatus('Uploading video to storage...');
   document.getElementById('uploadProgress').style.display = 'block';
+
+  const fileName = Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const uploadUrl = supabaseUrl + '/storage/v1/object/sermons/' + fileName;
 
   await new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('PUT', location);
-    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+    xhr.open('POST', uploadUrl);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + supabaseAnonKey);
+    xhr.setRequestHeader('x-upsert', 'true');
 
     xhr.upload.onprogress = function(e) {
       if (e.lengthComputable) {
@@ -1375,18 +1369,27 @@ async function uploadVideoToOpus(file) {
       if (xhr.status >= 200 && xhr.status < 300) {
         resolve();
       } else {
-        reject(new Error('Upload failed: ' + xhr.status));
+        try {
+          const err = JSON.parse(xhr.responseText);
+          reject(new Error(err.message || err.error || 'Storage upload failed: ' + xhr.status));
+        } catch(e) {
+          reject(new Error('Storage upload failed: ' + xhr.status));
+        }
       }
     };
-    xhr.onerror = () => reject(new Error('Upload network error'));
+    xhr.onerror = () => reject(new Error('Upload network error - check your connection'));
     xhr.send(file);
   });
+
+  // Step 3: Get the public URL for this file
+  const publicUrl = supabaseUrl + '/storage/v1/object/public/sermons/' + fileName;
 
   document.getElementById('uploadProgressBar').style.width = '100%';
   document.getElementById('uploadProgressText').textContent = 'Upload complete';
   document.getElementById('uploadedIdDisplay').style.display = 'block';
 
-  return uploadId;
+  // Return the public URL — this is what gets passed to Opus as videoUrl
+  return publicUrl;
 }
 
 function selectClipMode(mode) {
@@ -1489,7 +1492,7 @@ async function analyzeSermon(skipDuplicateCheck = false) {
         return;
       }
     }
-    // For uploaded files, use uploadId as the video identifier
+    // For uploaded files, currentUploadId is the Supabase public URL
     currentVideoId = currentUploadId;
     videoId = currentUploadId;
     sermonTitle = selectedVideoFile ? selectedVideoFile.name.replace(/\.[^.]+$/, '') : 'Uploaded Sermon';
