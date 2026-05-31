@@ -2894,6 +2894,30 @@ function restoreAnalysis(a) {
   currentSummary = a.summary || '';
   currentCustomQ = a.custom_q || null;
 
+  // Restore source mode and uploadId for uploaded sermons
+  if (a.source_type === 'upload') {
+    currentSourceMode = 'upload';
+    currentUploadId = a.video_id; // video_id stores the B2 public URL for uploads
+    selectedVideoFile = null; // file is already on B2, no need to re-upload
+    setSourceMode('upload');
+    // Show the uploaded state in the UI
+    const nameEl = document.getElementById('uploadFileName');
+    const dropText = document.getElementById('uploadDropText');
+    const uploaded = document.getElementById('uploadedIdDisplay');
+    if (nameEl) { nameEl.style.display = 'block'; nameEl.textContent = a.sermon_title || 'Uploaded Sermon'; }
+    if (dropText) dropText.style.display = 'none';
+    if (uploaded) { uploaded.style.display = 'block'; uploaded.textContent = 'Video on Backblaze B2. Ready to create clips.'; }
+  } else {
+    currentSourceMode = 'youtube';
+    currentUploadId = null;
+    setSourceMode('youtube');
+    // Restore YouTube URL field
+    const ytInput = document.getElementById('youtubeUrl');
+    if (ytInput && a.video_id && !a.video_id.startsWith('http')) {
+      ytInput.value = 'https://www.youtube.com/watch?v=' + a.video_id;
+    }
+  }
+
   // Restore clip mode card selection
   selectClipMode(a.clip_mode);
 
