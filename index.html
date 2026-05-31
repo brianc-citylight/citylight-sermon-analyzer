@@ -1104,7 +1104,8 @@ function onSignedIn(user) {
   document.getElementById('menuEmail').textContent = user.email;
   document.getElementById('accountEmail').value = user.email;
 
-  // Mobile-specific setup
+  // Initialize drop zone drag-and-drop support
+  initDropZone();
   if (IS_MOBILE) {
     document.getElementById('mobileNav').style.display = 'flex';
     document.getElementById('mobileAccountEmail').textContent = user.email;
@@ -1318,14 +1319,43 @@ function setSourceMode(mode) {
 function handleVideoFileSelect(input) {
   const file = input.files[0];
   if (!file) return;
+  setSelectedFile(file);
+}
+
+function setSelectedFile(file) {
   selectedVideoFile = file;
   currentUploadId = null;
-  document.getElementById('uploadDropText').style.display = 'none';
-  document.getElementById('uploadFileName').style.display = 'block';
-  document.getElementById('uploadFileName').textContent = file.name + ' (' + (file.size / 1048576).toFixed(1) + ' MB)';
-  document.getElementById('uploadedIdDisplay').style.display = 'none';
-  document.getElementById('uploadProgress').style.display = 'none';
-  document.getElementById('uploadProgressBar').style.width = '0%';
+  const dropText = document.getElementById('uploadDropText');
+  const nameEl = document.getElementById('uploadFileName');
+  if (dropText) dropText.style.display = 'none';
+  if (nameEl) {
+    nameEl.style.display = 'block';
+    nameEl.textContent = file.name + ' (' + (file.size / 1048576).toFixed(1) + ' MB)';
+  }
+  const uploaded = document.getElementById('uploadedIdDisplay');
+  const progress = document.getElementById('uploadProgress');
+  const bar = document.getElementById('uploadProgressBar');
+  if (uploaded) uploaded.style.display = 'none';
+  if (progress) progress.style.display = 'none';
+  if (bar) bar.style.width = '0%';
+}
+
+function initDropZone() {
+  const zone = document.getElementById('uploadDropZone');
+  if (!zone) return;
+  zone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    zone.style.borderColor = 'var(--gold)';
+  });
+  zone.addEventListener('dragleave', function() {
+    zone.style.borderColor = 'var(--border-light)';
+  });
+  zone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    zone.style.borderColor = 'var(--border-light)';
+    const file = e.dataTransfer.files[0];
+    if (file) setSelectedFile(file);
+  });
 }
 
 async function uploadVideoToB2(file) {
@@ -1464,7 +1494,7 @@ async function analyzeSermon(skipDuplicateCheck = false) {
 
   // -- HANDLE UPLOAD SOURCE MODE -----------------------------------------
   if (currentSourceMode === 'upload') {
-    if (!currentUploadId) {
+    if (!selectedVideoFile && !currentUploadId) {
       showError('Please select a video file to upload.');
       document.getElementById('analyzeBtn').disabled = false;
       return;
