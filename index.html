@@ -741,15 +741,15 @@
       <div id="uploadInputGroup" style="display:none;">
         <div class="input-group">
           <label>Sermon Video File</label>
-          <div id="uploadDropZone" style="border:2px dashed var(--border-light);border-radius:10px;padding:1.5rem 1rem;text-align:center;cursor:pointer;background:var(--surface2);" onclick="document.getElementById('videoFileInput').click()">
+          <label for="videoFileInput" id="uploadDropZone" style="border:2px dashed var(--border-light);border-radius:10px;padding:1.5rem 1rem;text-align:center;cursor:pointer;background:var(--surface2);display:block;">
             <div id="uploadDropText" style="font-size:0.9rem;color:var(--text-dim);line-height:1.6;">
               <div style="font-size:1.5rem;margin-bottom:0.4rem;">&#8679;</div>
               <div>Tap to select a video file</div>
               <div style="font-size:0.75rem;margin-top:0.25rem;color:var(--gray);">MP4 or MOV up to 500MB</div>
             </div>
             <div id="uploadFileName" style="display:none;font-size:0.9rem;color:var(--gold);font-weight:600;"></div>
-          </div>
-          <input type="file" id="videoFileInput" accept="video/mp4,video/quicktime,video/*" style="display:none;" onchange="handleVideoFileSelect(this)" />
+          </label>
+          <input type="file" id="videoFileInput" accept="video/mp4,video/quicktime,video/*" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;" onchange="handleVideoFileSelect(this)" />
         </div>
         <div id="uploadProgress" style="display:none;margin-top:0.5rem;">
           <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
