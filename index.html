@@ -737,16 +737,27 @@
         </div>
       </div>
 
-      <!-- Upload video input — Google Drive link -->
+      <!-- Upload video input - Backblaze B2 direct upload -->
       <div id="uploadInputGroup" style="display:none;">
         <div class="input-group">
-          <label>Google Drive Video Link</label>
-          <input type="text" id="driveUrl" placeholder="https://drive.google.com/file/d/FILE_ID/view?usp=sharing" oninput="handleDriveUrlInput(this.value)" />
+          <label>Sermon Video File</label>
+          <div id="uploadDropZone" style="border:2px dashed var(--border-light);border-radius:10px;padding:1.5rem 1rem;text-align:center;cursor:pointer;background:var(--surface2);" onclick="document.getElementById('videoFileInput').click()">
+            <div id="uploadDropText" style="font-size:0.9rem;color:var(--text-dim);line-height:1.6;">
+              <div style="font-size:1.5rem;margin-bottom:0.4rem;">&#8679;</div>
+              <div>Tap to select a video file</div>
+              <div style="font-size:0.75rem;margin-top:0.25rem;color:var(--gray);">MP4 or MOV up to 500MB</div>
+            </div>
+            <div id="uploadFileName" style="display:none;font-size:0.9rem;color:var(--gold);font-weight:600;"></div>
+          </div>
+          <input type="file" id="videoFileInput" accept="video/mp4,video/quicktime,video/*" style="display:none;" onchange="handleVideoFileSelect(this)" />
         </div>
-        <div id="driveUrlStatus" style="display:none;font-size:0.825rem;margin-top:4px;padding:6px 10px;border-radius:6px;"></div>
-        <div style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;line-height:1.5;">
-          In Google Drive: right-click the video file, click Share, set to Anyone with the link, click Copy link, paste above.
+        <div id="uploadProgress" style="display:none;margin-top:0.5rem;">
+          <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+            <div id="uploadProgressBar" style="height:100%;background:var(--gold);width:0%;transition:width 0.3s;border-radius:2px;"></div>
+          </div>
+          <div id="uploadProgressText" style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;"></div>
         </div>
+        <div id="uploadedIdDisplay" style="display:none;font-size:0.75rem;color:#00cc88;margin-top:4px;">Video uploaded. Transcript will be auto-generated via AssemblyAI.</div>
       </div>
       <div class="options-row" style="align-items:flex-end;">
         <div class="option-group">
@@ -1305,54 +1316,67 @@ function setSourceMode(mode) {
 }
 
 function handleVideoFileSelect(input) {
-  // No longer used - replaced by Google Drive link input
+  const file = input.files[0];
+  if (!file) return;
+  selectedVideoFile = file;
+  currentUploadId = null;
+  document.getElementById('uploadDropText').style.display = 'none';
+  document.getElementById('uploadFileName').style.display = 'block';
+  document.getElementById('uploadFileName').textContent = file.name + ' (' + (file.size / 1048576).toFixed(1) + ' MB)';
+  document.getElementById('uploadedIdDisplay').style.display = 'none';
+  document.getElementById('uploadProgress').style.display = 'none';
+  document.getElementById('uploadProgressBar').style.width = '0%';
 }
 
-function extractDriveId(url) {
-  const patterns = [
-    /\/file\/d\/([a-zA-Z0-9_-]+)/,
-    /[?&]id=([a-zA-Z0-9_-]+)/,
-  ];
-  for (const p of patterns) {
-    const m = url.match(p);
-    if (m) return m[1];
-  }
-  return null;
-}
+async function uploadVideoToB2(file) {
+  setStatus('Preparing upload to Backblaze...');
+  const urlRes = await fetch('/api/b2-upload?action=get-upload-url');
+  if (!urlRes.ok) throw new Error('Failed to get B2 upload URL: ' + urlRes.status);
+  const urlData = await urlRes.json();
+  if (urlData.error) throw new Error(urlData.error);
 
-function driveIdToDirectUrl(fileId) {
-  return 'https://drive.google.com/uc?export=download&id=' + fileId + '&confirm=1';
-}
+  setStatus('Uploading to Backblaze B2...');
+  document.getElementById('uploadProgress').style.display = 'block';
 
-function handleDriveUrlInput(val) {
-  const statusEl = document.getElementById('driveUrlStatus');
-  const trimmed = val.trim();
-  if (!trimmed) {
-    statusEl.style.display = 'none';
-    currentUploadId = null;
-    return;
-  }
-  const fileId = extractDriveId(trimmed);
-  if (fileId) {
-    currentUploadId = driveIdToDirectUrl(fileId);
-    statusEl.style.display = 'block';
-    statusEl.style.background = 'rgba(0,204,136,0.1)';
-    statusEl.style.border = '1px solid rgba(0,204,136,0.3)';
-    statusEl.style.color = '#00cc88';
-    statusEl.textContent = 'Drive link recognized. Ready to analyze.';
-  } else {
-    currentUploadId = null;
-    statusEl.style.display = 'block';
-    statusEl.style.background = 'rgba(255,107,107,0.1)';
-    statusEl.style.border = '1px solid rgba(255,107,107,0.3)';
-    statusEl.style.color = '#ff6b6b';
-    statusEl.textContent = 'Could not parse a Google Drive file ID. Please check the link.';
-  }
-}
+  const safeName = file.name.replace(/[^\w._-]/g, '_');
+  const fileName = Date.now() + '-' + safeName;
 
-async function uploadVideoToOpus() {
-  if (currentUploadId) return currentUploadId;
-  throw new Error('No Google Drive link found. Please paste a valid Drive link.');
+  await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', urlData.uploadUrl);
+    xhr.setRequestHeader('Authorization', urlData.authorizationToken);
+    xhr.setRequestHeader('X-Bz-File-Name', encodeURIComponent(fileName));
+    xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
+    xhr.setRequestHeader('X-Bz-Content-Sha1', 'do_not_verify');
+    xhr.upload.onprogress = function(e) {
+      if (e.lengthComputable) {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        document.getElementById('uploadProgressBar').style.width = pct + '%';
+        document.getElementById('uploadProgressText').textContent = 'Uploading: ' + pct + '%';
+      }
+    };
+    xhr.onload = function() {
+      if (xhr.status >= 200 && xhr.status < 300) { resolve(); }
+      else {
+        try { reject(new Error(JSON.parse(xhr.responseText).message || 'Upload failed: ' + xhr.status)); }
+        catch(e2) { reject(new Error('Upload failed: ' + xhr.status)); }
+      }
+    };
+    xhr.onerror = () => reject(new Error('Upload network error. Check your connection.'));
+    xhr.send(file);
+  });
+
+  setStatus('Finalizing upload...');
+  const pubRes = await fetch('/api/b2-upload?action=get-public-url&fileName=' + encodeURIComponent(fileName));
+  if (!pubRes.ok) throw new Error('Failed to get public URL');
+  const pubData = await pubRes.json();
+  if (pubData.error) throw new Error(pubData.error);
+
+  document.getElementById('uploadProgressBar').style.width = '100%';
+  document.getElementById('uploadProgressText').textContent = 'Upload complete';
+  document.getElementById('uploadedIdDisplay').style.display = 'block';
+
+  return pubData.publicUrl;
 }
 
 function selectClipMode(mode) {
@@ -1441,9 +1465,19 @@ async function analyzeSermon(skipDuplicateCheck = false) {
   // -- HANDLE UPLOAD SOURCE MODE -----------------------------------------
   if (currentSourceMode === 'upload') {
     if (!currentUploadId) {
-      showError('Please paste a Google Drive link to your sermon video.');
+      showError('Please select a video file to upload.');
       document.getElementById('analyzeBtn').disabled = false;
       return;
+    }
+    if (!currentUploadId && selectedVideoFile) {
+      try {
+        currentUploadId = await uploadVideoToB2(selectedVideoFile);
+      } catch(e) {
+        showError('Video upload failed: ' + e.message);
+        document.getElementById('analyzeBtn').disabled = false;
+        document.getElementById('statusBar').classList.remove('visible');
+        return;
+      }
     }
     currentVideoId = currentUploadId;
     videoId = currentUploadId;
@@ -2050,7 +2084,7 @@ async function sendToOpus(i, btn) {
   const statusEl = document.getElementById('opus-status-' + i);
 
   if (!youtubeUrl && currentSourceMode !== 'upload') { statusEl.textContent = 'No YouTube URL found.'; return; }
-  if (currentSourceMode === 'upload' && !currentUploadId) { statusEl.textContent = 'No Google Drive link found. Please paste one in Start Here.'; return; }
+  if (currentSourceMode === 'upload' && !currentUploadId) { statusEl.textContent = 'No video uploaded. Please upload a file in Start Here.'; return; }
 
   btn.disabled = true;
   statusEl.innerHTML = '<span class="opus-status queued">Sending to Opus Clip...</span>';
