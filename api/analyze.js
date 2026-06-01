@@ -41,21 +41,21 @@ export default async function handler(req, res) {
     ? `Find the TOP 5 moments in this sermon that would most help someone who already believes grow deeper in their faith. Look for theological depth, doctrinal content, practical application, moments that would fuel personal devotion or small group discussion, and passages that demand something of a believer's obedience or trust. These clips are for maturing disciples, not first-time seekers.
 
 For each clip format EXACTLY as one line:
-Q|[a compelling discipleship-focused insight or question]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence caption written for a believer who wants to grow — theologically honest, reflective, inviting depth, never shallow. End with exactly one relevant hashtag (e.g. #PrayerLife #GrowingInFaith #BiblicalTruth) followed by #CityLightChurch #Vicksburg]`
+Q|[a compelling discipleship-focused insight or question]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence caption written for a believer who wants to grow — theologically honest, reflective, inviting depth, never shallow. Write as a connected community member, use the speaker's name (e.g. Pastor Brian) not "this pastor". End with exactly one relevant hashtag (e.g. #PrayerLife #GrowingInFaith #BiblicalTruth) followed by #CityLightChurch #Vicksburg]`
     : clipMode === 'custom'
     ? `The user wants to know if this sermon addresses the following question: "${customQuestion}"
 
 Search the sermon carefully for any moments that directly speak to this question.
 
 If the sermon DOES address it: Find up to 5 clips that best answer or speak to this question. For each clip format EXACTLY as one line:
-Q|[the custom question or a direct variation of it]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence caption directly connecting this moment to the question. End with exactly one relevant hashtag followed by #CityLightChurch #Vicksburg]
+Q|[the custom question or a direct variation of it]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence caption directly connecting this moment to the question. Write as a connected community member, use the speaker's name (e.g. Pastor Brian) not "this pastor". End with exactly one relevant hashtag followed by #CityLightChurch #Vicksburg]
 
 If the sermon does NOT address this question at all, respond with exactly one line:
 NOANSWER|[honest explanation of what the sermon is actually about and why it does not address this question]`
     : `Find the TOP 5 moments in this sermon that most directly speak to someone who does not yet believe. Look for moments where the gospel intersects with real questions, doubts, cultural tensions, or felt needs. These clips are for people outside the faith scrolling social media. What would make someone who has never set foot in a church stop and watch?
 
 For each question format EXACTLY as one line:
-Q|[sharp culturally relevant question that a skeptic or seeker would genuinely ask]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence caption written for someone outside the faith — intriguing, never preachy, speaks to a real felt need or cultural tension. End with exactly one relevant hashtag (e.g. #Faith #Purpose #RealTalk) followed by #CityLightChurch #Vicksburg]`;
+Q|[sharp culturally relevant question that a skeptic or seeker would genuinely ask]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence caption written for someone outside the faith — intriguing, never preachy, speaks to a real felt need or cultural tension. Write as a connected community member, not an outside observer. Use the speaker's name (e.g. Pastor Brian) not "this pastor". End with exactly one relevant hashtag (e.g. #Faith #Purpose #RealTalk) followed by #CityLightChurch #Vicksburg]`;
 
   const customQSection = '';
 
