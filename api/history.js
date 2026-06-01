@@ -144,6 +144,7 @@ export default async function handler(req, res) {
         // Insert new
         const inserted = await dbPost('sermon_analyses', {
           user_id: userId,
+          org_id: '9931cb42-e87e-42d4-b62b-156de98069e1',
           video_id: videoId,
           sermon_title: sermonTitle,
           sermon_date: sermonDate,
@@ -154,7 +155,7 @@ export default async function handler(req, res) {
           slides: slides || [],
           summary: summary || '',
           custom_q: customQ || null,
-          source_type: sourceType || 'youtube' 
+          source_type: sourceType || 'youtube'
         });
         savedId = inserted && inserted[0] ? inserted[0].id : null;
       }
