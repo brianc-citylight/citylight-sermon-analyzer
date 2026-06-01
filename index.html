@@ -1422,13 +1422,13 @@ function initDropZone() {
 }
 
 async function uploadVideoToB2(file) {
-  setStatus('Preparing upload to Backblaze...');
+  setStatus('SermonReach is preparing your upload...');
   const urlRes = await fetch('/api/b2-upload?action=get-upload-url');
   if (!urlRes.ok) throw new Error('Failed to get B2 upload URL: ' + urlRes.status);
   const urlData = await urlRes.json();
   if (urlData.error) throw new Error(urlData.error);
 
-  setStatus('Uploading to Backblaze B2...');
+  setStatus('SermonReach is uploading your video...');
   document.getElementById('uploadProgress').style.display = 'block';
 
   const safeName = file.name.replace(/[^\w._-]/g, '_');
@@ -1459,7 +1459,7 @@ async function uploadVideoToB2(file) {
     xhr.send(file);
   });
 
-  setStatus('Finalizing upload...');
+  setStatus('SermonReach is finalizing your upload...');
   const pubRes = await fetch('/api/b2-upload?action=get-public-url&fileName=' + encodeURIComponent(fileName));
   if (!pubRes.ok) throw new Error('Failed to get public URL');
   const pubData = await pubRes.json();
@@ -1817,7 +1817,7 @@ async function analyzeSermon(skipDuplicateCheck = false) {
     sermonTitle = (titleEl && titleEl.value.trim()) ? titleEl.value.trim() : 'Uploaded Sermon';
 
     // STEP 1: Submit Google Drive URL to AssemblyAI for transcription
-    setStatus('Submitting video to AssemblyAI for transcription...');
+    setStatus('SermonReach is preparing your transcript...');
     let transcriptId = null;
     try {
       const submitRes = await fetch('/api/transcript-drive?action=submit', {
@@ -1841,7 +1841,7 @@ async function analyzeSermon(skipDuplicateCheck = false) {
     }
 
     // STEP 2: Poll AssemblyAI every 10 seconds until complete
-    setStatus('Transcribing sermon audio... this takes a few minutes for a full service.');
+    setStatus('SermonReach is transcribing your sermon audio. This takes a few minutes...');
     let driveTranscript = null;
     let pollAttempts = 0;
     const maxPollAttempts = 60;
@@ -1876,7 +1876,7 @@ async function analyzeSermon(skipDuplicateCheck = false) {
     }
 
     // STEP 3: Run Claude analysis with the transcript
-    setStatus('Transcription complete. Claude is analyzing the sermon...');
+    setStatus('Transcript ready. SermonReach is now analyzing your sermon...');
     try {
       const slideCount = document.getElementById('slideCount').value;
       const speakerFirst = document.getElementById('speakerFirst').value.trim();
@@ -1908,6 +1908,18 @@ async function analyzeSermon(skipDuplicateCheck = false) {
 
       const seekerRaw = (slidesSplit[0] || '').split('---SUMMARY---')[0];
       const seekerLines = seekerRaw.split('\n').map(l => l.trim()).filter(Boolean);
+
+      // Handle NOANSWER response from custom mode
+      const noAnswerLine = seekerLines.find(l => l.startsWith('NOANSWER|'));
+      if (noAnswerLine) {
+        const explanation = noAnswerLine.split('|')[1] || 'This sermon does not directly address that question.';
+        showError(explanation);
+        document.getElementById('errorCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (IS_MOBILE) mobileNav('home');
+        document.getElementById('analyzeBtn').disabled = false;
+        document.getElementById('statusBar').classList.remove('visible');
+        return;
+      }
 
       currentQuestions = seekerLines.filter(l => l.startsWith('Q|')).map(line => {
         const parts = line.split('|');
@@ -1975,7 +1987,7 @@ async function analyzeSermon(skipDuplicateCheck = false) {
   // Store videoId globally for history use
   currentVideoId = videoId;
 
-  setStatus('Fetching sermon title...');
+  setStatus('SermonReach is fetching sermon details...');
   try {
     const ytRes = await fetch('https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + videoId + '&format=json');
     const ytData = await ytRes.json();
@@ -2008,7 +2020,7 @@ async function analyzeSermon(skipDuplicateCheck = false) {
       const tData = await tRes.json();
       if (tData.transcript) {
         transcript = tData.transcript;
-        setStatus('Transcript fetched. Analyzing sermon...');
+        setStatus('Transcript ready. SermonReach is analyzing your sermon...');
       }
     } catch(e) { /* silent fail - will use fallback */ }
     if (!transcript) {
@@ -2017,7 +2029,7 @@ async function analyzeSermon(skipDuplicateCheck = false) {
     }
   }
 
-  setStatus('Claude is analyzing the sermon - about 30 to 45 seconds...');
+  setStatus('SermonReach is analyzing your sermon. This takes about 30 to 45 seconds...');
 
   try {
     const response = await fetch('/api/analyze', {
@@ -2046,6 +2058,19 @@ async function analyzeSermon(skipDuplicateCheck = false) {
     const slideSplit = rawText.split('---SLIDES---');
     const summarySplit = (slideSplit[1] || '').split('---SUMMARY---');
     const seekerLines = slideSplit[0].trim().split('\n');
+    // Handle NOANSWER response from custom mode
+    const noAnswerLine = seekerLines.find(l => l.startsWith('NOANSWER|'));
+    if (noAnswerLine) {
+      const explanation = noAnswerLine.split('|')[1] || 'This sermon does not directly address that question.';
+      // Make error visible regardless of which section is active
+      showError(explanation);
+      document.getElementById('errorCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Switch to home/start section so user can see the error
+      if (IS_MOBILE) mobileNav('home');
+      document.getElementById('analyzeBtn').disabled = false;
+      document.getElementById('statusBar').classList.remove('visible');
+      return;
+    }
     currentQuestions = seekerLines.filter(l => l.startsWith('Q|')).map(line => {
       const p = line.split('|');
       return { question: p[1]||'', timestamp: p[2]||'', caption: p[3]||'' };
@@ -2097,29 +2122,31 @@ async function autoSaveAnalysis(videoId, slideCount, sourceType) {
 }
 
 function parseSlidesFromRaw(raw) {
+  // Whitelist of valid field names from the Claude prompt
+  const VALID_FIELDS = new Set([
+    'Sermon Title', 'Sermon Date', 'Speaker',
+    'Scripture', 'Key Point',
+    'Subpoint', 'Key Takeaway', 'Key Reflection',
+    'Main Point'
+  ]);
   const slides = [];
-  // Only parse up to any content that looks like summary bleed-through
-  // Strip anything after the last valid slide block ends (after a blank line following fields)
   const sections = raw.split(/\n(?=TITLE_SLIDE|INTRO_SLIDE|SLIDE_\d)/);
   sections.forEach(section => {
     const lines = section.trim().split('\n');
     const header = lines[0].trim();
+    if (header !== 'TITLE_SLIDE' && header !== 'INTRO_SLIDE' && !/^SLIDE_\d+$/.test(header)) return;
     const fields = {};
     for (const l of lines.slice(1)) {
       const colon = l.indexOf(':');
-      // Stop parsing fields if we hit a line that looks like summary content
-      // (all caps long line, or line starting with ** or a blank line followed by non-field content)
-      if (colon === -1) continue; // skip lines without colon
-      const key = l.substring(0, colon).trim();
+      if (colon === -1) continue;
+      const key = l.substring(0, colon).replace(/\*+/g, '').trim();
       const val = l.substring(colon + 1).trim();
-      // Only accept keys that look like real slide field names (no spaces in multi-word check, reasonable length)
-      if (key && val && key.length < 40 && !key.includes('  ')) {
+      // Only accept whitelisted field names — rejects all summary bleed-through
+      if (VALID_FIELDS.has(key) && val) {
         fields[key] = val;
       }
     }
-    if (header && (header === 'TITLE_SLIDE' || header === 'INTRO_SLIDE' || /^SLIDE_\d+$/.test(header)) && Object.keys(fields).length > 0) {
-      slides.push({ header, fields });
-    }
+    if (Object.keys(fields).length > 0) slides.push({ header, fields });
   });
   return slides;
 }
@@ -3174,7 +3201,7 @@ async function openHistoryModal() {
     card.innerHTML = `
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;">
         <div style="flex:1;">
-          <div style="font-size:14px;font-weight:700;color:var(--black);margin-bottom:4px;">${a.sermon_title}</div>
+          <div style="font-size:14px;font-weight:700;color:var(--white);margin-bottom:4px;">${a.sermon_title}</div>
           <div style="font-size:12px;color:var(--gray);margin-bottom:6px;">${a.sermon_date}${a.speaker ? ' &nbsp;|&nbsp; ' + a.speaker : ''}</div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:${modeColors[a.clip_mode]}20;color:${modeColors[a.clip_mode]};border:1px solid ${modeColors[a.clip_mode]}40;">${modeLabels[a.clip_mode] || a.clip_mode}</span>
