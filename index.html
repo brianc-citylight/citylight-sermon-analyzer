@@ -1157,6 +1157,12 @@ function onSignedIn(user) {
 
   // Initialize drop zone drag-and-drop support
   initDropZone();
+
+  // Show admin buttons if this user is the admin
+  const adminBtn = document.getElementById('adminMenuBtn');
+  if (adminBtn && user.id === ADMIN_USER_ID) adminBtn.style.display = 'block';
+  const mobileAdminBtn = document.getElementById('mobileAdminBtn');
+  if (mobileAdminBtn && user.id === ADMIN_USER_ID) mobileAdminBtn.style.display = 'block';
   if (IS_MOBILE) {
     document.getElementById('mobileNav').style.display = 'flex';
     document.getElementById('mobileAccountEmail').textContent = user.email;
@@ -1367,6 +1373,9 @@ function setSourceMode(mode) {
     upGroup.style.display = 'block';
     transcriptBox.style.display = 'none';
     transcriptBtn.style.display = 'none';
+    // Show browse library button in upload mode
+    const browseBtn = document.getElementById('browseLibraryBtn');
+    if (browseBtn) browseBtn.style.display = 'block';
   }
 }
 
@@ -2089,20 +2098,28 @@ async function autoSaveAnalysis(videoId, slideCount, sourceType) {
 
 function parseSlidesFromRaw(raw) {
   const slides = [];
+  // Only parse up to any content that looks like summary bleed-through
+  // Strip anything after the last valid slide block ends (after a blank line following fields)
   const sections = raw.split(/\n(?=TITLE_SLIDE|INTRO_SLIDE|SLIDE_\d)/);
   sections.forEach(section => {
     const lines = section.trim().split('\n');
     const header = lines[0].trim();
     const fields = {};
-    lines.slice(1).forEach(l => {
+    for (const l of lines.slice(1)) {
       const colon = l.indexOf(':');
-      if (colon > -1) {
-        const key = l.substring(0, colon).trim();
-        const val = l.substring(colon + 1).trim();
-        if (key && val) fields[key] = val;
+      // Stop parsing fields if we hit a line that looks like summary content
+      // (all caps long line, or line starting with ** or a blank line followed by non-field content)
+      if (colon === -1) continue; // skip lines without colon
+      const key = l.substring(0, colon).trim();
+      const val = l.substring(colon + 1).trim();
+      // Only accept keys that look like real slide field names (no spaces in multi-word check, reasonable length)
+      if (key && val && key.length < 40 && !key.includes('  ')) {
+        fields[key] = val;
       }
-    });
-    if (header && Object.keys(fields).length > 0) slides.push({ header, fields });
+    }
+    if (header && (header === 'TITLE_SLIDE' || header === 'INTRO_SLIDE' || /^SLIDE_\d+$/.test(header)) && Object.keys(fields).length > 0) {
+      slides.push({ header, fields });
+    }
   });
   return slides;
 }
