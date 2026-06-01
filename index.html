@@ -487,6 +487,10 @@
     body.mobile textarea,
     body.mobile input { max-width: 100%; }
 
+    /* ── LIBRARY CARDS ── */
+    .library-card { background:var(--surface2); border:1px solid var(--border-light); border-radius:12px; padding:1rem; margin-bottom:0.75rem; transition:border-color 0.15s; }
+    .library-card:hover { border-color:var(--gold); }
+
     /* Desktop — hide mobile-only elements */
     body.desktop #mobileNav { display: none; }
     body.desktop .tab-dots { display: none; }
@@ -519,6 +523,7 @@
   </div>
   <button onclick="openAccountModal()" style="width:100%;text-align:left;padding:12px 16px;border:none;background:none;font-size:14px;color:var(--black);cursor:pointer;font-family:inherit;border-bottom:1px solid var(--border);">&#9881; My Account</button>
   <button onclick="openHistoryModal()" style="width:100%;text-align:left;padding:12px 16px;border:none;background:none;font-size:14px;color:var(--black);cursor:pointer;font-family:inherit;border-bottom:1px solid var(--border);">&#128337; Analysis History</button>
+  <button id="adminMenuBtn" onclick="openAdminPanel();closeMenu();" style="display:none;width:100%;text-align:left;padding:12px 16px;border:none;background:none;font-size:14px;color:var(--black);cursor:pointer;font-family:inherit;border-bottom:1px solid var(--border);">&#128101; Team Management</button>
   <button onclick="openHelpModal()" style="width:100%;text-align:left;padding:12px 16px;border:none;background:none;font-size:14px;color:var(--black);cursor:pointer;font-family:inherit;border-bottom:1px solid var(--border);">&#63; Help</button>
   <button onclick="signOut()" style="width:100%;text-align:left;padding:12px 16px;border:none;background:none;font-size:14px;color:#cc3333;cursor:pointer;font-family:inherit;">&#8594; Sign Out</button>
 </div>
@@ -635,6 +640,7 @@
     <div style="width:40px;height:4px;background:var(--border-light);border-radius:2px;margin:0 auto 1.5rem;"></div>
     <div id="mobileAccountEmail" style="font-size:13px;color:var(--text-dim);margin-bottom:1.5rem;text-align:center;"></div>
     <button onclick="openAccountModal();closeMobileAccount();" style="width:100%;text-align:left;padding:14px 16px;border:none;background:var(--surface2);color:var(--text);font-size:15px;font-family:inherit;border-radius:10px;margin-bottom:10px;cursor:pointer;">&#128100; My Account</button>
+    <button id="mobileAdminBtn" onclick="openAdminPanel();closeMobileAccount();" style="display:none;width:100%;text-align:left;padding:14px 16px;border:none;background:var(--surface2);color:var(--text);font-size:15px;font-family:inherit;border-radius:10px;margin-bottom:10px;cursor:pointer;">&#9881; Team Management</button>
     <button onclick="openHelpModal();closeMobileAccount();" style="width:100%;text-align:left;padding:14px 16px;border:none;background:var(--surface2);color:var(--text);font-size:15px;font-family:inherit;border-radius:10px;margin-bottom:10px;cursor:pointer;">&#63; Help</button>
     <button onclick="signOut();closeMobileAccount();" style="width:100%;text-align:left;padding:14px 16px;border:none;background:var(--surface2);color:#ff6b6b;font-size:15px;font-family:inherit;border-radius:10px;cursor:pointer;">&#8594; Sign Out</button>
   </div>
@@ -740,6 +746,10 @@
       <!-- Upload video input - Backblaze B2 direct upload -->
       <div id="uploadInputGroup" style="display:none;">
         <div class="input-group">
+          <label>Sermon Title <span style="color:#ff6b6b;">*</span></label>
+          <input type="text" id="sermonTitleInput" placeholder="e.g. The Gospel of Luke — Held By Grace" />
+        </div>
+        <div class="input-group">
           <label>Sermon Video File</label>
           <label for="videoFileInput" id="uploadDropZone" style="border:2px dashed var(--border-light);border-radius:10px;padding:1.5rem 1rem;text-align:center;cursor:pointer;background:var(--surface2);display:block;">
             <div id="uploadDropText" style="font-size:0.9rem;color:var(--text-dim);line-height:1.6;">
@@ -758,6 +768,9 @@
           <div id="uploadProgressText" style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;"></div>
         </div>
         <div id="uploadedIdDisplay" style="display:none;font-size:0.75rem;color:#00cc88;margin-top:4px;">Video uploaded. Transcript will be auto-generated via AssemblyAI.</div>
+      </div>
+      <div id="browseLibraryBtn" style="display:none;margin-top:0.5rem;">
+        <button class="btn" style="width:100%;font-size:0.875rem;border-color:var(--gold);color:var(--gold);" onclick="openLibraryPicker()">&#128218; Browse Sermon Library</button>
       </div>
       <div class="options-row" style="align-items:flex-end;">
         <div class="option-group">
@@ -892,9 +905,47 @@
 
   </div>
 </div>
+<!-- Library Picker Modal -->
+<div id="libraryModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:2000;align-items:flex-end;justify-content:center;">
+  <div style="background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:640px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 -8px 48px rgba(0,0,0,0.5);">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div>
+        <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.14em;color:var(--gold);">Sermon Library</div>
+        <div style="font-size:0.825rem;color:var(--text-dim);margin-top:2px;">Choose an existing sermon or upload a new one</div>
+      </div>
+      <button onclick="closeLibraryPicker()" style="background:none;border:none;font-size:1.25rem;cursor:pointer;color:var(--gray);">&#x2715;</button>
+    </div>
+    <div id="libraryList" style="overflow-y:auto;flex:1;padding:1rem 1.5rem;"></div>
+    <div style="padding:1rem 1.5rem;border-top:1px solid var(--border);flex-shrink:0;">
+      <button onclick="closeLibraryPicker()" class="btn" style="width:100%;font-size:0.875rem;">&#8679; Upload New Sermon Instead</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Panel -->
+<div id="adminPanel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:2000;align-items:flex-end;justify-content:center;">
+  <div style="background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:580px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 -8px 48px rgba(0,0,0,0.5);">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.14em;color:var(--gold);">Team Management</div>
+      <button onclick="closeAdminPanel()" style="background:none;border:none;font-size:1.25rem;cursor:pointer;color:var(--gray);">&#x2715;</button>
+    </div>
+    <div style="overflow-y:auto;flex:1;padding:1.25rem 1.5rem;">
+      <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold);margin-bottom:0.75rem;">Invite New Member</div>
+      <div style="display:flex;gap:8px;margin-bottom:1.5rem;">
+        <input type="email" id="inviteEmail" placeholder="Email address" style="flex:1;padding:10px 14px;border:1px solid var(--border-light);border-radius:8px;background:var(--surface2);color:var(--text);font-family:inherit;font-size:0.9rem;" />
+        <button id="inviteBtn" onclick="inviteMember()" class="btn btn-opus" style="font-size:0.875rem;white-space:nowrap;">Send Invite</button>
+      </div>
+      <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold);margin-bottom:0.75rem;">Team Members</div>
+      <div id="memberList"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 // -- DEVICE DETECTION - locked at load, never re-evaluates ---------------
 const IS_MOBILE = window.matchMedia('(max-width: 767px)').matches;
+const ORG_ID = '9931cb42-e87e-42d4-b62b-156de98069e1';
+const ADMIN_USER_ID = '05b384e6-7143-404b-915f-5fdb6fec818c';
 if (IS_MOBILE) {
   document.body.classList.add('mobile');
 } else {
@@ -1304,6 +1355,9 @@ function setSourceMode(mode) {
     ytGroup.style.display = 'block';
     upGroup.style.display = 'none';
     transcriptBtn.style.display = 'inline-block';
+    // Hide browse library button in YouTube mode
+    const browseBtn2 = document.getElementById('browseLibraryBtn');
+    if (browseBtn2) browseBtn2.style.display = 'none';
   } else {
     upBtn.style.borderColor = 'var(--gold)';
     upBtn.style.color = 'var(--gold)';
@@ -1409,6 +1463,238 @@ async function uploadVideoToB2(file) {
   return pubData.publicUrl;
 }
 
+// ── SERMON LIBRARY ────────────────────────────────────────────────────────
+
+async function fetchLibrary() {
+  try {
+    const r = await fetch('/api/library?action=list');
+    if (!r.ok) return [];
+    const data = await r.json();
+    return data.sermons || [];
+  } catch(e) { return []; }
+}
+
+async function saveToLibrary(info) {
+  const r = await fetch('/api/library?action=save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(info)
+  });
+  if (!r.ok) throw new Error('Library save failed');
+  return await r.json();
+}
+
+async function removeFromLibrary(id) {
+  const r = await fetch('/api/library?action=remove', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id })
+  });
+  return r.ok;
+}
+
+async function updateLibraryTitle(id, title) {
+  const r = await fetch('/api/library?action=update-title', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, title })
+  });
+  return r.ok;
+}
+
+function getDaysRemaining(expiresAt) {
+  const ms = new Date(expiresAt) - new Date();
+  return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
+}
+
+function getOpusStatus(createdAt) {
+  const ms = new Date() - new Date(createdAt);
+  const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+  if (days < 30) return { label: 'Opus Active', color: '#00cc88', bg: 'rgba(0,204,136,0.1)' };
+  return { label: 'Opus Expired', color: '#C9A84C', bg: 'rgba(201,168,76,0.1)' };
+}
+
+function isAdmin() {
+  return currentUser && currentUser.id === ADMIN_USER_ID;
+}
+
+async function openLibraryPicker() {
+  const modal = document.getElementById('libraryModal');
+  if (!modal) return;
+  const list = document.getElementById('libraryList');
+  list.innerHTML = '<div style="padding:1rem;color:var(--text-dim);font-size:0.9rem;">Loading library...</div>';
+  modal.style.display = 'flex';
+
+  const sermons = await fetchLibrary();
+
+  if (sermons.length === 0) {
+    list.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--text-dim);font-size:0.9rem;">No sermons in the library yet. Upload the first one below.</div>';
+    return;
+  }
+
+  list.innerHTML = sermons.map(s => {
+    const daysLeft = getDaysRemaining(s.expires_at);
+    const opusStatus = getOpusStatus(s.created_at);
+    const expiryColor = daysLeft <= 7 ? '#ff6b6b' : daysLeft <= 14 ? '#C9A84C' : 'var(--text-dim)';
+    const adminDelete = isAdmin() ? '<button onclick="deleteFromLibrary(\'' + s.id + '\', this)" style="background:none;border:none;color:#ff6b6b;font-size:0.75rem;cursor:pointer;padding:0;margin-left:8px;">Delete</button>' : '';
+    return '<div class="library-card" id="lib-' + s.id + '">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;">' +
+        '<div style="flex:1;">' +
+          '<div id="lib-title-' + s.id + '" style="font-size:0.95rem;font-weight:700;color:var(--white);line-height:1.3;">' + s.title + '</div>' +
+          '<div style="font-size:0.75rem;color:var(--text-dim);margin-top:2px;">' + (s.sermon_date || '') + (s.speaker ? ' &bull; ' + s.speaker : '') + '</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">' +
+          '<button onclick="editLibraryTitle(\'' + s.id + '\')" style="background:none;border:none;color:var(--gold);font-size:0.75rem;cursor:pointer;padding:0;">Edit</button>' +
+          adminDelete +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">' +
+        '<span style="font-size:0.7rem;padding:2px 8px;border-radius:12px;background:' + opusStatus.bg + ';color:' + opusStatus.color + ';border:1px solid ' + opusStatus.color + '40;">' + opusStatus.label + '</span>' +
+        '<span style="font-size:0.7rem;color:' + expiryColor + ';">' + daysLeft + ' days remaining</span>' +
+      '</div>' +
+      '<button onclick="useLibrarySermon(' + JSON.stringify(s).replace(/"/g, '&quot;') + ')" class="btn btn-gold" style="width:100%;min-height:40px;font-size:0.875rem;">Use This Sermon</button>' +
+    '</div>';
+  }).join('');
+}
+
+function closeLibraryPicker() {
+  const modal = document.getElementById('libraryModal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function deleteFromLibrary(id, btn) {
+  if (!confirm('Remove this sermon from the library?')) return;
+  btn.textContent = 'Removing...';
+  const ok = await removeFromLibrary(id);
+  if (ok) {
+    const card = document.getElementById('lib-' + id);
+    if (card) card.remove();
+  } else {
+    btn.textContent = 'Failed';
+  }
+}
+
+async function editLibraryTitle(id) {
+  const titleEl = document.getElementById('lib-title-' + id);
+  if (!titleEl) return;
+  const current = titleEl.textContent;
+  const newTitle = prompt('Edit sermon title:', current);
+  if (!newTitle || newTitle === current) return;
+  const ok = await updateLibraryTitle(id, newTitle.trim());
+  if (ok) titleEl.textContent = newTitle.trim();
+}
+
+function useLibrarySermon(sermon) {
+  // Load the sermon from library into the analyzer
+  currentUploadId = sermon.b2_url;
+  currentVideoId = sermon.b2_url;
+  selectedVideoFile = null;
+
+  // Show upload mode UI
+  setSourceMode('upload');
+
+  // Fill in the sermon details
+  const titleInput = document.getElementById('sermonTitleInput');
+  if (titleInput) titleInput.value = sermon.title;
+  if (sermon.sermon_date) document.getElementById('sermonDate').value = sermon.sermon_date;
+  if (sermon.speaker) {
+    const parts = sermon.speaker.split(' ');
+    if (parts.length >= 1) document.getElementById('speakerTitle').value = parts[0];
+    if (parts.length >= 2) document.getElementById('speakerFirst').value = parts[1];
+    if (parts.length >= 3) document.getElementById('speakerLast').value = parts.slice(2).join(' ');
+  }
+
+  // Show loaded state in drop zone
+  const nameEl = document.getElementById('uploadFileName');
+  const dropText = document.getElementById('uploadDropText');
+  const uploaded = document.getElementById('uploadedIdDisplay');
+  if (nameEl) { nameEl.style.display = 'block'; nameEl.textContent = sermon.title; }
+  if (dropText) dropText.style.display = 'none';
+  if (uploaded) { uploaded.style.display = 'block'; uploaded.textContent = 'Loaded from library. Ready to analyze.'; }
+
+  closeLibraryPicker();
+}
+
+// ── ADMIN FUNCTIONS ────────────────────────────────────────────────────────
+
+async function openAdminPanel() {
+  const panel = document.getElementById('adminPanel');
+  if (!panel) return;
+  panel.style.display = 'flex';
+  loadTeamMembers();
+}
+
+function closeAdminPanel() {
+  const panel = document.getElementById('adminPanel');
+  if (panel) panel.style.display = 'none';
+}
+
+async function loadTeamMembers() {
+  const list = document.getElementById('memberList');
+  if (!list) return;
+  list.innerHTML = '<div style="color:var(--text-dim);font-size:0.9rem;">Loading members...</div>';
+  try {
+    const r = await fetch('/api/admin?action=members&userId=' + (currentUser ? currentUser.id : ''));
+    const data = await r.json();
+    const members = data.members || [];
+    list.innerHTML = members.map(m => 
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">' +
+        '<div>' +
+          '<div style="font-size:0.9rem;color:var(--white);">' + m.email + '</div>' +
+          '<div style="font-size:0.75rem;color:var(--text-dim);">' + m.role + '</div>' +
+        '</div>' +
+        (isAdmin() && m.user_id !== currentUser.id ? '<button onclick="removeMember(\'' + m.id + '\', this)" style="background:none;border:none;color:#ff6b6b;font-size:0.8rem;cursor:pointer;">Remove</button>' : '') +
+      '</div>'
+    ).join('');
+  } catch(e) {
+    list.innerHTML = '<div style="color:#ff6b6b;font-size:0.9rem;">Failed to load members</div>';
+  }
+}
+
+async function inviteMember() {
+  const emailInput = document.getElementById('inviteEmail');
+  const email = emailInput ? emailInput.value.trim() : '';
+  if (!email) { alert('Please enter an email address.'); return; }
+  const btn = document.getElementById('inviteBtn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  try {
+    const r = await fetch('/api/admin?action=invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, userId: currentUser ? currentUser.id : '' })
+    });
+    const data = await r.json();
+    if (data.success) {
+      emailInput.value = '';
+      btn.textContent = 'Sent!';
+      setTimeout(() => { btn.textContent = 'Send Invite'; btn.disabled = false; }, 2000);
+      loadTeamMembers();
+    } else {
+      btn.textContent = 'Failed';
+      btn.disabled = false;
+      alert(data.error || 'Invite failed');
+    }
+  } catch(e) {
+    btn.textContent = 'Failed';
+    btn.disabled = false;
+  }
+}
+
+async function removeMember(id, btn) {
+  if (!confirm('Remove this member from the organization?')) return;
+  btn.textContent = 'Removing...';
+  try {
+    const r = await fetch('/api/admin?action=remove-member', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ memberId: id, userId: currentUser ? currentUser.id : '' })
+    });
+    if (r.ok) loadTeamMembers();
+    else btn.textContent = 'Failed';
+  } catch(e) { btn.textContent = 'Failed'; }
+}
+
 function selectClipMode(mode) {
   currentClipMode = mode;
   ['outreach','discipleship','custom'].forEach(m => {
@@ -1494,6 +1780,13 @@ async function analyzeSermon(skipDuplicateCheck = false) {
 
   // -- HANDLE UPLOAD SOURCE MODE -----------------------------------------
   if (currentSourceMode === 'upload') {
+    const uploadTitleInput = document.getElementById('sermonTitleInput');
+    const uploadTitle = uploadTitleInput ? uploadTitleInput.value.trim() : '';
+    if (!uploadTitle) {
+      showError('Please enter a sermon title.');
+      document.getElementById('analyzeBtn').disabled = false;
+      return;
+    }
     if (!selectedVideoFile && !currentUploadId) {
       showError('Please select a video file to upload.');
       document.getElementById('analyzeBtn').disabled = false;
@@ -1511,7 +1804,8 @@ async function analyzeSermon(skipDuplicateCheck = false) {
     }
     currentVideoId = currentUploadId;
     videoId = currentUploadId;
-    sermonTitle = 'Uploaded Sermon';
+    const titleEl = document.getElementById('sermonTitleInput');
+    sermonTitle = (titleEl && titleEl.value.trim()) ? titleEl.value.trim() : 'Uploaded Sermon';
 
     // STEP 1: Submit Google Drive URL to AssemblyAI for transcription
     setStatus('Submitting video to AssemblyAI for transcription...');
@@ -1638,6 +1932,24 @@ async function analyzeSermon(skipDuplicateCheck = false) {
 
       renderResults(currentQuestions, currentSlides, currentSummary);
       autoSaveAnalysis(currentUploadId, slideCount, 'upload');
+
+      // Save to shared sermon library
+      try {
+        await saveToLibrary({
+          title: sermonTitle,
+          sermonDate: document.getElementById('sermonDate').value.trim(),
+          speaker: [
+            document.getElementById('speakerTitle').value.trim(),
+            document.getElementById('speakerFirst').value.trim(),
+            document.getElementById('speakerLast').value.trim()
+          ].filter(Boolean).join(' '),
+          b2Url: currentUploadId,
+          opusUploadId: null, // will be updated when first clip is created
+          uploadedBy: currentUser ? currentUser.id : null
+        });
+      } catch(e) {
+        console.warn('Library save failed:', e.message);
+      }
 
     } catch(e) { showError('Network error: ' + e.message); }
     document.getElementById('analyzeBtn').disabled = false;
