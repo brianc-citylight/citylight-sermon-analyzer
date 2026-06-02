@@ -8,6 +8,7 @@
     "api/library.js": { "maxDuration": 15 },
     "api/admin.js": { "maxDuration": 15 },
     "api/opus.js": { "maxDuration": 60 },
+    "api/opus-upload.js": { "maxDuration": 300 },
     "api/config.js": { "maxDuration": 10 },
     "api/history.js": { "maxDuration": 10 }
   }
