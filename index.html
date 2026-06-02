@@ -3318,7 +3318,7 @@ async function loadHistoryEntry(id) {
   document.getElementById('statusBar').classList.remove('visible');
 }
 
-function restoreAnalysis(a) {
+async function restoreAnalysis(a) {
   sermonTitle = a.sermon_title;
   currentVideoId = a.video_id;
   currentAnalysisId = a.id;
@@ -3337,19 +3337,20 @@ function restoreAnalysis(a) {
     // Will be restored when library is checked — reset here
     currentOpusUploadId = null;
     setSourceMode('upload');
-    // Check library for stored Opus uploadId
+    // Await library check so currentOpusUploadId is populated before user can click Create Clip
     if (currentUploadId) {
-      fetch('/api/library?action=check&b2_url=' + encodeURIComponent(currentUploadId))
-        .then(r => r.json())
-        .then(data => {
-          if (data.exists && data.sermon && data.sermon.opus_upload_id) {
-            currentOpusUploadId = data.sermon.opus_upload_id;
-            currentLibraryId = data.sermon.id;
-            const uploaded = document.getElementById('uploadedIdDisplay');
-            if (uploaded) uploaded.textContent = 'Video ready. Zero-credit clips available.';
+      try {
+        const libCheckRes = await fetch('/api/library?action=check&b2_url=' + encodeURIComponent(currentUploadId));
+        const libCheckData = await libCheckRes.json();
+        if (libCheckData.exists && libCheckData.sermon) {
+          currentLibraryId = libCheckData.sermon.id;
+          if (libCheckData.sermon.opus_upload_id) {
+            currentOpusUploadId = libCheckData.sermon.opus_upload_id;
           }
-        })
-        .catch(e => console.warn('Library check failed:', e.message));
+        }
+      } catch(e) {
+        console.warn('Library check failed:', e.message);
+      }
     }
     // Show the uploaded state in the UI
     const nameEl = document.getElementById('uploadFileName');
@@ -3357,7 +3358,12 @@ function restoreAnalysis(a) {
     const uploaded = document.getElementById('uploadedIdDisplay');
     if (nameEl) { nameEl.style.display = 'block'; nameEl.textContent = a.sermon_title || 'Uploaded Sermon'; }
     if (dropText) dropText.style.display = 'none';
-    if (uploaded) { uploaded.style.display = 'block'; uploaded.textContent = 'Video on Backblaze B2. Ready to create clips.'; }
+    if (uploaded) {
+      uploaded.style.display = 'block';
+      uploaded.textContent = currentOpusUploadId
+        ? 'Video ready. Zero-credit clips available.'
+        : 'Video on Backblaze B2. Ready to create clips.';
+    }
   } else {
     currentSourceMode = 'youtube';
     currentUploadId = null;
