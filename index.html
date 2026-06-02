@@ -1730,7 +1730,8 @@ async function initiateOpusUpload(b2Url, libraryId) {
 
     const { uploadId, location } = initData;
 
-    // Store uploadId immediately so clips created during streaming use it
+    // Set immediately in memory — DB already updated in initiate action
+    // Clips created after this point will use the real Opus uploadId
     currentOpusUploadId = uploadId;
 
     // Step 2: Stream — B2 to Opus GCS in background on Edge server
