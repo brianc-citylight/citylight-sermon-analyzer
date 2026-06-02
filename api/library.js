@@ -76,6 +76,16 @@ export default async function handler(req, res) {
     return res.status(200).json({ success: true, sermon: saved });
   }
 
+  // ── UPDATE OPUS ID: store projectId after first clip created ──────────────
+  if (req.method === 'PATCH' && action === 'update-opus-id') {
+    const { id, opusUploadId } = req.body;
+    if (!id || !opusUploadId) return res.status(400).json({ error: 'Missing id or opusUploadId' });
+    const url = base + '/sermon_library?id=eq.' + id + '&org_id=eq.' + ORG_ID;
+    const result = await supabaseRequest(url, 'PATCH', { opus_upload_id: opusUploadId }, serviceKey);
+    if (!result.ok) return res.status(result.status).json({ error: 'Failed to update opus upload id' });
+    return res.status(200).json({ success: true });
+  }
+
   // ── UPDATE TITLE: edit sermon title ────────────────────────────────────────
   if (req.method === 'PATCH' && action === 'update-title') {
     const { id, title } = req.body;
