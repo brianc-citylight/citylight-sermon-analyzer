@@ -1911,8 +1911,7 @@ async function analyzeSermon(skipDuplicateCheck = false) {
       const result = data.result || '';
       const slidesSplit = result.split('---SLIDES---');
 
-      const seekerRaw = (slidesSplit[0] || '').split('---SUMMARY---')[0];
-      const seekerLines = seekerRaw.split('\n').map(l => l.trim()).filter(Boolean);
+      const seekerLines = slidesSplit[0].trim().split('\n');
 
       // Handle NOANSWER response from custom mode
       const noAnswerLine = seekerLines.find(l => l.startsWith('NOANSWER|'));
@@ -1937,21 +1936,9 @@ async function analyzeSermon(skipDuplicateCheck = false) {
         currentCustomQ = { question: cp[1] || '', timestamp: cp[2] || '', explanation: cp[3] || '' };
       }
 
-      const slidesRaw = slidesSplit[1] || '';
-      currentSlides = [];
-      const slideBlocks = slidesRaw.split(/\n(?=TITLE_SLIDE|INTRO_SLIDE|SLIDE_\d)/).filter(Boolean);
-      slideBlocks.forEach(block => {
-        const lines = block.trim().split('\n');
-        const header = lines[0].trim();
-        const fields = {};
-        lines.slice(1).forEach(l => {
-          const colonIdx = l.indexOf(':');
-          if (colonIdx > 0) { fields[l.substring(0, colonIdx).trim()] = l.substring(colonIdx + 1).trim(); }
-        });
-        currentSlides.push({ header, fields });
-      });
-
-      let rawSummary = (slidesSplit[1] ? result.split('---SUMMARY---')[1] : '') || '';
+      const summarySplit = slidesSplit[1].split('---SUMMARY---');
+      currentSlides = parseSlidesFromRaw(summarySplit[0] || '');
+      let rawSummary = (summarySplit[1] || '').trim();
       rawSummary = rawSummary.replace(/^(OUTPUT\s*3\s*[-:]\s*)?SERMON\s*SUMMARY\s*[-:]?\s*/i, '').trim();
       rawSummary = rawSummary.replace(/^OUTPUT\s*3\s*[-:]?\s*/i, '').trim();
       currentSummary = rawSummary;
