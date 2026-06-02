@@ -1945,21 +1945,29 @@ async function analyzeSermon(skipDuplicateCheck = false) {
 
       // Save to shared sermon library
       try {
-        const libResult = await saveToLibrary({
-          title: sermonTitle,
-          sermonDate: document.getElementById('sermonDate').value.trim(),
-          speaker: [
-            document.getElementById('speakerTitle').value.trim(),
-            document.getElementById('speakerFirst').value.trim(),
-            document.getElementById('speakerLast').value.trim()
-          ].filter(Boolean).join(' '),
-          b2Url: currentUploadId,
-          opusUploadId: null, // will be updated when first clip is created
-          uploadedBy: currentUser ? currentUser.id : null
-        });
-        // Store the library record id so we can update opus_upload_id after first clip
-        if (libResult && libResult.sermon && libResult.sermon.id) {
-          currentLibraryId = libResult.sermon.id;
+        // Check if this sermon already exists in the library before saving
+        const checkRes = await fetch('/api/library?action=check&b2_url=' + encodeURIComponent(currentUploadId));
+        const checkData = await checkRes.json();
+        if (!checkData.exists) {
+          // Not in library yet — save it
+          const libResult = await saveToLibrary({
+            title: sermonTitle,
+            sermonDate: document.getElementById('sermonDate').value.trim(),
+            speaker: [
+              document.getElementById('speakerTitle').value.trim(),
+              document.getElementById('speakerFirst').value.trim(),
+              document.getElementById('speakerLast').value.trim()
+            ].filter(Boolean).join(' '),
+            b2Url: currentUploadId,
+            opusUploadId: null,
+            uploadedBy: currentUser ? currentUser.id : null
+          });
+          if (libResult && libResult.sermon && libResult.sermon.id) {
+            currentLibraryId = libResult.sermon.id;
+          }
+        } else {
+          // Already in library — restore the existing record id for opus_upload_id tracking
+          currentLibraryId = checkData.sermon.id;
         }
       } catch(e) {
         console.warn('Library save failed:', e.message);
