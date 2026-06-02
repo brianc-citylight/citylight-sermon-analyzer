@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // POLL: check status and get result
+  // POLL: check status and get result with embedded timestamps
   if (req.method === 'GET' && action === 'poll') {
     const transcriptId = req.query.id;
     if (!transcriptId) return res.status(400).json({ error: 'Missing transcript id' });
@@ -47,10 +47,41 @@ export default async function handler(req, res) {
       const r = await fetch(pollUrl, { headers: aaiHeaders });
       const data = await r.json();
       if (!r.ok) return res.status(r.status).json({ error: data.error || 'AssemblyAI poll failed' });
+
+      // If not completed yet return status only
+      if (data.status !== 'completed') {
+        return res.status(200).json({ status: data.status, text: null, error: data.error || null });
+      }
+
+      // Fetch paragraph-level data which contains precise millisecond timestamps
+      const paragraphsUrl = ASSEMBLY_BASE + '/v2/transcript/' + transcriptId + '/paragraphs';
+      const paragraphsRes = await fetch(paragraphsUrl, { headers: aaiHeaders });
+      const paragraphsData = await paragraphsRes.json();
+
+      // Helper: convert milliseconds to MM:SS format
+      const formatMs = (ms) => {
+        const totalSeconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
+      };
+
+      // Build timestamped transcript — each paragraph prefixed with [MM:SS]
+      // This gives Claude real temporal anchors to produce accurate clip timestamps
+      let timestampedTranscript = '';
+      if (paragraphsData.paragraphs && paragraphsData.paragraphs.length > 0) {
+        timestampedTranscript = paragraphsData.paragraphs
+          .map(p => '[' + formatMs(p.start) + '] ' + p.text)
+          .join('\n\n');
+      } else {
+        // Fallback to raw text if paragraphs unavailable
+        timestampedTranscript = data.text || '';
+      }
+
       return res.status(200).json({
         status: data.status,
-        text: data.text || null,
-        error: data.error || null
+        text: timestampedTranscript,
+        error: null
       });
     } catch (e) {
       return res.status(500).json({ error: 'Poll error: ' + e.message });
