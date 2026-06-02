@@ -1931,12 +1931,9 @@ async function analyzeSermon(skipDuplicateCheck = false) {
       });
 
       const customLine = seekerLines.find(l => l.startsWith('CQ|'));
-      if (customLine) {
-        const cp = customLine.split('|');
-        currentCustomQ = { question: cp[1] || '', timestamp: cp[2] || '', explanation: cp[3] || '' };
-      }
+      currentCustomQ = customLine ? (() => { const cp = customLine.split('|'); return { question: cp[1] || '', timestamp: cp[2] || '', explanation: cp[3] || '' }; })() : null;
 
-      const summarySplit = slidesSplit[1].split('---SUMMARY---');
+      const summarySplit = (slidesSplit[1] || '').split('---SUMMARY---');
       currentSlides = parseSlidesFromRaw(summarySplit[0] || '');
       let rawSummary = (summarySplit[1] || '').trim();
       rawSummary = rawSummary.replace(/^(OUTPUT\s*3\s*[-:]\s*)?SERMON\s*SUMMARY\s*[-:]?\s*/i, '').trim();
