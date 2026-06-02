@@ -73,6 +73,10 @@ export default async function handler(req) {
       const { url: gcsUrl, uploadId } = linkData;
       if (!uploadId || !gcsUrl) return new Response(JSON.stringify({ error: 'Missing uploadId or gcsUrl from Opus' }), { status: 500, headers: corsHeaders });
 
+      // Save uploadId to DB immediately — do not wait for streaming to complete
+      // This ensures the frontend can use it right away for zero-credit clips
+      await saveUploadId(libraryId, uploadId);
+
       // Step 2: Initiate GCS resumable session
       const initRes = await fetch(gcsUrl, {
         method: 'POST',
@@ -118,8 +122,8 @@ export default async function handler(req) {
             duplex: 'half'
           });
 
-          // Save uploadId to sermon library on success
-          await saveUploadId(libraryId, uploadId);
+          // uploadId already saved in initiate action — no need to save again here
+          console.log('Background stream to Opus GCS completed for uploadId:', uploadId);
 
         } catch(e) {
           console.error('Background stream failed:', e.message);
