@@ -1305,6 +1305,8 @@ let currentAnalysisId = null; // Supabase record ID for current analysis
 let currentVideoId = null;    // YouTube video ID or Opus uploadId for current analysis
 let currentSourceMode = 'youtube'; // 'youtube' | 'upload'
 let currentUploadId = null;   // Opus uploadId when source is uploaded file
+let currentOpusUploadId = null; // Opus projectId after first clip created — enables zero-credit reuse
+let currentLibraryId = null;  // sermon_library record id for the current sermon
 let selectedVideoFile = null; // The File object when user selects a file
 let sermonTitle = '';
 
@@ -1598,6 +1600,9 @@ function useLibrarySermon(sermon) {
   currentUploadId = sermon.b2_url;
   currentVideoId = sermon.b2_url;
   selectedVideoFile = null;
+  currentLibraryId = sermon.id;
+  // If a clip was previously created, restore the projectId for zero-credit reuse
+  currentOpusUploadId = sermon.opus_upload_id || null;
 
   // Show upload mode UI
   setSourceMode('upload');
@@ -1956,7 +1961,7 @@ async function analyzeSermon(skipDuplicateCheck = false) {
 
       // Save to shared sermon library
       try {
-        await saveToLibrary({
+        const libResult = await saveToLibrary({
           title: sermonTitle,
           sermonDate: document.getElementById('sermonDate').value.trim(),
           speaker: [
@@ -1968,6 +1973,10 @@ async function analyzeSermon(skipDuplicateCheck = false) {
           opusUploadId: null, // will be updated when first clip is created
           uploadedBy: currentUser ? currentUser.id : null
         });
+        // Store the library record id so we can update opus_upload_id after first clip
+        if (libResult && libResult.sermon && libResult.sermon.id) {
+          currentLibraryId = libResult.sermon.id;
+        }
       } catch(e) {
         console.warn('Library save failed:', e.message);
       }
@@ -2479,9 +2488,9 @@ async function sendToOpus(i, btn) {
 
   // STAGE 1: Create project via serverless function
   try {
-    // Use uploadId if source is uploaded file, otherwise use YouTube URL
-    const opusVideoUrl = (currentSourceMode === 'upload' && currentUploadId)
-      ? currentUploadId
+    // Use stored Opus projectId if available (zero credits) — else fall back to B2 URL or YouTube URL
+    const opusVideoUrl = (currentSourceMode === 'upload')
+      ? (currentOpusUploadId || currentUploadId)
       : youtubeUrl;
 
     const projRes = await fetch('/api/opus?action=create', {
@@ -2521,6 +2530,18 @@ async function sendToOpus(i, btn) {
     currentQuestions[i].projectId = clip.projectId || projectId;
     currentQuestions[i].clipId = clip.clipId || '';
     currentQuestions[i].previewUrl = clip.previewUrl || '';
+
+    // If this is an upload-mode sermon and no Opus projectId stored yet, save it to the library
+    // This enables zero-credit reuse for all future clips from this sermon
+    if (currentSourceMode === 'upload' && !currentOpusUploadId && projectId && currentLibraryId) {
+      currentOpusUploadId = projectId;
+      // Save projectId to sermon_library.opus_upload_id
+      fetch('/api/library?action=update-opus-id', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: currentLibraryId, opusUploadId: projectId })
+      }).catch(e => console.warn('Failed to save opus upload id:', e.message));
+    }
 
     // Save updated questions to history immediately
     const slideCount = document.getElementById('slideCount').value;
@@ -3254,7 +3275,10 @@ function restoreAnalysis(a) {
   if (a.source_type === 'upload') {
     currentSourceMode = 'upload';
     currentUploadId = a.video_id; // video_id stores the B2 public URL for uploads
-    selectedVideoFile = null; // file is already on B2, no need to re-upload
+    selectedVideoFile = null;
+    // Restore Opus projectId if any clip was previously created — enables zero-credit reuse
+    const firstClipWithProject = (a.questions || []).find(q => q.projectId);
+    currentOpusUploadId = firstClipWithProject ? firstClipWithProject.projectId : null;
     setSourceMode('upload');
     // Show the uploaded state in the UI
     const nameEl = document.getElementById('uploadFileName');
@@ -3262,7 +3286,12 @@ function restoreAnalysis(a) {
     const uploaded = document.getElementById('uploadedIdDisplay');
     if (nameEl) { nameEl.style.display = 'block'; nameEl.textContent = a.sermon_title || 'Uploaded Sermon'; }
     if (dropText) dropText.style.display = 'none';
-    if (uploaded) { uploaded.style.display = 'block'; uploaded.textContent = 'Video on Backblaze B2. Ready to create clips.'; }
+    if (uploaded) {
+      uploaded.style.display = 'block';
+      uploaded.textContent = currentOpusUploadId
+        ? 'Video ready. Clips will reuse existing Opus project.'
+        : 'Video on Backblaze B2. Ready to create clips.';
+    }
   } else {
     currentSourceMode = 'youtube';
     currentUploadId = null;
