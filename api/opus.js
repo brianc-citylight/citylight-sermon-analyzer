@@ -85,9 +85,13 @@ export default async function handler(req, res) {
     const minDuration = Math.max(30, adjustedDuration - 5);
     const maxDuration = Math.min(90, adjustedDuration + 5);
 
+    // Check if the frontend passed an Opus uploadId instead of an external URL
+    const isOpusUploadId = typeof videoUrl === 'string' && videoUrl.startsWith('UPL_');
+
     const body = {
       title: question.substring(0, 100),
-      videoUrl,
+      // Opus requires different structure for uploaded files vs external URLs
+      video: isOpusUploadId ? { uploadId: videoUrl } : { url: videoUrl },
       curationPref: {
         range: { startSec: adjustedStart, endSec: adjustedEnd },
         clipDurations: [[minDuration, maxDuration]],
