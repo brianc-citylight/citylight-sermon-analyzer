@@ -90,11 +90,10 @@ export default async function handler(req, res) {
 
     const body = {
       title: question.substring(0, 100),
-      // Opus requires different structure for uploaded files vs external URLs
-      video: isOpusUploadId ? { uploadId: videoUrl } : { url: videoUrl },
+      videoUrl: videoUrl,
       curationPref: {
         range: { startSec: adjustedStart, endSec: adjustedEnd },
-        clipDurations: [[minDuration, maxDuration]],
+        clipDurations: [30, 90],
         topicKeywords: [question.substring(0, 80)],
         genre: 'Auto',
         skipCurate: true
