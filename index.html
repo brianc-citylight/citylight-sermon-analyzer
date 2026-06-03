@@ -1747,19 +1747,28 @@ async function initiateOpusUpload(b2Url) {
       xhr.open('PUT', location);
       xhr.setRequestHeader('Content-Type', videoBlob.type || 'video/mp4');
 
+      let uploadComplete = false;
+
       xhr.upload.onprogress = function(e) {
         if (e.lengthComputable) {
           const pct = Math.round((e.loaded / e.total) * 100);
+          if (pct === 100) uploadComplete = true;
           console.log('SermonReach: Opus upload progress:', pct + '%');
         }
       };
 
       xhr.onload = function() {
         // GCS may block CORS on the response but the upload still succeeded
-        // Resolve regardless since onload fired after 100% progress
         resolve();
       };
-      xhr.onerror = () => reject(new Error('Opus GCS upload network error'));
+      xhr.onerror = function() {
+        // CORS blocks reading the GCS response — if upload reached 100% treat as success
+        if (uploadComplete) {
+          resolve();
+        } else {
+          reject(new Error('Opus GCS upload network error'));
+        }
+      };
       xhr.send(videoBlob);
     });
 
