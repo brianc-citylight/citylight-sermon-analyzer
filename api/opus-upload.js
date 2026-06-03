@@ -50,7 +50,7 @@ export default async function handler(req) {
   }
 
   const opusHeaders = {
-    'x-opus-api-key': OPUS_API_KEY,
+    'Authorization': 'Bearer ' + OPUS_API_KEY,
     'Content-Type': 'application/json'
   };
 
