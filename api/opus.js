@@ -65,9 +65,19 @@ export default async function handler(req, res) {
   if (req.method === 'POST' && req.query.action === 'create') {
     const { videoUrl, startSec, endSec, question } = req.body;
 
+    // Guard against missing required fields
+    if (!videoUrl) return res.status(400).json({ error: 'Missing videoUrl' });
+    if (startSec === undefined || endSec === undefined) return res.status(400).json({ error: 'Missing startSec or endSec' });
+    if (!question) return res.status(400).json({ error: 'Missing question' });
+
     let adjustedStart = startSec;
     let adjustedEnd = endSec;
     const clipDuration = endSec - startSec;
+
+    // Guard against NaN or invalid timestamps
+    if (isNaN(clipDuration) || clipDuration <= 0) {
+      return res.status(400).json({ error: 'Invalid timestamp range: startSec=' + startSec + ' endSec=' + endSec });
+    }
 
     // Enforce 30 second minimum
     if (clipDuration < 30) {
@@ -81,20 +91,12 @@ export default async function handler(req, res) {
       adjustedEnd = adjustedStart + 90;
     }
 
-    const adjustedDuration = adjustedEnd - adjustedStart;
-    const minDuration = Math.max(30, adjustedDuration - 5);
-    const maxDuration = Math.min(90, adjustedDuration + 5);
-
-    // 🌟 FIX 1: Map the upload identifier string into the strict nested
-    // object format that the Opus project creation schema expects.
     const body = {
       title: question.substring(0, 100),
-      video: {
-        uploadId: videoUrl // Pass your raw "UPL_..." string here
-      },
+      videoUrl: videoUrl,
       curationPref: {
         range: { startSec: adjustedStart, endSec: adjustedEnd },
-        clipDurations: [30, 90],
+        clipDurations: [[30, 90]],
         topicKeywords: [question.substring(0, 80)],
         genre: 'Auto',
         skipCurate: true
@@ -109,28 +111,36 @@ export default async function handler(req, res) {
         body: JSON.stringify(body)
       });
 
-      // 🌟 FIX 2: Safely extract response text first to insulate the runtime
-      // from crashing if Opus responds with an HTML error page
+      // Safe response parsing — prevents crash if Opus returns HTML instead of JSON
       const rawResponse = await opusRes.text();
       let data;
       try {
         data = JSON.parse(rawResponse);
-      } catch (parseError) {
-        data = { error: 'Raw non-JSON response received', raw: rawResponse };
+      } catch(parseError) {
+        console.error('Opus returned non-JSON response:', rawResponse.substring(0, 500));
+        return res.status(500).json({ error: 'Opus returned unexpected response format', raw: rawResponse.substring(0, 200) });
       }
 
       if (!opusRes.ok) {
-        console.error('Opus API validation rejected the payload:', data);
+        console.error('Opus API rejection — status:', opusRes.status, 'body:', JSON.stringify(data));
         return res.status(opusRes.status).json({
           error: data.message || data.error || 'Opus Clip error',
+          status: opusRes.status,
           details: data
         });
       }
 
-      return res.status(200).json({ projectId: data.id || data.projectId });
-    } catch (e) {
-      console.error('Fatal execution exception inside catch handler:', e.message);
-      return res.status(500).json({ error: 'Internal server route exception: ' + e.message });
+      const projectId = data.id || data.projectId;
+      if (!projectId) {
+        console.error('Opus returned OK but no projectId:', JSON.stringify(data));
+        return res.status(500).json({ error: 'Opus returned no projectId', details: data });
+      }
+
+      return res.status(200).json({ projectId });
+
+    } catch(e) {
+      console.error('Fatal exception in create action:', e.message);
+      return res.status(500).json({ error: 'Internal server error: ' + e.message });
     }
   }
 
