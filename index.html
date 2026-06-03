@@ -1720,9 +1720,9 @@ async function removeMember(id, btn) {
 
 async function initiateOpusUpload(b2Url) {
   try {
-    console.log('SermonReach: Initiating background Opus upload...');
+    console.log('SermonReach: Initiating Opus upload...');
 
-    // Step 1: Initiate — get uploadId and GCS location from Opus
+    // Step 1: Get uploadId and GCS location from our server
     const initRes = await fetch('/api/opus-upload?action=initiate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1733,27 +1733,49 @@ async function initiateOpusUpload(b2Url) {
     if (initData.error) { console.warn('Opus upload initiate error:', initData.error); return; }
 
     const { uploadId, location } = initData;
+    console.log('SermonReach: Got Opus uploadId:', uploadId);
 
-    // Set in memory immediately — session-only, never persisted
+    // Step 2: Fetch the video from B2
+    const videoRes = await fetch(b2Url);
+    if (!videoRes.ok) { console.warn('Failed to fetch video from B2:', videoRes.status); return; }
+    const videoBlob = await videoRes.blob();
+
+    // Step 3: PUT the file directly from browser to Opus GCS via XHR
+    // This is the original working approach — browser to GCS directly
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', location);
+      xhr.setRequestHeader('Content-Type', videoBlob.type || 'video/mp4');
+
+      xhr.upload.onprogress = function(e) {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          console.log('SermonReach: Opus upload progress:', pct + '%');
+        }
+      };
+
+      xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error('Opus GCS upload failed: ' + xhr.status));
+        }
+      };
+      xhr.onerror = () => reject(new Error('Opus GCS upload network error'));
+      xhr.send(videoBlob);
+    });
+
+    // Upload complete — set uploadId in memory for zero-credit clips this session
     currentOpusUploadId = uploadId;
-    console.log('SermonReach: Opus uploadId ready for this session:', uploadId);
+    console.log('SermonReach: Opus upload complete. uploadId ready:', uploadId);
 
-    // Show session savings banner in clips tab
+    // Show session savings banner
     const savingsBanner = document.getElementById('sessionSavingsBanner');
     if (savingsBanner) savingsBanner.style.display = 'block';
 
-    // Step 2: Stream B2 to Opus GCS in background
-    const streamRes = await fetch('/api/opus-upload?action=stream', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ b2Url, location, uploadId })
-    });
-    if (!streamRes.ok) { console.warn('Opus upload stream failed:', streamRes.status); return; }
-
-    console.log('SermonReach: Background Opus stream started. Create all 5 clips now for zero-credit savings.');
-
   } catch(e) {
-    console.warn('SermonReach: Background Opus upload error:', e.message);
+    console.warn('SermonReach: Opus upload error:', e.message);
+    // Non-fatal — clips will fall back to B2 URL
   }
 }
 
