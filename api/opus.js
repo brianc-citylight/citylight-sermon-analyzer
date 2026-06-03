@@ -85,12 +85,13 @@ export default async function handler(req, res) {
     const minDuration = Math.max(30, adjustedDuration - 5);
     const maxDuration = Math.min(90, adjustedDuration + 5);
 
-    // Check if the frontend passed an Opus uploadId instead of an external URL
-    const isOpusUploadId = typeof videoUrl === 'string' && videoUrl.startsWith('UPL_');
-
+    // 🌟 FIX 1: Map the upload identifier string into the strict nested
+    // object format that the Opus project creation schema expects.
     const body = {
       title: question.substring(0, 100),
-      videoUrl: videoUrl,
+      video: {
+        uploadId: videoUrl // Pass your raw "UPL_..." string here
+      },
       curationPref: {
         range: { startSec: adjustedStart, endSec: adjustedEnd },
         clipDurations: [30, 90],
@@ -107,13 +108,29 @@ export default async function handler(req, res) {
         headers: opusHeaders,
         body: JSON.stringify(body)
       });
-      const data = await opusRes.json();
-      if (!opusRes.ok) {
-        return res.status(opusRes.status).json({ error: data.message || data.error || 'Opus Clip error' });
+
+      // 🌟 FIX 2: Safely extract response text first to insulate the runtime
+      // from crashing if Opus responds with an HTML error page
+      const rawResponse = await opusRes.text();
+      let data;
+      try {
+        data = JSON.parse(rawResponse);
+      } catch (parseError) {
+        data = { error: 'Raw non-JSON response received', raw: rawResponse };
       }
+
+      if (!opusRes.ok) {
+        console.error('Opus API validation rejected the payload:', data);
+        return res.status(opusRes.status).json({
+          error: data.message || data.error || 'Opus Clip error',
+          details: data
+        });
+      }
+
       return res.status(200).json({ projectId: data.id || data.projectId });
     } catch (e) {
-      return res.status(500).json({ error: e.message });
+      console.error('Fatal execution exception inside catch handler:', e.message);
+      return res.status(500).json({ error: 'Internal server route exception: ' + e.message });
     }
   }
 
