@@ -34,8 +34,13 @@ export default async function handler(req, res) {
   const sermonDate = date || '';
   const numSlides = parseInt(slideCount) || 3;
 
-  // 90-second maximum enforced in prompt — complete thought within 30 to 90 seconds
-  const clipWindowInstruction = 'IMPORTANT: Each clip window must be between 30 and 90 seconds. Find moments that are complete and land within that window — a tight illustration, a clear point with a strong landing, a question fully answered. Do not identify windows longer than 90 seconds. Do not cut a thought mid-sentence to hit the limit — choose moments that naturally conclude within 90 seconds.';
+  // 90-second maximum enforced in prompt — complete thought within 45 to 90 seconds
+  const clipWindowInstruction = 'IMPORTANT: Each clip window must be between 45 and 90 seconds. ' +
+    'When the transcript contains [MM:SS] timestamp markers, you MUST use those exact markers to identify clip boundaries. ' +
+    'The start and end timestamps you provide MUST match or encapsulate the actual text where the speaker says these things. ' +
+    'Do not invent or approximate timestamps — only use timestamps anchored to the [MM:SS] markers present in the transcript. ' +
+    'Find moments that are complete and land within that window — a tight illustration, a clear point with a strong landing, a question fully answered. ' +
+    'Do not identify windows longer than 90 seconds. Do not cut a thought mid-sentence to hit the limit — choose moments that naturally conclude within 90 seconds.';
 
   const clipModeInstruction = clipMode === 'discipleship'
     ? `Find the TOP 5 moments in this sermon that would most help someone who already believes grow deeper in their faith. Look for theological depth, doctrinal content, practical application, moments that would fuel personal devotion or small group discussion, and passages that demand something of a believer's obedience or trust. These clips are for maturing disciples, not first-time seekers.
