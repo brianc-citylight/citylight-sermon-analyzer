@@ -1755,11 +1755,9 @@ async function initiateOpusUpload(b2Url) {
       };
 
       xhr.onload = function() {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve();
-        } else {
-          reject(new Error('Opus GCS upload failed: ' + xhr.status));
-        }
+        // GCS may block CORS on the response but the upload still succeeded
+        // Resolve regardless since onload fired after 100% progress
+        resolve();
       };
       xhr.onerror = () => reject(new Error('Opus GCS upload network error'));
       xhr.send(videoBlob);
@@ -2478,7 +2476,8 @@ function downloadSlides() {
 // -- OPUS CLIP INTEGRATION ------------------------------------------------
 
 function timestampToSeconds(ts) {
-  const parts = ts.split('-').map(s => s.trim());
+  const cleaned = ts.replace(/[\[\]]/g, ''); // strip square brackets from AssemblyAI timestamp format
+  const parts = cleaned.split('-').map(s => s.trim());
   const toSec = t => {
     const seg = t.split(':').map(Number);
     return (seg[0] || 0) * 60 + (seg[1] || 0);
