@@ -302,7 +302,7 @@ export default async function handler(req, res) {
         clipId: tryClipId,
         postAccountId,
         postDetail,
-        scheduledTime: scheduledTimestamp  // Unix timestamp in milliseconds
+        scheduleTime: Number(scheduledTimestamp)
       };
       if (subAccountId && subAccountId !== 'null' && subAccountId !== 'undefined') {
         body.subAccountId = subAccountId;
