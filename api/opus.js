@@ -295,6 +295,9 @@ export default async function handler(req, res) {
     if (!clipId.includes('.') && projectId) clipIdVariants.push(projectId + '.' + clipId);
     if (clipId.includes('.')) clipIdVariants.push(clipId.split('.').pop());
 
+    // Convert millisecond timestamp to ISO 8601 UTC string per Opus publish-schedules spec
+    const isoPublishAt = new Date(Number(scheduledTimestamp)).toISOString();
+
     let lastError = null;
     for (const tryClipId of clipIdVariants) {
       const body = {
@@ -302,13 +305,13 @@ export default async function handler(req, res) {
         clipId: tryClipId,
         postAccountId,
         postDetail,
-        scheduleTime: Number(scheduledTimestamp)
+        publishAt: isoPublishAt
       };
       if (subAccountId && subAccountId !== 'null' && subAccountId !== 'undefined') {
         body.subAccountId = subAccountId;
       }
       try {
-        const opusRes = await fetch('https://api.opus.pro/api/post-tasks', {
+        const opusRes = await fetch('https://api.opus.pro/api/publish-schedules', {
           method: 'POST',
           headers: opusHeaders,
           body: JSON.stringify(body)
@@ -317,7 +320,7 @@ export default async function handler(req, res) {
         let data;
         try { data = JSON.parse(raw); } catch(e) { data = { raw }; }
         if (opusRes.ok) {
-          return res.status(200).json({ success: true, postId: data.data?.postId || '', clipIdUsed: tryClipId, scheduledFor: scheduledTimestamp });
+          return res.status(200).json({ success: true, postId: data.data?.scheduleId || data.data?.postId || '', clipIdUsed: tryClipId, scheduledFor: isoPublishAt });
         }
         lastError = { error: data.message || data.errorName || data.error || 'Schedule failed', detail: data };
       } catch (e) {
