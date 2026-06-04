@@ -1,100 +1,74 @@
-# SermonReach — City Light Church
+# SermonReach
+### City Light Church — Vicksburg, MS
 
-Sermon content tool for City Light Church, Vicksburg, MS.
-Paste a YouTube sermon link every Tuesday and get three outputs ready to post by Wednesday.
+SermonReach is a sermon content tool that turns any Sunday message into a full week of social media content. From a single analysis it produces five short-form video clips with captions, a set of branded sermon notes slides, and a narrative summary — all ready to publish directly to Instagram, Facebook, and YouTube.
+
+---
 
 ## What It Does
 
-1. **Sermon Summary** — 500 word or less narrative summary ready to post as a text caption on Instagram, Facebook, or YouTube
-2. **Sermon Notes Slides** — 3 to 5 branded 1080x1080 slide images in four theme options, ready to post as a carousel
-3. **Sermon Clips** — Top 5 clips in three focus modes: Outreach (for people outside the faith), Discipleship (for growing believers), or Custom (a specific question). Each clip includes a timestamp, social media caption, and direct publishing to Instagram, Facebook, and YouTube Shorts via Opus Clip
+**Sermon Clips**
+SermonReach identifies the five most compelling moments in a sermon and generates precise video clips from those timestamps. Each clip comes with an editable social media caption written in the voice of a connected community member. Clips can be published immediately or scheduled for a future date and time.
 
-## File Structure
+Three clip focus modes:
+- **Outreach** — finds moments that speak to people outside the faith
+- **Discipleship** — finds moments for growing believers
+- **Custom** — you enter a specific question; SermonReach finds relevant moments or tells you clearly if the sermon does not address it
 
-```
-index.html              — the full web app (single page, includes html2canvas slide rendering)
-package.json            — Node dependencies
-vercel.json             — Vercel function configuration
-README.md               — this file
+**Sermon Notes Slides**
+A branded slide deck in four theme options — one title slide, one scripture and key point slide, and up to five takeaway slides. Each slide is 1080x1080 and ready for Instagram carousel. Export the full deck as HTML or download individual slides as PNG.
 
-api/
-  analyze.js            — Claude API call for sermon analysis (reads ANTHROPIC_API_KEY)
-  title.js              — YouTube title fetcher
-  transcript.js         — YouTube transcript fetcher via Supadata
-  opus.js               — Opus Clip integration (create, poll, accounts, publish)
-  config.js             — Delivers Supabase credentials to frontend
-  history.js            — Analysis history and publish tracking (reads SUPABASE_SERVICE_KEY)
-  test-transcript.js    — Diagnostic endpoint for transcript testing
+**Sermon Summary**
+A narrative summary of 500 words or less, written for social media. Ready to post as a caption on Instagram, Facebook, or YouTube.
 
-images/
-  CityLightLogo.png     — City Light logo used in slide exports
-  Slide Templates/      — Four cover and detail slide theme reference images
-```
+---
 
-## Deploy to Vercel
+## Video Sources
 
-1. Push all files to GitHub maintaining the folder structure above
-2. Go to vercel.com and import the GitHub repo
-3. Add all environment variables listed below
-4. Deploy
+**YouTube**
+Paste a YouTube link. SermonReach fetches the transcript automatically. If the auto-fetch fails, paste the transcript manually using the link below the input field.
 
-## Environment Variables (Vercel)
+**Upload Video File**
+Upload an MP4 directly. SermonReach stores it securely in your team's cloud storage, transcribes it automatically with precise timestamps, and saves it to the shared Sermon Library for your whole team.
 
-All keys are stored securely in Vercel environment variables. Never put them in code.
+---
 
-| Variable | Source |
-|---|---|
-| ANTHROPIC_API_KEY | console.anthropic.com |
-| SUPADATA_API_KEY | supadata.ai dashboard |
-| OPUS_API_KEY | Opus Clip dashboard |
-| SUPABASE_URL | Supabase project settings → API |
-| SUPABASE_ANON_KEY | Supabase project settings → API |
-| SUPABASE_SERVICE_KEY | Supabase project settings → API (service_role) |
+## Sermon Library
 
-## Supabase Database
+Uploaded sermons are saved to a shared library accessible to everyone on your team. Any team member can load a previously uploaded sermon instantly without re-uploading. Each sermon stays available for 60 days. The library shows the sermon title, date, speaker, and days remaining.
 
-Table: `sermon_analyses`
-Stores the last 10 analyses per user including questions, slides, summary, and publish tracking.
-Row Level Security must be enabled with a policy allowing users to manage only their own rows.
+---
 
-SQL policy:
-```sql
-create policy "Users can manage own analyses"
-on sermon_analyses
-for all
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
-```
+## Publishing and Scheduling
 
-## Authentication
+Clips are sent to Opus Clip for processing. Once ready, each clip can be:
+- **Published immediately** to Instagram, Facebook, or YouTube
+- **Scheduled** for a specific future date and time
 
-SermonReach uses Supabase Auth. Staff sign in with email and password or Google.
-To add a new user: Supabase dashboard → Authentication → Users → Add user → Create new user.
-To change a password: user clicks hamburger menu → My Account → Update Password.
+Create no more than two clips at a time. Wait for each to finish processing before creating the next. If you are working with a freshly uploaded video in the same session, creating all five clips in that session saves credits.
 
-## Opus Clip
+---
 
-Connected accounts: City Light Church Instagram, City Light Church Facebook, City Light Church YouTube
-Plan: supports 4 concurrent projects and 900 credits per month
-Send no more than 3 clips at a time. Wait for each to finish before sending more.
+## Team
 
-## Slide Themes
+SermonReach supports multiple team members under one organization. The admin (Pastor Brian Crawford) can invite new members by email and remove members from the Team Management panel. Each team member signs in with their own account and has access to the shared sermon library and analysis history.
 
-Four themes available in the Sermon Notes Slides tab:
-1. City Light — white background, gold and black
-2. Navy — deep navy background, white text
-3. Warm Brown — warm brown background, white text
-4. Slate — medium gray background, white text
-
-All slides export at 1080x1080 for Instagram carousel format.
+---
 
 ## Analysis History
 
-SermonReach stores the last 10 analyses per user account in Supabase.
-Before running a new analysis, the app checks if an identical one already exists and prompts the user to load it instead of re-running.
-Publish tracking is stored per clip so published badges persist across sessions.
+SermonReach saves your last 10 analyses automatically. Open Analysis History from the menu to restore any previous analysis instantly — all slides, clips, and summaries are exactly as you left them.
 
-## Weekly Timeline
+---
 
-Tuesday: Sermon available on YouTube. Run analysis.
-Wednesday: Post content to Instagram, Facebook, and YouTube Shorts.
+## Access
+
+**Web:** [sermonreach.citylightvicksburg.org](https://sermonreach.citylightvicksburg.org)
+
+Sign in with your email and password or continue with Google. Contact Pastor Brian at brianc@citylightvicksburg.org to request access.
+
+---
+
+## Built For
+
+City Light Church, Vicksburg MS — currently in active use by the City Light communications team.
