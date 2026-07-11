@@ -780,15 +780,8 @@
       <div id="browseLibraryBtn" style="display:none;margin-top:0.5rem;">
         <button class="btn" style="width:100%;font-size:0.875rem;border-color:var(--gold);color:var(--gold);" onclick="openLibraryPicker()">&#128218; Browse Sermon Library</button>
       </div>
+      <input type="hidden" id="slideCount" value="6" />
       <div class="options-row" style="align-items:flex-end;">
-        <div class="option-group">
-          <label>Sermon Notes Slides</label>
-          <select id="slideCount">
-            <option value="3">3 slides</option>
-            <option value="4">4 slides</option>
-            <option value="5" selected>5 slides</option>
-          </select>
-        </div>
         <div class="option-group">
           <label>Sermon Notes Slide Theme</label>
           <div id="themeScrollWrapper" style="overflow:hidden;">
@@ -1983,7 +1976,6 @@ async function analyzeSermon(skipDuplicateCheck = false) {
           sermonTitle,
           url: '',
           transcript: driveTranscript,
-          slideCount,
           date: sermonDateRaw,
           speaker: speakerFull,
           customQuestion,
@@ -2209,26 +2201,25 @@ async function autoSaveAnalysis(videoId, slideCount, sourceType) {
 }
 
 function parseSlidesFromRaw(raw) {
-  // Whitelist of valid field names from the Claude prompt
+  // Whitelist of valid field names from the Claude prompt — new 6-slide structure
   const VALID_FIELDS = new Set([
     'Sermon Title', 'Sermon Date', 'Speaker',
-    'Scripture', 'Key Point',
-    'Subpoint', 'Key Takeaway', 'Key Reflection',
-    'Main Point'
+    'Scripture Reference', 'Scripture Text',
+    'Key Idea', 'Summary Statement',
+    'Call To Action'
   ]);
   const slides = [];
-  const sections = raw.split(/\n(?=TITLE_SLIDE|INTRO_SLIDE|SLIDE_\d)/);
+  const sections = raw.split(/\n(?=TITLE_SLIDE|SCRIPTURE_SLIDE|IDEA_\d|CALL_SLIDE)/);
   sections.forEach(section => {
     const lines = section.trim().split('\n');
     const header = lines[0].trim();
-    if (header !== 'TITLE_SLIDE' && header !== 'INTRO_SLIDE' && !/^SLIDE_\d+$/.test(header)) return;
+    if (header !== 'TITLE_SLIDE' && header !== 'SCRIPTURE_SLIDE' && header !== 'CALL_SLIDE' && !/^IDEA_\d+$/.test(header)) return;
     const fields = {};
     for (const l of lines.slice(1)) {
       const colon = l.indexOf(':');
       if (colon === -1) continue;
       const key = l.substring(0, colon).replace(/\*+/g, '').trim();
       const val = l.substring(colon + 1).trim();
-      // Only accept whitelisted field names — rejects all summary bleed-through
       if (VALID_FIELDS.has(key) && val) {
         fields[key] = val;
       }
@@ -2249,14 +2240,14 @@ function renderResults(questions, slides, summary) {
   const sContainer = document.getElementById('slidesContainer');
   sContainer.innerHTML = '';
   const actualSermonDate = document.getElementById('sermonDate').value.trim();
-  const labelMap = { 'TITLE_SLIDE': 'Title Slide', 'INTRO_SLIDE': 'Intro Slide: Scripture and Key Point' };
+  const labelMap = { 'TITLE_SLIDE': 'Title Slide', 'SCRIPTURE_SLIDE': 'Scripture Slide', 'CALL_SLIDE': 'Call To Action Slide' };
   slides.forEach((slide, idx) => {
     // Override sermon date on title slide with the actual required input value
     if (slide.header === 'TITLE_SLIDE' && actualSermonDate) {
       slide.fields['Sermon Date'] = actualSermonDate;
     }
     const num = slide.header.match(/\d+/);
-    const label = labelMap[slide.header] || `Takeaway Slide ${num ? num[0] : ''}`;
+    const label = labelMap[slide.header] || `Key Idea Slide ${num ? num[0] : ''}`;
     const fieldsHtml = Object.entries(slide.fields).map(([k,v]) => `
       <div class="slide-field">
         <div class="slide-field-key">${k}</div>
@@ -2618,7 +2609,7 @@ async function sendToOpus(i, btn) {
     const card = document.getElementById('opus-card-' + i);
 
     const dashboardUrl = clip.projectId
-      ? 'https://www.opus.pro/app/clip-projects/' + clip.projectId
+      ? 'https://clip.opus.pro/clip/' + clip.projectId
       : (clip.previewUrl || '');
     const previewHtml = dashboardUrl
       ? '<a href="' + dashboardUrl + '" target="_blank" style="font-size:12px; color:var(--gold); text-decoration:underline; display:block; margin-top:4px;">Open in Opus Clip Dashboard</a>'
@@ -2931,26 +2922,28 @@ function exportSlidesAsHtml() {
         <div style="font-family:Arial,sans-serif;font-size:24px;color:${SUBTEXT};">${fields['Sermon Date'] || sermonDate}</div>
         ${speakerFull ? '<div style="font-family:Arial,sans-serif;font-size:18px;color:' + SUBTEXT + ';margin-top:8px;">' + speakerFull + '</div>' : ''}
       </div>`;
-    } else if (header === 'INTRO_SLIDE') {
+
+    } else if (header === 'SCRIPTURE_SLIDE') {
       body = `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:70px 76px;">
-        <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:29px;">The Text</div>
-        <div style="font-family:Arial,sans-serif;font-size:31px;font-weight:700;color:${TEXT};line-height:1.4;margin-bottom:43px;padding-bottom:38px;border-bottom:2px solid ${DIVIDER};">${fields['Scripture'] || ''}</div>
-        <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:19px;">Key Point</div>
-        <div style="font-family:Arial,sans-serif;font-size:31px;font-weight:700;color:${TEXT};line-height:1.4;">${fields['Key Point'] || ''}</div>
+        <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:22px;">The Text</div>
+        <div style="font-family:Arial,sans-serif;font-size:22px;font-weight:700;color:${ACCENT};margin-bottom:18px;">${fields['Scripture Reference'] || ''}</div>
+        <div style="width:72px;height:3px;background:${DIVIDER};margin-bottom:28px;"></div>
+        <div style="font-family:Arial,sans-serif;font-size:33px;font-weight:600;color:${TEXT};line-height:1.5;font-style:italic;">"${fields['Scripture Text'] || ''}"</div>
       </div>`;
-    } else {
+
+    } else if (header === 'CALL_SLIDE') {
+      body = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:80px 80px;">
+        <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:32px;">This Week</div>
+        <div style="width:72px;height:3px;background:${ACCENT};margin-bottom:36px;"></div>
+        <div style="font-family:Arial,sans-serif;font-size:34px;font-weight:700;color:${TEXT};line-height:1.5;">${fields['Call To Action'] || ''}</div>
+      </div>`;
+
+    } else if (/^IDEA_\d+$/.test(header)) {
       const num = header.match(/\d+/);
-      const scripture = fields['Scripture'] || '';
       body = `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:60px 76px;">
-        <div style="font-family:'Arial Black',Arial,sans-serif;font-size:16px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:5px;">TAKEAWAY ${num ? num[0] : ''}</div>
-        <div style="font-family:Arial,sans-serif;font-size:29px;font-weight:700;color:${TEXT};line-height:1.35;margin-bottom:29px;padding-bottom:24px;border-bottom:2px solid ${DIVIDER};">${fields['Subpoint'] || ''}</div>
-        <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${SUBTEXT};margin-bottom:10px;">Key Takeaway</div>
-        <div style="font-family:Arial,sans-serif;font-size:24px;color:${SUBTEXT};line-height:1.6;margin-bottom:24px;">${fields['Key Takeaway'] || ''}</div>
-        <div style="background:${TAKEAWAY_BG};border-left:4px solid ${REFL_BORDER};padding:14px 18px;border-radius:0 6px 6px 0;${scripture ? 'margin-bottom:16px;' : ''}">
-          <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${REFL_LABEL};margin-bottom:7px;">Reflection</div>
-          <div style="font-family:Arial,sans-serif;font-size:23px;color:${TEXT};line-height:1.5;font-style:italic;">${fields['Key Reflection'] || ''}</div>
-        </div>
-        ${scripture ? '<div style="font-family:Arial,sans-serif;font-size:21px;color:' + SCRIPTURE + ';font-weight:600;margin-top:14px;">' + scripture + '</div>' : ''}
+        <div style="font-family:'Arial Black',Arial,sans-serif;font-size:15px;font-weight:900;letter-spacing:0.2em;text-transform:uppercase;color:${ACCENT};margin-bottom:12px;">Key Idea ${num ? num[0] : ''}</div>
+        <div style="font-family:Arial,sans-serif;font-size:40px;font-weight:800;color:${TEXT};line-height:1.2;margin-bottom:32px;padding-bottom:28px;border-bottom:2px solid ${DIVIDER};">${fields['Key Idea'] || ''}</div>
+        <div style="font-family:Arial,sans-serif;font-size:27px;color:${SUBTEXT};line-height:1.6;">${fields['Summary Statement'] || ''}</div>
       </div>`;
     }
 
@@ -3041,32 +3034,31 @@ function exportSingleSlide(slide) {
       <div style="font-family:Arial,sans-serif;font-size:24px;color:${SUBTEXT};">${fields['Sermon Date'] || sermonDate}</div>
       ${speakerFull ? '<div style="font-family:Arial,sans-serif;font-size:20px;color:' + SUBTEXT + ';margin-top:8px;">' + speakerFull + '</div>' : ''}
     </div>`;
-  } else if (header === 'INTRO_SLIDE') {
+  } else if (header === 'SCRIPTURE_SLIDE') {
     body = `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:70px 76px;">
-      <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:29px;">The Text</div>
-      <div style="font-family:Arial,sans-serif;font-size:26px;font-weight:700;color:${TEXT};line-height:1.4;margin-bottom:43px;padding-bottom:38px;border-bottom:2px solid ${DIVIDER};">${fields['Scripture'] || ''}</div>
-      <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:19px;">Key Point</div>
-      <div style="font-family:Arial,sans-serif;font-size:31px;font-weight:700;color:${TEXT};line-height:1.4;">${fields['Key Point'] || ''}</div>
+      <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:22px;">The Text</div>
+      <div style="font-family:Arial,sans-serif;font-size:22px;font-weight:700;color:${ACCENT};margin-bottom:18px;">${fields['Scripture Reference'] || ''}</div>
+      <div style="width:72px;height:3px;background:${DIVIDER};margin-bottom:28px;"></div>
+      <div style="font-family:Arial,sans-serif;font-size:33px;font-weight:600;color:${TEXT};line-height:1.5;font-style:italic;">"${fields['Scripture Text'] || ''}"</div>
+    </div>`;
+  } else if (header === 'CALL_SLIDE') {
+    body = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:80px 80px;">
+      <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:32px;">This Week</div>
+      <div style="width:72px;height:3px;background:${ACCENT};margin-bottom:36px;"></div>
+      <div style="font-family:Arial,sans-serif;font-size:34px;font-weight:700;color:${TEXT};line-height:1.5;">${fields['Call To Action'] || ''}</div>
     </div>`;
   } else {
     const num = header.match(/\d+/);
-    const scripture = fields['Scripture'] || '';
     body = `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:60px 76px;">
-      <div style="font-family:'Arial Black',Arial,sans-serif;font-size:16px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:5px;">TAKEAWAY ${num ? num[0] : ''}</div>
-      <div style="font-family:Arial,sans-serif;font-size:29px;font-weight:700;color:${TEXT};line-height:1.35;margin-bottom:29px;padding-bottom:24px;border-bottom:2px solid ${DIVIDER};">${fields['Subpoint'] || ''}</div>
-      <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${SUBTEXT};margin-bottom:10px;">Key Takeaway</div>
-      <div style="font-family:Arial,sans-serif;font-size:24px;color:${SUBTEXT};line-height:1.6;margin-bottom:24px;">${fields['Key Takeaway'] || ''}</div>
-      <div style="background:${TAKEAWAY_BG};border-left:4px solid ${REFL_BORDER};padding:14px 18px;border-radius:0 6px 6px 0;${scripture ? 'margin-bottom:16px;' : ''}">
-        <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${REFL_LABEL};margin-bottom:7px;">Reflection</div>
-        <div style="font-family:Arial,sans-serif;font-size:23px;color:${TEXT};line-height:1.5;font-style:italic;">${fields['Key Reflection'] || ''}</div>
-      </div>
-      ${scripture ? '<div style="font-family:Arial,sans-serif;font-size:21px;color:' + SCRIPTURE + ';font-weight:600;margin-top:14px;">' + scripture + '</div>' : ''}
+      <div style="font-family:'Arial Black',Arial,sans-serif;font-size:15px;font-weight:900;letter-spacing:0.2em;text-transform:uppercase;color:${ACCENT};margin-bottom:12px;">Key Idea ${num ? num[0] : ''}</div>
+      <div style="font-family:Arial,sans-serif;font-size:40px;font-weight:800;color:${TEXT};line-height:1.2;margin-bottom:32px;padding-bottom:28px;border-bottom:2px solid ${DIVIDER};">${fields['Key Idea'] || ''}</div>
+      <div style="font-family:Arial,sans-serif;font-size:27px;color:${SUBTEXT};line-height:1.6;">${fields['Summary Statement'] || ''}</div>
     </div>`;
   }
 
-  const labelMap = { 'TITLE_SLIDE': 'title', 'INTRO_SLIDE': 'intro' };
+  const labelMap = { 'TITLE_SLIDE': 'title', 'SCRIPTURE_SLIDE': 'scripture', 'CALL_SLIDE': 'call-to-action' };
   const num = header.match(/\d+/);
-  const slug = labelMap[header] || 'takeaway-' + (num ? num[0] : '1');
+  const slug = labelMap[header] || 'idea-' + (num ? num[0] : '1');
 
   const html = `<!DOCTYPE html>
 <html>
@@ -3152,26 +3144,25 @@ async function downloadSlideAsPng(slide, btn) {
       <div style="font-family:Arial,sans-serif;font-size:24px;color:${SUBTEXT};">${fields['Sermon Date'] || sermonDate}</div>
       ${speakerFull ? '<div style="font-family:Arial,sans-serif;font-size:20px;color:' + SUBTEXT + ';margin-top:8px;">' + speakerFull + '</div>' : ''}
     </div>`;
-  } else if (header === 'INTRO_SLIDE') {
+  } else if (header === 'SCRIPTURE_SLIDE') {
     bodyHtml = `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:70px 76px;">
-      <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:29px;">The Text</div>
-      <div style="font-family:Arial,sans-serif;font-size:26px;font-weight:700;color:${TEXT};line-height:1.4;margin-bottom:43px;padding-bottom:38px;border-bottom:2px solid ${DIVIDER};">${fields['Scripture'] || ''}</div>
-      <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:19px;">Key Point</div>
-      <div style="font-family:Arial,sans-serif;font-size:31px;font-weight:700;color:${TEXT};line-height:1.4;">${fields['Key Point'] || ''}</div>
+      <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:22px;">The Text</div>
+      <div style="font-family:Arial,sans-serif;font-size:22px;font-weight:700;color:${ACCENT};margin-bottom:18px;">${fields['Scripture Reference'] || ''}</div>
+      <div style="width:72px;height:3px;background:${DIVIDER};margin-bottom:28px;"></div>
+      <div style="font-family:Arial,sans-serif;font-size:33px;font-weight:600;color:${TEXT};line-height:1.5;font-style:italic;">"${fields['Scripture Text'] || ''}"</div>
+    </div>`;
+  } else if (header === 'CALL_SLIDE') {
+    bodyHtml = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:80px 80px;">
+      <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:32px;">This Week</div>
+      <div style="width:72px;height:3px;background:${ACCENT};margin-bottom:36px;"></div>
+      <div style="font-family:Arial,sans-serif;font-size:34px;font-weight:700;color:${TEXT};line-height:1.5;">${fields['Call To Action'] || ''}</div>
     </div>`;
   } else {
     const num = header.match(/\d+/);
-    const scripture = fields['Scripture'] || '';
     bodyHtml = `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:60px 76px;">
-      <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:${ACCENT};margin-bottom:5px;">TAKEAWAY ${num ? num[0] : ''}</div>
-      <div style="font-family:Arial,sans-serif;font-size:29px;font-weight:700;color:${TEXT};line-height:1.35;margin-bottom:29px;padding-bottom:24px;border-bottom:2px solid ${DIVIDER};">${fields['Subpoint'] || ''}</div>
-      <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${SUBTEXT};margin-bottom:10px;">Key Takeaway</div>
-      <div style="font-family:Arial,sans-serif;font-size:24px;color:${SUBTEXT};line-height:1.6;margin-bottom:24px;">${fields['Key Takeaway'] || ''}</div>
-      <div style="background:${TAKEAWAY_BG};border-left:4px solid ${REFL_BORDER};padding:14px 18px;border-radius:0 6px 6px 0;${scripture ? 'margin-bottom:16px;' : ''}">
-        <div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${REFL_LABEL};margin-bottom:7px;">Reflection</div>
-        <div style="font-family:Arial,sans-serif;font-size:23px;color:${TEXT};line-height:1.5;font-style:italic;">${fields['Key Reflection'] || ''}</div>
-      </div>
-      ${scripture ? '<div style="font-family:Arial,sans-serif;font-size:21px;color:' + SCRIPTURE + ';font-weight:600;margin-top:14px;">' + scripture + '</div>' : ''}
+      <div style="font-family:Arial,sans-serif;font-size:15px;font-weight:900;letter-spacing:0.2em;text-transform:uppercase;color:${ACCENT};margin-bottom:12px;">Key Idea ${num ? num[0] : ''}</div>
+      <div style="font-family:Arial,sans-serif;font-size:40px;font-weight:800;color:${TEXT};line-height:1.2;margin-bottom:32px;padding-bottom:28px;border-bottom:2px solid ${DIVIDER};">${fields['Key Idea'] || ''}</div>
+      <div style="font-family:Arial,sans-serif;font-size:27px;color:${SUBTEXT};line-height:1.6;">${fields['Summary Statement'] || ''}</div>
     </div>`;
   }
 
@@ -3199,9 +3190,9 @@ async function downloadSlideAsPng(slide, btn) {
       logging: false
     });
 
-    const labelMap = { 'TITLE_SLIDE': 'title', 'INTRO_SLIDE': 'intro' };
+    const labelMap = { 'TITLE_SLIDE': 'title', 'SCRIPTURE_SLIDE': 'scripture', 'CALL_SLIDE': 'call-to-action' };
     const num = header.match(/\d+/);
-    const slug = labelMap[header] || 'takeaway-' + (num ? num[0] : '1');
+    const slug = labelMap[header] || 'idea-' + (num ? num[0] : '1');
     const filename = (sermonTitle || 'sermon').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_' + slug + '.png';
 
     const a = document.createElement('a');
@@ -3421,7 +3412,7 @@ async function validateStoredClips(questions) {
         // Clip still exists - show ready state
         const statusEl = document.getElementById('opus-status-' + i);
         if (statusEl && !statusEl.querySelector('.opus-status.done')) {
-          const dashboardUrl = 'https://www.opus.pro/app/clip-projects/' + q.projectId;
+          const dashboardUrl = 'https://clip.opus.pro/clip/' + q.projectId;
           statusEl.innerHTML = '<span class="opus-status done">Clip exists in Opus.</span> <a href="' + dashboardUrl + '" target="_blank" style="font-size:12px;color:var(--gold);text-decoration:underline;">Open in Opus Clip</a>';
 
           // Show publish panel if not already shown
