@@ -5,9 +5,102 @@
 //   3. Sermon summary (500 words or less) for social media
 // Reads ANTHROPIC_API_KEY from Vercel environment variables
 
+// Shared caption rules - used by BOTH the full analysis and the single-caption
+// regenerate action so the house voice never drifts between the two.
+const CAPTION_RULES = `Caption writing rules: Open with a narrative hook that drops the viewer into the scene or tension of the moment — no throat-clearing, no "Pastor Brian says...". Build tension or subvert an expectation in the second sentence. Land with a clear resonant thought that makes someone want to watch. Write as a connected community member, use the speaker's name (e.g. Pastor Brian) naturally if needed — never "this pastor". End with 4-5 broad searchable hashtags relevant to the topic (e.g. #Faith #Brokenness #Grace #BibleStudy #ChristianLife) — choose hashtags people actually search, not church-specific ones. Add #CityLightChurch as the final tag only.`;
+
+// ── REGENERATE A SINGLE CLIP CAPTION ────────────────────────────────────────
+// Rewrites one caption with a fresh angle without re-running a full analysis.
+// The transcript is only held in browser memory during a live session, so it may
+// be absent (e.g. when a past analysis is reloaded from History). When it is
+// absent we hard-constrain Claude to the facts already present in the existing
+// caption. This is a pastor's content - it must never invent quotes or claims.
+async function regenerateCaption(req, res, apiKey) {
+  const { question, currentCaption, clipMode, speaker, transcript } = req.body;
+
+  if (!question || !currentCaption) {
+    return res.status(400).json({ error: 'Missing question or currentCaption' });
+  }
+
+  const speakerName = speaker || 'the pastor';
+  const audience = clipMode === 'discipleship'
+    ? 'a believer who wants to grow deeper in their faith'
+    : clipMode === 'custom'
+    ? 'someone genuinely asking this specific question'
+    : 'someone outside the faith scrolling social media';
+
+  const sourceBlock = transcript && transcript.trim()
+    ? `Here is the sermon transcript for context. Ground the caption in what was actually preached:
+---
+${transcript.substring(0, 30000)}
+---`
+    : `The sermon transcript is not available. You MUST write the new caption using ONLY the facts, ideas, and details already present in the existing caption below. Do NOT invent new quotes, statistics, illustrations, scripture references, or claims of any kind. Rephrase and re-angle what is already there.`;
+
+  const prompt = `You are rewriting one social media caption for a sermon clip from City Light Church in Vicksburg, MS. The speaker is ${speakerName}.
+
+The clip answers this question: "${question}"
+
+The existing caption is:
+"${currentCaption}"
+
+${sourceBlock}
+
+Write ONE new caption for this clip, targeted at ${audience}. Take a noticeably different angle from the existing caption - a different hook, a different entry point - while staying true to the same moment in the sermon.
+
+${CAPTION_RULES}
+
+Do NOT use em dashes. Use plain alternatives like "and", "to", or a comma instead.
+
+Return ONLY the caption text itself. No preamble, no quotation marks around it, no labels, no explanation.`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 600,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return res.status(500).json({ error: data.error?.message || 'Claude API error' });
+    }
+
+    let caption = data.content.map(b => b.text || '').join('').trim();
+    // Strip wrapping quotes if the model added them despite instructions
+    caption = caption.replace(/^["']|["']$/g, '').trim();
+
+    if (!caption) {
+      return res.status(500).json({ error: 'No caption returned' });
+    }
+
+    return res.status(200).json({ caption });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'Anthropic API key not configured in environment variables' });
+  }
+
+  // Single-caption regenerate runs on this same endpoint so it inherits the
+  // existing 60s timeout in vercel.json - no vercel.json change required.
+  if (req.query.action === 'regenerate-caption') {
+    return await regenerateCaption(req, res, apiKey);
   }
 
   const {
@@ -24,11 +117,6 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required fields: sermonTitle and transcript' });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Anthropic API key not configured in environment variables' });
-  }
-
   const speakerName = speaker || 'the pastor';
   const sermonDate = date || '';
 
@@ -40,7 +128,7 @@ export default async function handler(req, res) {
     'Find moments that are complete and land within that window — a tight illustration, a clear point with a strong landing, a question fully answered. ' +
     'Do not identify windows longer than 90 seconds. Do not cut a thought mid-sentence to hit the limit — choose moments that naturally conclude within 90 seconds.';
 
-  const captionInstruction = `Caption writing rules: Open with a narrative hook that drops the viewer into the scene or tension of the moment — no throat-clearing, no "Pastor Brian says...". Build tension or subvert an expectation in the second sentence. Land with a clear resonant thought that makes someone want to watch. Write as a connected community member, use the speaker's name (e.g. Pastor Brian) naturally if needed — never "this pastor". End with 4-5 broad searchable hashtags relevant to the topic (e.g. #Faith #Brokenness #Grace #BibleStudy #ChristianLife) — choose hashtags people actually search, not church-specific ones. Add #CityLightChurch as the final tag only.`;
+  const captionInstruction = CAPTION_RULES;
 
   const clipModeInstruction = clipMode === 'discipleship'
     ? `Find the TOP 5 moments in this sermon that would most help someone who already believes grow deeper in their faith. Look for theological depth, doctrinal content, practical application, moments that would fuel personal devotion or small group discussion, and passages that demand something of a believer's obedience or trust. These clips are for maturing disciples, not first-time seekers.
