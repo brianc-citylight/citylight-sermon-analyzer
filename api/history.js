@@ -182,28 +182,33 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing required fields' });
       }
 
-      // Fetch current questions
+      // Fetch current questions (and the custom question clip, which the
+      // app shows as the clip right after the main clips)
       const records = await dbGet(
-        `sermon_analyses?id=eq.${analysisId}&user_id=eq.${userId}&limit=1&select=questions`
+        `sermon_analyses?id=eq.${analysisId}&user_id=eq.${userId}&limit=1&select=questions,custom_q`
       );
       if (!records || records.length === 0) {
         return res.status(404).json({ error: 'Analysis not found' });
       }
 
       const questions = records[0].questions || [];
-      if (!questions[clipIndex]) {
+      const customQ = records[0].custom_q || null;
+      const idx = Number(clipIndex);
+      const isCustomClip = !questions[idx] && idx === questions.length && !!customQ;
+      const target = isCustomClip ? customQ : questions[idx];
+      if (!target) {
         return res.status(400).json({ error: 'Clip index out of range' });
       }
 
-      if (!questions[clipIndex].published) {
-        questions[clipIndex].published = {};
+      if (!target.published) {
+        target.published = {};
       }
 
       const { type, scheduledFor } = req.body;
 
       if (type === 'scheduled' && scheduledFor) {
         // Scheduled post — record when it was scheduled and when it will post
-        questions[clipIndex].published[platform] = {
+        target.published[platform] = {
           type: 'scheduled',
           scheduledAt: new Date().toISOString(),
           scheduledFor: new Date(scheduledFor).toISOString(),
@@ -211,7 +216,7 @@ export default async function handler(req, res) {
         };
       } else {
         // Immediate publish
-        questions[clipIndex].published[platform] = {
+        target.published[platform] = {
           type: 'immediate',
           publishedAt: new Date().toISOString(),
           postId: postId || null
@@ -220,7 +225,7 @@ export default async function handler(req, res) {
 
       await dbPatch(
         `sermon_analyses?id=eq.${analysisId}&user_id=eq.${userId}`,
-        { questions }
+        isCustomClip ? { custom_q: customQ } : { questions }
       );
 
       return res.status(200).json({ success: true, questions });

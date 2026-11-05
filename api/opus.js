@@ -63,32 +63,53 @@ export default async function handler(req, res) {
 
   // ── CREATE PROJECT ────────────────────────────────────────────────────────
   if (req.method === 'POST' && req.query.action === 'create') {
-    const { videoUrl, startSec, endSec, question } = req.body;
+    const { videoUrl, startSec, endSec, question, aiStartSec, aiEndSec } = req.body;
+
+    // Clip timing rules (mirrors the browser): each edge may move up to 60s from
+    // the AI suggestion; clips run 0:30 to 3:00 (YouTube Shorts ceiling)
+    const CLIP_MIN_SEC = 30;
+    const CLIP_MAX_SEC = 180;
+    const CLIP_FLEX_SEC = 60;
 
     // Guard against missing required fields
     if (!videoUrl) return res.status(400).json({ error: 'Missing videoUrl' });
     if (startSec === undefined || endSec === undefined) return res.status(400).json({ error: 'Missing startSec or endSec' });
     if (!question) return res.status(400).json({ error: 'Missing question' });
 
-    let adjustedStart = startSec;
-    let adjustedEnd = endSec;
-    const clipDuration = endSec - startSec;
+    const reqStart = Math.round(Number(startSec));
+    const reqEnd = Math.round(Number(endSec));
 
     // Guard against NaN or invalid timestamps
-    if (isNaN(clipDuration) || clipDuration <= 0) {
+    if (!Number.isFinite(reqStart) || !Number.isFinite(reqEnd) || reqEnd - reqStart <= 0) {
       return res.status(400).json({ error: 'Invalid timestamp range: startSec=' + startSec + ' endSec=' + endSec });
     }
-
-    // Enforce 30 second minimum
-    if (clipDuration < 30) {
-      const deficit = 30 - clipDuration;
-      adjustedStart = Math.max(0, startSec - Math.ceil(deficit / 2));
-      adjustedEnd = endSec + Math.floor(deficit / 2);
+    if (reqStart < 0) {
+      return res.status(400).json({ error: 'Clip start cannot be before 0:00' });
     }
 
-    // Enforce 90 second maximum — hard cap for all platforms
-    if (adjustedEnd - adjustedStart > 90) {
-      adjustedEnd = adjustedStart + 90;
+    // Enforce the 60-second flex window when the AI suggestion is provided
+    const aiStart = Number(aiStartSec);
+    const aiEnd = Number(aiEndSec);
+    if (Number.isFinite(aiStart) && Number.isFinite(aiEnd)) {
+      if (Math.abs(reqStart - aiStart) > CLIP_FLEX_SEC || Math.abs(reqEnd - aiEnd) > CLIP_FLEX_SEC) {
+        return res.status(400).json({ error: 'Clip timing can only move 60 seconds from the AI suggestion on each side' });
+      }
+    }
+
+    let adjustedStart = reqStart;
+    let adjustedEnd = reqEnd;
+    const clipDuration = reqEnd - reqStart;
+
+    // Enforce 30 second minimum (pad evenly; covers older saved analyses)
+    if (clipDuration < CLIP_MIN_SEC) {
+      const deficit = CLIP_MIN_SEC - clipDuration;
+      adjustedStart = Math.max(0, reqStart - Math.ceil(deficit / 2));
+      adjustedEnd = adjustedStart + CLIP_MIN_SEC;
+    }
+
+    // Enforce 3 minute maximum: reject rather than silently cut the clip
+    if (adjustedEnd - adjustedStart > CLIP_MAX_SEC) {
+      return res.status(400).json({ error: 'Clip is longer than 3:00. Shorten it so YouTube treats it as a Short.' });
     }
 
     const body = {
@@ -96,7 +117,7 @@ export default async function handler(req, res) {
       videoUrl: videoUrl,
       curationPref: {
         range: { startSec: adjustedStart, endSec: adjustedEnd },
-        clipDurations: [[30, 90]],
+        clipDurations: [[0, 180]],
         topicKeywords: [question.substring(0, 80)],
         genre: 'Auto',
         skipCurate: true
