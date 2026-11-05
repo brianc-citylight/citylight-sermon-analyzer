@@ -7,7 +7,27 @@
 
 // Shared caption rules - used by BOTH the full analysis and the single-caption
 // regenerate action so the house voice never drifts between the two.
-const CAPTION_RULES = `Caption writing rules: Open with a narrative hook that drops the viewer into the scene or tension of the moment — no throat-clearing, no "Pastor Brian says...". Build tension or subvert an expectation in the second sentence. Land with a clear resonant thought that makes someone want to watch. Write as a connected community member, use the speaker's name (e.g. Pastor Brian) naturally if needed — never "this pastor". End with 4-5 broad searchable hashtags relevant to the topic (e.g. #Faith #Brokenness #Grace #BibleStudy #ChristianLife) — choose hashtags people actually search, not church-specific ones. Add #CityLightChurch as the final tag only.`;
+// speakerName comes from the required Start Here fields. When it is missing
+// (only possible on old saved sermons) the caption must not name the speaker.
+function captionRules(speakerName) {
+  const nameRule = speakerName
+    ? `Mention the speaker at most once, as "${speakerName}", and only if it reads naturally. Never say "this pastor."`
+    : 'Do not name the speaker. Never say "this pastor" or "the pastor."';
+  // Kept on ONE line: the clip format requires each clip on a single line,
+  // so line breaks inside these rules could leak into the output and break parsing.
+  return [
+    'Caption writing rules:',
+    'Write the whole caption, hashtags included, on one line with no line breaks.',
+    `Sentence 1 is the hook. Keep it under 125 characters so it shows before Instagram cuts it off. Open with the real tension, question, or picture from this moment in the sermon. No warm-up.`,
+    `Sentence 2 adds depth. Name the struggle honestly, or turn the answer people expect.`,
+    `Sentence 3 is optional. Land on a simple, honest invitation to watch or reflect.`,
+    `Tone: warm, humble, and plainspoken, like a friend from church sharing something that helped them. Point to God and the Scripture, not to the preacher.`,
+    `Do not oversell. Never promise the clip will change someone's life, blow their mind, or change how they see something forever. Do not use hype words or phrases such as "powerful," "incredible," "life-changing," "game-changer," "must-see," "you won't believe," or "watch how." No all caps, no stacked exclamation points, no emojis.`,
+    nameRule,
+    `Only quote words that are actually in the transcript. Never put words in the speaker's mouth.`,
+    `End with 4 or 5 broad hashtags people actually search, chosen for this clip's topic and not church-specific. Then add #CityLightChurch as the final tag.`
+  ].join(' ');
+}
 
 // ── REGENERATE A SINGLE CLIP CAPTION ────────────────────────────────────────
 // Rewrites one caption with a fresh angle without re-running a full analysis.
@@ -22,7 +42,7 @@ async function regenerateCaption(req, res, apiKey) {
     return res.status(400).json({ error: 'Missing question or currentCaption' });
   }
 
-  const speakerName = speaker || 'the pastor';
+  const speakerName = (speaker || '').trim();
   const audience = clipMode === 'discipleship'
     ? 'a believer who wants to grow deeper in their faith'
     : clipMode === 'custom'
@@ -36,7 +56,7 @@ ${transcript.substring(0, 30000)}
 ---`
     : `The sermon transcript is not available. You MUST write the new caption using ONLY the facts, ideas, and details already present in the existing caption below. Do NOT invent new quotes, statistics, illustrations, scripture references, or claims of any kind. Rephrase and re-angle what is already there.`;
 
-  const prompt = `You are rewriting one social media caption for a sermon clip from City Light Church in Vicksburg, MS. The speaker is ${speakerName}.
+  const prompt = `You are rewriting one social media caption for a sermon clip from City Light Church in Vicksburg, MS.${speakerName ? ' The speaker is ' + speakerName + '.' : ''}
 
 The clip answers this question: "${question}"
 
@@ -45,9 +65,9 @@ The existing caption is:
 
 ${sourceBlock}
 
-Write ONE new caption for this clip, targeted at ${audience}. Take a noticeably different angle from the existing caption - a different hook, a different entry point - while staying true to the same moment in the sermon.
+Write ONE new caption for this clip, targeted at ${audience}. Take a noticeably different angle from the existing caption, with a different hook and a different entry point, while staying true to the same moment in the sermon.
 
-${CAPTION_RULES}
+${captionRules(speakerName)}
 
 Do NOT use em dashes. Use plain alternatives like "and", "to", or a comma instead.
 
@@ -117,24 +137,31 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required fields: sermonTitle and transcript' });
   }
 
-  const speakerName = speaker || 'the pastor';
+  const speakerName = (speaker || '').trim();
+  if (!speakerName) {
+    return res.status(400).json({ error: 'Missing speaker name. Enter the speaker title, first name, and last name in Start Here.' });
+  }
   const sermonDate = date || '';
 
-  // 90-second maximum enforced in prompt — complete thought within 45 to 90 seconds
+  // Clip length stays 45 to 90 seconds (people can stretch it up to 3:00 in the app)
   const clipWindowInstruction = 'IMPORTANT: Each clip window must be between 45 and 90 seconds. ' +
     'When the transcript contains [MM:SS] timestamp markers, you MUST use those exact markers to identify clip boundaries. ' +
     'The start and end timestamps you provide MUST match or encapsulate the actual text where the speaker says these things. ' +
-    'Do not invent or approximate timestamps — only use timestamps anchored to the [MM:SS] markers present in the transcript. ' +
-    'Find moments that are complete and land within that window — a tight illustration, a clear point with a strong landing, a question fully answered. ' +
-    'Do not identify windows longer than 90 seconds. Do not cut a thought mid-sentence to hit the limit — choose moments that naturally conclude within 90 seconds.';
+    'Do not invent or approximate timestamps. Only use timestamps anchored to the [MM:SS] markers present in the transcript. ' +
+    'Find moments that are complete and land within that window: a tight illustration, a clear point with a strong landing, a question fully answered. ' +
+    'Do not identify windows longer than 90 seconds. Do not cut a thought mid-sentence to hit the limit. Choose moments that naturally conclude within 90 seconds.\n\n' +
+    'Clip selection rules:\n' +
+    '- Start each clip on a line that grabs attention on its own in the first few seconds: a question, a bold but true statement, or the start of a story. Never start mid-thought or on filler like "and so" or "so anyway."\n' +
+    '- Each clip must make sense to someone who has not heard the rest of the sermon. Skip moments that depend on earlier context, such as "as I said earlier" or "this passage."\n' +
+    '- Pick 5 different ideas from different parts of the sermon. No two clips may overlap or come from the same few minutes.';
 
-  const captionInstruction = CAPTION_RULES;
+  const captionInstruction = captionRules(speakerName);
 
   const clipModeInstruction = clipMode === 'discipleship'
     ? `Find the TOP 5 moments in this sermon that would most help someone who already believes grow deeper in their faith. Look for theological depth, doctrinal content, practical application, moments that would fuel personal devotion or small group discussion, and passages that demand something of a believer's obedience or trust. These clips are for maturing disciples, not first-time seekers.
 
 For each clip format EXACTLY as one line:
-Q|[a compelling discipleship-focused insight or question]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence caption — ${captionInstruction}]`
+Q|[a compelling discipleship-focused insight or question]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence caption. ${captionInstruction}]`
 
     : clipMode === 'custom'
     ? `The user wants to know if this sermon addresses the following question: "${customQuestion}"
@@ -142,7 +169,7 @@ Q|[a compelling discipleship-focused insight or question]|[start timestamp MM:SS
 Search the sermon carefully for any moments that directly speak to this question.
 
 If the sermon DOES address it: Find up to 5 clips that best answer or speak to this question. For each clip format EXACTLY as one line:
-Q|[the custom question or a direct variation of it]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence caption directly connecting this moment to the question — ${captionInstruction}]
+Q|[the custom question or a direct variation of it]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence caption directly connecting this moment to the question. ${captionInstruction}]
 
 If the sermon does NOT address this question at all, respond with exactly one line:
 NOANSWER|[honest explanation of what the sermon is actually about and why it does not address this question]`
@@ -150,7 +177,7 @@ NOANSWER|[honest explanation of what the sermon is actually about and why it doe
     : `Find the TOP 5 moments in this sermon that most directly speak to someone who does not yet believe. Look for moments where the gospel intersects with real questions, doubts, cultural tensions, or felt needs. These clips are for people outside the faith scrolling social media. What would make someone who has never set foot in a church stop and watch?
 
 For each question format EXACTLY as one line:
-Q|[sharp culturally relevant question that a skeptic or seeker would genuinely ask]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence caption written for someone outside the faith — ${captionInstruction}]`;
+Q|[sharp culturally relevant question that a skeptic or seeker would genuinely ask]|[start timestamp MM:SS]-[end timestamp MM:SS]|[2-3 sentence caption written for someone outside the faith. ${captionInstruction}]`;
 
   const prompt = `You are analyzing a sermon for City Light Church in Vicksburg, MS. The speaker is ${speakerName}. This church preaches expository, Christ-centered sermons for both believers and seekers.
 
@@ -161,7 +188,7 @@ YouTube: ${url || ''}
 
 Transcript:
 ---
-${transcript.substring(0, 50000)}
+${transcript.substring(0, 100000)}
 ---
 
 Produce THREE outputs. Do NOT use em dashes anywhere in your response. Use plain alternatives like "and", "to", or a comma instead. When referencing the speaker by name, use "${speakerName}" exactly as written.
