@@ -126,6 +126,30 @@
     .q-caption-label { font-size:0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 5px; }
     .q-caption { font-size:0.9rem; color: var(--text-dim); line-height: 1.6; padding: 10px 14px; background: var(--surface2); border-radius: 8px; border-left: 3px solid var(--gold); margin-bottom: 8px; }
 
+    /* ── CLIP TIMING EDITOR ── */
+    .clip-timing { background: var(--surface2); border: 1px solid var(--border-light); border-radius: 10px; padding: 12px 14px; margin: 6px 0 10px; }
+    .ct-head { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+    .ct-ai { font-size:0.75rem; color: var(--text-dim); }
+    .ct-row { display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; }
+    .ct-field label { display:block; font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color: var(--text-dim); margin-bottom:4px; }
+    .ct-ctrl { display:flex; align-items:center; gap:4px; }
+    .ct-ctrl input { width:64px; text-align:center; padding:6px 4px; background: var(--surface); border:1px solid var(--border-light); border-radius:6px; color: var(--text); font-family:inherit; font-size:0.9rem; }
+    .ct-ctrl input:disabled, .ct-nudge:disabled { opacity:0.45; cursor:not-allowed; }
+    .ct-nudge { padding:5px 8px !important; font-size:0.75rem !important; min-width:0; }
+    .ct-dur { font-size:1rem; font-weight:700; color: var(--white); padding:6px 0; }
+    .ct-dur.warn { color:#e0b84c; }
+    .ct-dur.error { color:#ff6666; }
+    .ct-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:10px; }
+    .ct-link { background:none; border:none; padding:0; color: var(--gold); font-size:0.8rem; text-decoration:underline; cursor:pointer; font-family:inherit; }
+    .ct-msg { font-size:0.8rem; margin-top:8px; line-height:1.5; }
+    .ct-msg .ct-err { color:#ff6666; display:block; }
+    .ct-msg .ct-warn { color:#e0b84c; display:block; }
+    .ct-msg .ct-note { color: var(--text-dim); display:block; }
+    .ct-preview { margin-top:10px; }
+    .ct-preview video { width:100%; max-height:360px; border-radius:8px; background:#000; }
+    .ct-preview .ct-yt { position:relative; width:100%; padding-top:56.25%; }
+    .ct-preview .ct-yt iframe { position:absolute; inset:0; width:100%; height:100%; border:0; border-radius:8px; }
+
     /* ── SLIDE CARDS ── */
     .slide-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
     .slide-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 6px; }
@@ -1340,6 +1364,265 @@ let currentOpusUploadId = null; // Session-only Opus uploadId — enables zero-c
 let selectedVideoFile = null; // The File object when user selects a file
 let sermonTitle = '';
 
+// -- CLIP TIMING FLEX ------------------------------------------------------
+// Each clip edge can move up to 60s from the AI suggestion. Clips must be
+// 0:30 to 3:00 (YouTube Shorts ceiling). Over 1:30 shows a reach warning.
+const CLIP_FLEX_SEC = 60;
+const CLIP_NUDGE_SEC = 5;
+const CLIP_MIN_SEC = 30;
+const CLIP_WARN_SEC = 90;
+const CLIP_MAX_SEC = 180;
+const unlockedTiming = new Set();   // clip indexes the user unlocked for re-creation
+let timingSaveTimer = null;
+
+function secToMMSS(s) {
+  s = Math.max(0, Math.round(s));
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+
+function mmssToSec(str) {
+  if (str === undefined || str === null) return NaN;
+  const p = String(str).trim().split(':').map(x => x.trim());
+  if (p.some(x => x === '' || isNaN(Number(x)))) return NaN;
+  if (p.length === 1) return Number(p[0]);
+  if (p.length === 2) return Number(p[0]) * 60 + Number(p[1]);
+  if (p.length === 3) return Number(p[0]) * 3600 + Number(p[1]) * 60 + Number(p[2]);
+  return NaN;
+}
+
+// Clips 0-4 live in currentQuestions; the custom question clip is index 5
+// and lives in currentCustomQ. Always read/write clip data through this.
+function getClipData(i) {
+  if (currentQuestions && i < currentQuestions.length) return currentQuestions[i];
+  return currentCustomQ;
+}
+
+function getClipWindow(q) {
+  const [aiStart, aiEnd] = timestampToSeconds(q.timestamp || '');
+  let start = Number.isFinite(q.adjStartSec) ? q.adjStartSec : aiStart;
+  let end = Number.isFinite(q.adjEndSec) ? q.adjEndSec : aiEnd;
+  // Unadjusted AI windows under 0:30 get padded evenly (same rule the server used)
+  if (!Number.isFinite(q.adjStartSec) && !Number.isFinite(q.adjEndSec) && end - start < CLIP_MIN_SEC) {
+    const deficit = CLIP_MIN_SEC - (end - start);
+    start = Math.max(0, start - Math.ceil(deficit / 2));
+    end = start + CLIP_MIN_SEC;
+  }
+  return { aiStart, aiEnd, start, end };
+}
+
+function validateClipWindow(w) {
+  const errors = [], warnings = [];
+  const dur = w.end - w.start;
+  if (!Number.isFinite(w.start) || !Number.isFinite(w.end)) {
+    errors.push('Enter times as M:SS, for example 12:05.');
+  } else {
+    if (w.start < 0) errors.push('Start cannot be before 0:00.');
+    if (Math.abs(w.start - w.aiStart) > CLIP_FLEX_SEC) errors.push('Start can only move 60 seconds from the AI suggestion.');
+    if (Math.abs(w.end - w.aiEnd) > CLIP_FLEX_SEC) errors.push('End can only move 60 seconds from the AI suggestion.');
+    if (dur < CLIP_MIN_SEC) errors.push('Clip must be at least 0:30.');
+    else if (dur > CLIP_MAX_SEC) errors.push('Clip is over 3:00. YouTube will not treat it as a Short.');
+    else if (dur > CLIP_WARN_SEC) warnings.push('Over 1:30. This works on all three platforms, but Instagram reach tends to drop past 90 seconds.');
+  }
+  return { errors, warnings, dur };
+}
+
+function isTimingLocked(i, q) {
+  return !!(q && q.projectId) && !unlockedTiming.has(i);
+}
+
+function buildTimingEditor(i, q) {
+  const w = getClipWindow(q);
+  const box = document.createElement('div');
+  box.className = 'clip-timing';
+  box.id = 'clip-timing-' + i;
+  const field = (edge, label, val) => `
+      <div class="ct-field"><label>${label}</label><div class="ct-ctrl">
+        <button type="button" class="btn btn-sm ct-nudge" data-edge="${edge}" data-delta="-${CLIP_NUDGE_SEC}">-${CLIP_NUDGE_SEC}s</button>
+        <input type="text" id="ct-${edge}-${i}" value="${secToMMSS(val)}" inputmode="numeric" aria-label="Clip ${label.toLowerCase()} time">
+        <button type="button" class="btn btn-sm ct-nudge" data-edge="${edge}" data-delta="${CLIP_NUDGE_SEC}">+${CLIP_NUDGE_SEC}s</button>
+      </div></div>`;
+  box.innerHTML = `
+    <div class="ct-head">
+      <span class="q-caption-label" style="margin:0;">Clip timing</span>
+      <span class="ct-ai">AI suggestion: ${secToMMSS(w.aiStart)} to ${secToMMSS(w.aiEnd)}</span>
+    </div>
+    <div class="ct-row">
+      ${field('start', 'Start', w.start)}
+      ${field('end', 'End', w.end)}
+      <div class="ct-field"><label>Duration</label><div class="ct-dur" id="ct-dur-${i}"></div></div>
+    </div>
+    <div class="ct-actions">
+      <button type="button" class="btn btn-sm" data-act="preview" id="ct-prev-btn-${i}">Preview</button>
+      <button type="button" class="ct-link" data-act="reset" id="ct-reset-${i}">Reset to AI suggestion</button>
+      <button type="button" class="ct-link" data-act="unlock" id="ct-unlock-${i}" style="display:none;">Edit timing</button>
+    </div>
+    <div class="ct-msg" id="ct-msg-${i}"></div>
+    <div class="ct-preview" id="ct-preview-${i}" style="display:none;"></div>`;
+
+  box.querySelectorAll('.ct-nudge').forEach(b => {
+    b.onclick = () => nudgeClipEdge(i, b.dataset.edge, Number(b.dataset.delta));
+  });
+  ['start', 'end'].forEach(edge => {
+    const input = box.querySelector('#ct-' + edge + '-' + i);
+    input.addEventListener('change', () => typedClipEdge(i, edge, input.value));
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); input.blur(); } });
+  });
+  box.querySelector('[data-act="reset"]').onclick = () => resetClipTiming(i);
+  box.querySelector('[data-act="preview"]').onclick = () => toggleClipPreview(i);
+  box.querySelector('[data-act="unlock"]').onclick = () => {
+    unlockedTiming.add(i);
+    // Re-enable the create button so the clip can be re-created with new timing
+    const createBtn = document.getElementById('create-clip-' + i);
+    if (createBtn) {
+      createBtn.classList.remove('copied');
+      createBtn.textContent = 'Re-create Clip';
+      createBtn.style.opacity = '';
+    }
+    updateTimingUI(i, 'Timing unlocked. Re-creating this clip uses an Opus credit.');
+  };
+  return box;
+}
+
+function clampEdge(val, ai) {
+  return Math.min(ai + CLIP_FLEX_SEC, Math.max(ai - CLIP_FLEX_SEC, Math.max(0, val)));
+}
+
+function setClipEdge(i, edge, val, note) {
+  const q = getClipData(i);
+  if (!q || isTimingLocked(i, q)) return;
+  const w = getClipWindow(q);
+  // Freeze the current window into explicit values before changing one edge
+  q.adjStartSec = w.start;
+  q.adjEndSec = w.end;
+  if (edge === 'start') q.adjStartSec = val; else q.adjEndSec = val;
+  // Back at the AI suggestion: drop the adjustment entirely
+  if (q.adjStartSec === w.aiStart && q.adjEndSec === w.aiEnd) { delete q.adjStartSec; delete q.adjEndSec; }
+  updateTimingUI(i, note);
+  scheduleTimingSave();
+}
+
+function nudgeClipEdge(i, edge, delta) {
+  const q = getClipData(i);
+  if (!q) return;
+  const w = getClipWindow(q);
+  const ai = edge === 'start' ? w.aiStart : w.aiEnd;
+  const cur = edge === 'start' ? w.start : w.end;
+  const want = cur + delta;
+  const got = clampEdge(want, ai);
+  setClipEdge(i, edge, got, got !== want ? 'Limit reached: each edge can move up to 60 seconds from the AI suggestion.' : '');
+}
+
+function typedClipEdge(i, edge, text) {
+  const q = getClipData(i);
+  if (!q) return;
+  const w = getClipWindow(q);
+  const parsed = mmssToSec(text);
+  if (!Number.isFinite(parsed)) {
+    updateTimingUI(i, 'Enter times as M:SS, for example 12:05.');
+    return;
+  }
+  const ai = edge === 'start' ? w.aiStart : w.aiEnd;
+  const got = clampEdge(Math.round(parsed), ai);
+  setClipEdge(i, edge, got, got !== Math.round(parsed) ? 'Adjusted to stay within 60 seconds of the AI suggestion.' : '');
+}
+
+function resetClipTiming(i) {
+  const q = getClipData(i);
+  if (!q || isTimingLocked(i, q)) return;
+  delete q.adjStartSec;
+  delete q.adjEndSec;
+  updateTimingUI(i, 'Reset to the AI suggestion.');
+  scheduleTimingSave();
+}
+
+function updateTimingUI(i, note) {
+  const q = getClipData(i);
+  const box = document.getElementById('clip-timing-' + i);
+  if (!q || !box) return;
+  const w = getClipWindow(q);
+  const check = validateClipWindow(w);
+  const locked = isTimingLocked(i, q);
+
+  const startEl = document.getElementById('ct-start-' + i);
+  const endEl = document.getElementById('ct-end-' + i);
+  startEl.value = secToMMSS(w.start);
+  endEl.value = secToMMSS(w.end);
+  startEl.disabled = endEl.disabled = locked;
+  box.querySelectorAll('.ct-nudge').forEach(b => { b.disabled = locked; });
+  document.getElementById('ct-reset-' + i).style.display = locked ? 'none' : '';
+  document.getElementById('ct-unlock-' + i).style.display = locked ? '' : 'none';
+
+  const durEl = document.getElementById('ct-dur-' + i);
+  durEl.textContent = Number.isFinite(check.dur) ? secToMMSS(check.dur) : '--';
+  durEl.className = 'ct-dur' + (check.errors.length ? ' error' : check.warnings.length ? ' warn' : '');
+
+  let html = '';
+  if (locked) html += '<span class="ct-note">Timing is locked because this clip was created. Click Edit timing to change it, then Re-create Clip (uses an Opus credit).</span>';
+  check.errors.forEach(e => { html += '<span class="ct-err">' + e + '</span>'; });
+  check.warnings.forEach(e => { html += '<span class="ct-warn">' + e + '</span>'; });
+  if (note) html += '<span class="ct-note">' + note + '</span>';
+  document.getElementById('ct-msg-' + i).innerHTML = html;
+
+  const createBtn = document.getElementById('create-clip-' + i);
+  if (createBtn && !createBtn.classList.contains('copied')) {
+    createBtn.disabled = check.errors.length > 0;
+    createBtn.title = check.errors.length ? check.errors[0] : '';
+  }
+
+  // If a preview is open, flag that it shows the old times
+  const prev = document.getElementById('ct-preview-' + i);
+  const prevBtn = document.getElementById('ct-prev-btn-' + i);
+  if (prev && prevBtn && prev.style.display !== 'none' && prev.dataset.win !== w.start + '-' + w.end) {
+    prevBtn.textContent = 'Preview new times';
+  }
+}
+
+function scheduleTimingSave() {
+  clearTimeout(timingSaveTimer);
+  timingSaveTimer = setTimeout(() => {
+    if (!currentVideoId) return;
+    const slideCount = document.getElementById('slideCount').value;
+    autoSaveAnalysis(currentVideoId, slideCount).catch(e => console.warn('Timing save failed:', e.message));
+  }, 1500);
+}
+
+function toggleClipPreview(i) {
+  const q = getClipData(i);
+  const prev = document.getElementById('ct-preview-' + i);
+  const btn = document.getElementById('ct-prev-btn-' + i);
+  if (!q || !prev) return;
+  const w = getClipWindow(q);
+  const key = w.start + '-' + w.end;
+
+  // Clicking while open on the same window closes it
+  if (prev.style.display !== 'none' && prev.dataset.win === key) {
+    prev.innerHTML = '';
+    prev.style.display = 'none';
+    prev.dataset.win = '';
+    btn.textContent = 'Preview';
+    return;
+  }
+
+  const start = Math.round(w.start), end = Math.round(w.end);
+  if (currentSourceMode === 'upload' && currentUploadId) {
+    prev.innerHTML = '<video controls playsinline preload="metadata"></video>';
+    const v = prev.querySelector('video');
+    v.src = currentUploadId + '#t=' + start + ',' + end;
+    v.addEventListener('loadedmetadata', () => { v.currentTime = start; v.play().catch(() => {}); });
+    v.addEventListener('timeupdate', () => { if (v.currentTime >= end) { v.pause(); v.currentTime = end; } });
+    v.addEventListener('play', () => { if (v.currentTime >= end - 0.25 || v.currentTime < start - 1) v.currentTime = start; });
+  } else if (currentVideoId) {
+    const src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(currentVideoId) +
+      '?start=' + start + '&end=' + end + '&autoplay=1&rel=0&modestbranding=1';
+    prev.innerHTML = '<div class="ct-yt"><iframe src="' + src + '" allow="autoplay; encrypted-media" allowfullscreen title="Clip preview"></iframe></div>';
+  } else {
+    prev.innerHTML = '<span class="ct-note">No video source is loaded for preview.</span>';
+  }
+  prev.dataset.win = key;
+  prev.style.display = '';
+  btn.textContent = 'Hide preview';
+}
+
 // Helper: get current user ID from Supabase session
 function getCurrentUserId() {
   return supabaseClient?.auth?.getSession
@@ -2364,7 +2647,7 @@ function renderClipsTab(questions) {
     allClips.push({
       question: currentCustomQ.question,
       timestamp: hasTimestamp ? currentCustomQ.timestamp : null,
-      caption: currentCustomQ.explanation || '',
+      caption: currentCustomQ.caption || currentCustomQ.explanation || '',
       isCustom: true,
       addressed: hasTimestamp
     });
@@ -2383,7 +2666,8 @@ function renderClipsTab(questions) {
     const captionCopyId = 'cap-copy-' + i;
 
     // Check if clip already exists in Opus from stored data
-    const hasClip = !isCustom && q.projectId && q.clipId;
+    const dataQ = getClipData(i);
+    const hasClip = !!(dataQ && dataQ.projectId && dataQ.clipId);
 
     card.innerHTML = `
       <div class="q-meta">
@@ -2399,6 +2683,12 @@ function renderClipsTab(questions) {
       ${hasClip ? '<div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">&#9654; Clip stored in Opus - validating...</div>' : ''}
       <div class="opus-clip-status" id="opus-status-${i}" style="margin-top:4px;"></div>
     `;
+
+    // Clip timing editor (adjust each edge up to 60s from the AI suggestion)
+    const hasTimingEditor = !!(q.timestamp && !notAddressed && dataQ);
+    if (hasTimingEditor) {
+      card.insertBefore(buildTimingEditor(i, dataQ), card.querySelector('#opus-status-' + i));
+    }
 
     // Add buttons row
     const btnRow = document.createElement('div');
@@ -2435,6 +2725,7 @@ function renderClipsTab(questions) {
     if (q.timestamp && !notAddressed) {
       const clipBtn = document.createElement('button');
       clipBtn.className = 'btn btn-sm btn-opus';
+      clipBtn.id = 'create-clip-' + i;
       clipBtn.textContent = 'Create Clip';
       clipBtn.onclick = function() { sendToOpus(i, clipBtn); };
       btnRow.appendChild(clipBtn);
@@ -2442,6 +2733,7 @@ function renderClipsTab(questions) {
 
     card.appendChild(btnRow);
     container.appendChild(card);
+    if (hasTimingEditor) updateTimingUI(i);
   });
 }
 
@@ -2449,7 +2741,7 @@ function renderClipsTab(questions) {
 // Asks SermonReach for a fresh angle on one caption and drops it straight into
 // the textarea, so it flows into Create Clip without re-running the analysis.
 async function regenerateCaption(i, btn) {
-  const q = currentQuestions[i];
+  const q = getClipData(i);
   if (!q) return;
 
   const textarea = document.getElementById('caption-edit-' + i);
@@ -2482,7 +2774,7 @@ async function regenerateCaption(i, btn) {
     }
 
     if (textarea) textarea.value = data.caption;
-    currentQuestions[i].caption = data.caption;
+    q.caption = data.caption;
 
     btn.textContent = 'Rewritten!';
     btn.classList.add('copied');
@@ -2630,20 +2922,29 @@ async function pollForCompletion(projectId, statusEl, maxAttempts = 24) {
 async function sendToOpus(i, btn) {
   // Read caption from editable textarea if available
   const captionEl = document.getElementById('caption-edit-' + i);
+  const q = getClipData(i);
+  if (!q) return;
   if (captionEl) {
-    currentQuestions[i].caption = captionEl.value.trim() || currentQuestions[i].caption;
+    q.caption = captionEl.value.trim() || q.caption || q.explanation || '';
   }
-  const q = currentQuestions[i];
   const youtubeUrl = document.getElementById('youtubeUrl').value.trim();
   const statusEl = document.getElementById('opus-status-' + i);
 
   if (!youtubeUrl && currentSourceMode !== 'upload') { statusEl.textContent = 'No YouTube URL found.'; return; }
   if (currentSourceMode === 'upload' && !currentUploadId) { statusEl.textContent = 'No video uploaded. Please upload a file in Start Here.'; return; }
 
-  btn.disabled = true;
-  statusEl.innerHTML = '<span class="opus-status queued">Sending to Opus Clip...</span>';
+  // Use the adjusted clip window and block anything outside the limits
+  const win = getClipWindow(q);
+  const winCheck = validateClipWindow(win);
+  if (winCheck.errors.length) {
+    statusEl.innerHTML = '<span class="opus-status error">' + winCheck.errors[0] + '</span>';
+    return;
+  }
+  const startSec = Math.round(win.start);
+  const endSec = Math.round(win.end);
 
-  const [startSec, endSec] = timestampToSeconds(q.timestamp);
+  btn.disabled = true;
+  statusEl.innerHTML = '<span class="opus-status queued">Sending to Opus Clip (' + secToMMSS(startSec) + ' to ' + secToMMSS(endSec) + ')...</span>';
 
   // STAGE 1: Create project via serverless function
   try {
@@ -2662,6 +2963,8 @@ async function sendToOpus(i, btn) {
         videoUrl: opusVideoUrl,
         startSec,
         endSec,
+        aiStartSec: win.aiStart,
+        aiEndSec: win.aiEnd,
         question: q.question
       })
     });
@@ -2687,9 +2990,13 @@ async function sendToOpus(i, btn) {
     }
 
     // STAGE 3: Store clip data on question object and save to history
-    currentQuestions[i].projectId = clip.projectId || projectId;
-    currentQuestions[i].clipId = clip.clipId || '';
-    currentQuestions[i].previewUrl = clip.previewUrl || '';
+    q.projectId = clip.projectId || projectId;
+    q.clipId = clip.clipId || '';
+    q.previewUrl = clip.previewUrl || '';
+    q.clipStartSec = startSec;   // record the window actually sent to Opus
+    q.clipEndSec = endSec;
+    unlockedTiming.delete(i);
+    updateTimingUI(i);
 
     // Save updated questions to history
     const slideCount = document.getElementById('slideCount').value;
@@ -3546,8 +3853,8 @@ async function restoreAnalysis(a) {
     setMobileTab(0); // Start on Summary tab
   }
 
-  // Restore publish badges on clips
-  restorePublishBadges(a.questions || []);
+  // Restore publish badges on clips (custom question clip sits at index 5)
+  restorePublishBadges((a.questions || []).concat(a.custom_q && a.custom_q.published ? [a.custom_q] : []));
 
   // Validate stored clip data against Opus - clips expire over time
   validateStoredClips(currentQuestions);
@@ -3555,7 +3862,10 @@ async function restoreAnalysis(a) {
 
 async function validateStoredClips(questions) {
   // Fire all checks in parallel - fast, server-side, no CORS
-  const checks = questions.map(async (q, i) => {
+  // Include the custom question clip, which renders at index questions.length
+  const list = questions.slice();
+  if (currentCustomQ && currentCustomQ.projectId) list.push(currentCustomQ);
+  const checks = list.map(async (q, i) => {
     if (!q.projectId || !q.clipId) return; // no clip stored, nothing to check
 
     try {
@@ -3589,10 +3899,11 @@ async function validateStoredClips(questions) {
           }
         }
       } else {
-        // Clip expired or not found - clear stored data
-        currentQuestions[i].projectId = null;
-        currentQuestions[i].clipId = null;
-        currentQuestions[i].previewUrl = null;
+        // Clip expired or not found - clear stored data and unlock timing
+        q.projectId = null;
+        q.clipId = null;
+        q.previewUrl = null;
+        updateTimingUI(i);
       }
     } catch(e) {
       // Silent fail - clip check not critical, do not block UI
