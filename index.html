@@ -11,6 +11,7 @@
   <link rel="manifest" href="/images/site.webmanifest" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js" integrity="sha384-qovJwSBbRDPP5cEjCp8S0UP66wrvnjaa60XMOGzTNanrThcrGfXfnZkvgY8N1KT3" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
@@ -526,6 +527,32 @@
     body.desktop .tab-dots { display: none; }
     body.desktop .tab-deck { display: block; }
     body.desktop #mobileAccountPanel { display: none !important; }
+
+    /* ── DEVOTIONS AND DISCUSSION GUIDE ── */
+    .tab-row { flex-wrap: wrap; }
+    .tab-btn { padding: 10px 11px; font-size: 0.76rem; letter-spacing: 0.05em; white-space: nowrap; }
+    .ex-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+    .ex-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 0.25rem; }
+    .ex-day { font-size: 0.8rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+    .ex-sub { font-size: 0.75rem; font-weight: 800; color: var(--white); margin: 1rem 0 0.4rem; }
+    .ex-lab { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray); margin: 0.9rem 0 0.35rem; }
+    .ex-input, .ex-text { width: 100%; padding: 10px 12px; background: var(--surface2); border: 1px solid var(--border-light); border-radius: 8px; color: var(--text); font-size: 0.9rem; line-height: 1.65; font-family: inherit; }
+    .ex-text { resize: none; overflow: hidden; min-height: 44px; display: block; }
+    .ex-body { min-height: 180px; }
+    .ex-input:focus, .ex-text:focus { outline: none; border-color: var(--gold); background: var(--surface3); }
+    .ex-count { font-size: 0.7rem; font-weight: 700; color: var(--gray); text-transform: none; letter-spacing: 0; }
+    .ex-count.warn { color: #e0a050; }
+    .ex-warn { background: var(--gold-dim); border: 1px solid var(--gold); border-radius: 12px; padding: 0.875rem 1rem; margin-bottom: 1rem; font-size: 0.8rem; line-height: 1.5; color: var(--text-dim); }
+    .ex-warn strong { color: var(--white); }
+    .ex-warn textarea { margin-top: 8px; }
+    .ex-note { font-size: 0.85rem; color: var(--gray); padding: 0.5rem 0; }
+    .ex-status { font-size: 0.8rem; color: var(--gold); margin: 0 0 1rem; }
+    .ex-status:empty { display: none; }
+    .ex-status.err { color: #e57373; }
+    .ex-save { font-size: 0.7rem; color: var(--gray); text-align: right; min-height: 1em; margin: 0.25rem 0; }
+    body.mobile .ex-card { padding: 1rem; }
+    body.mobile .ex-input, body.mobile .ex-text { font-size: 16px; }
+    body.mobile .tab-content .canva-banner { flex-direction: column; align-items: stretch; }
   </style>
 </head>
 <body>
@@ -591,16 +618,19 @@
       <button onclick="closeHelpModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray);">&#x2715;</button>
     </div>
 <div id="helpContentDesktop" style="font-size:1rem;color:var(--text-dim);line-height:1.85;max-height:65vh;overflow-y:auto;padding-right:6px;">
-  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:0;">Welcome to SermonReach</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">SermonReach turns one sermon into a week of posts. You get a summary, six slides, and five video clips. Work from top to bottom: fill in Start Here, click Analyze Sermon, then use the three tabs.</p>
-  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Step 1: Start Here</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Type the speaker&#x27;s title, first name, last name, and the sermon date. Fields with a red star are required. Then pick YouTube Link or Upload Video File.</p>
-  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">YouTube Sermons</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Paste the YouTube link. Then click Paste transcript manually and paste the sermon&#x27;s words. To get them, open the video on YouTube, click ...more, then Show transcript. Pasting gives the best results.</p>
-  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Uploaded Sermons</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Type a sermon title and pick your video. It must be an MP4 or MOV file, 500 MB or smaller. Uploaded sermons are saved to the team&#x27;s Sermon Library. Click Browse Sermon Library to reuse one without uploading again.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:0;">Welcome to SermonReach</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">SermonReach turns one sermon into a week of posts. You get a summary, six slides, and five video clips. You can also make three devotions and a discussion guide. Work from top to bottom: fill in Start Here, click Analyze Sermon, then use the five tabs.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Step 1: Start Here</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Type the speaker's title, first name, last name, and the sermon date. Fields with a red star are required. Then pick YouTube Link or Upload Video File.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">YouTube Sermons</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Paste the YouTube link. Then click Paste transcript manually and paste the sermon's words. To get them, open the video on YouTube, click ...more, then Show transcript. Pasting gives the best results.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Uploaded Sermons</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Type a sermon title and pick your video. It must be an MP4 or MOV file, 500 MB or smaller. Uploaded sermons are saved to the team's Sermon Library. Click Browse Sermon Library to reuse one without uploading again.</p>
   <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Step 2: Clip Focus and Analyze</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Pick who the clips are for. Outreach is for people outside the faith. Discipleship is for believers who want to grow. Custom checks a question your community is asking. Then click Analyze Sermon. YouTube sermons take about 30 to 45 seconds. Uploads take longer.</p>
   <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Sermon Summary Tab</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">This tab holds a summary of about 500 words. Click Copy Summary or Download .txt. Read it before you post, and fix any names or verses that look wrong.</p>
   <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Sermon Notes Slides Tab</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Click Generate Slide Images to download all six slides in one zip file. They are numbered in the order you post them. Each slide also has Copy Slide, Export Slide, and Download PNG.</p>
   <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Sermon Clips Tab</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Each clip card has a caption and clip timing. Change the caption as needed, or click Regenerate Caption for a new one. Then click Create Clip. Clips take a few minutes. Wait for Clip ready.</p>
   <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Clip Timing</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Click -5s or +5s to move the start or end by 5 seconds. You can also type a time, like 12:05. Each time can move up to 60 seconds from the AI suggestion. Click Preview to watch that part first. Click Reset to AI suggestion to undo.</p>
   <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Publish or Schedule</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">When a clip is ready, pick Instagram, Facebook, or YouTube Shorts. Click Publish Now to post it. Or click Schedule, pick a date and time, and click Confirm. A green badge means published. A gold badge means scheduled.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Devotions Tab</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Click Generate Devotions to make three devotions, Day 1 to Day 3. Each has a title, a Scripture reference, a short reading of 250 to 400 words, one reflection question, and one action. You can edit every part. Click Regenerate on one day to get a new version of just that day.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Discussion Guide Tab</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Click Generate Discussion Guide. You get the sermon's main points, Scripture references, discussion questions, one or two weekly applications, and a closing prayer. Edit anything you like.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Download as PDF</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Click Download PDF on either tab. The PDF has the City Light logo and is set so it is harder to edit or copy. It is not perfect security, so share the PDF and keep your editable version in the app. Your edits save on their own.</p>
   <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">History and Library</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Open the menu at the top right and click Analysis History. It keeps your last 10 sermons. Click Load to bring one back. Published This Month shows every clip posted or scheduled this month.</p>
   <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Account and Team</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Open the menu and click My Account to change your password. Click Sign Out when you are done. Admins can invite or remove people in Team Management.</p>
   <div style="margin-top:1rem;padding:0.75rem 1rem;background:var(--surface2);border:1px solid var(--gold);border-radius:10px;"><strong style="color:var(--gold);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.1em;">Quick Tips</strong><ul style="margin:0.5rem 0 0 1.1rem;padding:0;font-size:0.95rem;color:var(--text-dim);line-height:1.7;"><li style="margin-bottom:0.25rem;">Create no more than 2 clips at a time.</li><li style="margin-bottom:0.25rem;">Clips must be 0:30 to 3:00 long.</li><li style="margin-bottom:0.25rem;">Over 1:30 still works, but Instagram shows it to fewer people.</li><li style="margin-bottom:0.25rem;">Once a clip is made, its timing locks. Re-creating it uses an Opus credit.</li></ul></div>
@@ -609,16 +639,19 @@
   </div>
 </div>
 <div id="helpContentMobile" style="font-size:1rem;color:var(--text-dim);line-height:1.85;max-height:65vh;overflow-y:auto;padding-right:4px;">
-  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:0;">Welcome to SermonReach</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">SermonReach turns one sermon into a week of posts. You get a summary, six slides, and five video clips.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:0;">Welcome to SermonReach</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">SermonReach turns one sermon into a week of posts. You get a summary, six slides, and five video clips. You can also make three devotions and a discussion guide.</p>
   <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Getting Around</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Use the bar at the bottom of the screen. Start Here is where you enter the sermon. Results shows what SermonReach made. History opens past sermons. Account has your settings and Sign Out.</p>
-  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Step 1: Start Here</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Type the speaker&#x27;s title, first name, last name, and the sermon date. Fields with a red star are required. Then pick YouTube Link or Upload Video File.</p>
-  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">YouTube Sermons</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Paste the YouTube link. Then tap Paste transcript manually and paste the sermon&#x27;s words from YouTube&#x27;s Show transcript. Pasting gives the best results.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Step 1: Start Here</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Type the speaker's title, first name, last name, and the sermon date. Fields with a red star are required. Then pick YouTube Link or Upload Video File.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">YouTube Sermons</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Paste the YouTube link. Then tap Paste transcript manually and paste the sermon's words from YouTube's Show transcript. Pasting gives the best results.</p>
   <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Uploaded Sermons</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Type a sermon title and pick your video. It must be an MP4 or MOV file, 500 MB or smaller. Tap Browse Sermon Library to reuse a sermon your team already uploaded.</p>
   <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Step 2: Clip Focus and Analyze</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Pick Outreach, Discipleship, or Custom. Then tap Analyze Sermon. When it is done, the app opens Results for you.</p>
-  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Viewing Results</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Swipe left or right to move between Sermon Summary, Sermon Notes Slides, and Sermon Clips.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Viewing Results</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Swipe left or right to move between Sermon Summary, Sermon Notes Slides, Sermon Clips, Devotions, and Discussion Guide.</p>
   <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Sermon Clips</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Change the caption if needed. Check the clip timing, then tap Create Clip. Wait for Clip ready before you publish.</p>
   <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Clip Timing</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Tap -5s or +5s to move the start or end by 5 seconds. Each time can move up to 60 seconds. Tap Preview to watch that part first. Tap Reset to AI suggestion to undo.</p>
   <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Publish or Schedule</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">When a clip is ready, tap Publish Now or Schedule for each account. A green badge means published. A gold badge means scheduled.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Devotions</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Tap Generate Devotions to make three devotions, Day 1 to Day 3. Each has a title, a Scripture reference, a short reading, one reflection question, and one action. Tap any text to edit it. Tap Regenerate on a day for a new version of that day.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Discussion Guide</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Tap Generate Discussion Guide. You get the main points, Scripture references, questions, one or two weekly applications, and a closing prayer. Tap any text to edit it.</p>
+  <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Download as PDF</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Tap Download PDF on either tab. The PDF has the City Light logo and is set so it is harder to edit or copy. Your edits save on their own.</p>
   <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">History</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Tap History in the bottom bar. It keeps your last 10 sermons. Tap Load to bring one back.</p>
   <span style="display:block;background:rgba(201,168,76,0.15);border-left:3px solid var(--gold);color:var(--gold);font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:0.5rem;margin-top:1rem;">Account and Team</span><p style="font-size:1rem;color:var(--text-dim);line-height:1.85;margin-bottom:0.25rem;">Tap Account to change your password or sign out. Admins can invite or remove people in Team Management.</p>
   <div style="margin-top:1rem;padding:0.75rem 1rem;background:var(--surface2);border:1px solid var(--gold);border-radius:10px;"><strong style="color:var(--gold);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.1em;">Quick Tips</strong><ul style="margin:0.5rem 0 0 1.1rem;padding:0;font-size:0.95rem;color:var(--text-dim);line-height:1.7;"><li style="margin-bottom:0.25rem;">Create no more than 2 clips at a time.</li><li style="margin-bottom:0.25rem;">Clips must be 0:30 to 3:00 long.</li><li style="margin-bottom:0.25rem;">Over 1:30 still works, but Instagram shows it to fewer people.</li><li style="margin-bottom:0.25rem;">Once a clip is made, its timing locks. Re-creating it uses an Opus credit.</li></ul></div>
@@ -904,12 +937,16 @@
         <button class="tab-btn active" onclick="switchTab('summary')">Sermon Summary</button>
         <button class="tab-btn" onclick="switchTab('notes')">Sermon Notes Slides</button>
         <button class="tab-btn" onclick="switchTab('clips')">Sermon Clips</button>
+        <button class="tab-btn" onclick="switchTab('devotions')">Devotions</button>
+        <button class="tab-btn" onclick="switchTab('guide')">Discussion Guide</button>
       </div>
       <!-- Mobile tab dots indicator -->
       <div class="tab-dots" id="tabDots" style="display:none;">
         <div class="tab-dot active" id="dot-0"></div>
         <div class="tab-dot" id="dot-1"></div>
         <div class="tab-dot" id="dot-2"></div>
+        <div class="tab-dot" id="dot-3"></div>
+        <div class="tab-dot" id="dot-4"></div>
       </div>
       <div class="tab-label" id="tabLabel" style="display:none;">Sermon Summary</div>
       <!-- MOBILE SWIPE DECK WRAPPER -->
@@ -960,6 +997,38 @@
         </div>
         <div id="clipsContainer">
           <div style="font-size:13px; color:var(--gray); padding:1rem 0;">Run an analysis above to see clip options.</div>
+        </div>
+      </div>
+
+      <!-- DEVOTIONS TAB -->
+      <div class="tab-content" id="tab-devotions">
+        <div class="canva-banner">
+          <p><strong>Three short devotions from this sermon.</strong><br>Each takes 2 to 3 minutes to read and ends with a reflection question and an action. Edit anything, then download a PDF to share.</p>
+          <button class="btn btn-gold" id="devGenBtn" onclick="generateDevotions()" style="width:auto; padding:9px 18px; font-size:13px; white-space:nowrap;">&#9654; Generate Devotions</button>
+        </div>
+        <div id="devNotice"></div>
+        <div class="ex-status" id="devStatus"></div>
+        <div id="devotionsContainer"></div>
+        <div class="ex-save" id="devSaveNote"></div>
+        <div class="action-row" id="devActions" style="display:none;">
+          <button class="btn btn-sm" onclick="downloadDevotionsPdf()">&#8595; Download PDF</button>
+          <button class="btn btn-sm" onclick="copyDevotions()">&#10697; Copy Text</button>
+        </div>
+      </div>
+
+      <!-- DISCUSSION GUIDE TAB -->
+      <div class="tab-content" id="tab-guide">
+        <div class="canva-banner">
+          <p><strong>A small group discussion guide.</strong><br>Sermon points, scripture, discussion questions, weekly applications, and a closing prayer. Edit anything, then download a PDF to share.</p>
+          <button class="btn btn-gold" id="guideGenBtn" onclick="generateGuide()" style="width:auto; padding:9px 18px; font-size:13px; white-space:nowrap;">&#9654; Generate Discussion Guide</button>
+        </div>
+        <div id="guideNotice"></div>
+        <div class="ex-status" id="guideStatus"></div>
+        <div id="guideContainer"></div>
+        <div class="ex-save" id="guideSaveNote"></div>
+        <div class="action-row" id="guideActions" style="display:none;">
+          <button class="btn btn-sm" onclick="downloadGuidePdf()">&#8595; Download PDF</button>
+          <button class="btn btn-sm" onclick="copyGuide()">&#10697; Copy Text</button>
         </div>
       </div>
     </div>
@@ -1016,8 +1085,8 @@ if (IS_MOBILE) {
 // -- MOBILE NAVIGATION -----------------------------------------------------
 let mobileCurrentSection = 'home';
 let mobileCurrentTab = 0;
-const TAB_NAMES = ['Sermon Summary', 'Sermon Notes Slides', 'Sermon Clips'];
-const TAB_IDS = ['summary', 'notes', 'clips'];
+const TAB_NAMES = ['Sermon Summary', 'Sermon Notes Slides', 'Sermon Clips', 'Devotions', 'Discussion Guide'];
+const TAB_IDS = ['summary', 'notes', 'clips', 'devotions', 'guide'];
 
 function mobileNav(section) {
   if (!IS_MOBILE) return;
@@ -1109,7 +1178,7 @@ function initSwipeDeck() {
     const dx = e.changedTouches[0].clientX - touchStartX;
     if (Math.abs(dx) < 60) { isSwiping = false; touchStartX = 0; touchStartY = 0; return; }
 
-    if (dx < 0 && mobileCurrentTab < 2) {
+    if (dx < 0 && mobileCurrentTab < TAB_IDS.length - 1) {
       setMobileTab(mobileCurrentTab + 1);
     } else if (dx > 0 && mobileCurrentTab > 0) {
       setMobileTab(mobileCurrentTab - 1);
@@ -1132,7 +1201,7 @@ function setMobileTab(index) {
   });
 
   // Update dot indicators
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < TAB_IDS.length; i++) {
     const dot = document.getElementById('dot-' + i);
     if (dot) dot.classList.toggle('active', i === index);
   }
@@ -1145,7 +1214,587 @@ function setMobileTab(index) {
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
     b.classList.toggle('active', i === index);
   });
+  setTimeout(srAutosizeAll, 0); // text boxes can only size themselves once visible
 }
+
+// City Light Church logo for the PDF header (cropped and shrunk, about 28 KB)
+const SR_LOGO_DATA_URL = 'data:image/png;base64,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';
+
+// ── SERMONREACH PDF EXPORT ──────────────────────────────────────────────────
+// Builds the Devotions and Discussion Guide PDFs in the browser with jsPDF.
+// Pages carry the City Light Church logo. The finished file is permission-locked
+// (print only, no editing or copying). That lock is a speed bump for casual edits,
+// not real security: the PDF format cannot make a file truly uneditable.
+const SR_PDF = {
+  W: 612, H: 792, M: 54, TOP: 104, BOTTOM: 732,
+  C: {
+    gold: [252, 191, 40], amber: [150, 108, 0], gray: [126, 126, 126],
+    dark: [34, 34, 34], text: [51, 51, 51], tint: [255, 247, 220], panel: [243, 243, 243]
+  }
+};
+
+// Standard PDF fonts cannot draw every Unicode character, so smooth out the
+// ones the AI likes to use and drop anything the font cannot show.
+function srPdfSafe(s) {
+  return String(s == null ? '' : s)
+    .replace(/[‘’‛]/g, "'")
+    .replace(/[“”„]/g, '"')
+    .replace(/(\d)\s*[–—]\s*(\d)/g, '$1-$2')
+    .replace(/\s*[–—]\s*/g, ', ')
+    .replace(/…/g, '...')
+    .replace(/[   ]/g, ' ')
+    .replace(/[^\x09\x0A\x0D\x20-\x7E¡-ÿ]/g, '')
+    .replace(/ ,/g, ',')
+    .replace(/,\s*,/g, ',');
+}
+
+function srPdfNew(labelText, title, byline) {
+  const { jsPDF } = window.jspdf;
+  // Random owner password per file. No open password, so anyone can read it.
+  const rnd = new Uint8Array(12);
+  (window.crypto || globalThis.crypto).getRandomValues(rnd);
+  const owner = Array.from(rnd).map(b => b.toString(16).padStart(2, '0')).join('');
+  const doc = new jsPDF({
+    unit: 'pt', format: 'letter', orientation: 'portrait',
+    encryption: { userPassword: '', ownerPassword: owner, userPermissions: ['print'] }
+  });
+  doc.setProperties({
+    title: srPdfSafe(title) + ' - ' + labelText,
+    subject: labelText,
+    author: 'City Light Church',
+    creator: 'SermonReach'
+  });
+  const ctx = { doc, y: SR_PDF.TOP, label: labelText.toUpperCase() };
+  srPdfHeader(ctx);
+  srPdfTitleBlock(ctx, title, byline);
+  return ctx;
+}
+
+function srPdfHeader(ctx) {
+  const { doc } = ctx, { M, W, C } = SR_PDF;
+  const lw = 130, lh = lw * 313 / 1100;
+  try { doc.addImage(SR_LOGO_DATA_URL, 'PNG', M, 32, lw, lh); } catch (e) { /* logo is optional */ }
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5);
+  doc.setTextColor(...C.gray);
+  doc.text(ctx.label, W - M, 52, { align: 'right', charSpace: 1.4 });
+  doc.setDrawColor(...C.gold); doc.setLineWidth(1.5);
+  doc.line(M, 82, W - M, 82);
+}
+
+function srPdfNewPage(ctx) {
+  ctx.doc.addPage();
+  ctx.y = SR_PDF.TOP;
+  srPdfHeader(ctx);
+}
+
+function srPdfEnsure(ctx, h) {
+  if (ctx.y + h > SR_PDF.BOTTOM) srPdfNewPage(ctx);
+}
+
+function srPdfTitleBlock(ctx, title, byline) {
+  const { doc } = ctx, { M, W, C } = SR_PDF;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(21); doc.setTextColor(...C.dark);
+  const lines = doc.splitTextToSize(srPdfSafe(title), W - 2 * M);
+  lines.forEach(l => { ctx.y += 25; doc.text(l, M, ctx.y); });
+  if (byline) {
+    ctx.y += 20;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.setTextColor(...C.gray);
+    doc.text(srPdfSafe(byline), M, ctx.y);
+  }
+  ctx.y += 26;
+}
+
+// Write wrapped text line by line, starting a new page when it runs out of room.
+function srPdfPara(ctx, text, o = {}) {
+  const { doc } = ctx, { M, W, C } = SR_PDF;
+  const size = o.size || 11, lead = o.lead || size * 1.5;
+  const x = M + (o.indent || 0), width = W - 2 * M - (o.indent || 0);
+  doc.setFont('helvetica', o.style || 'normal'); doc.setFontSize(size);
+  doc.setTextColor(...(o.color || C.text));
+  const blocks = srPdfSafe(text).split(/\n+/).filter(s => s.trim());
+  blocks.forEach((blk, bi) => {
+    doc.splitTextToSize(blk.trim(), width).forEach(l => {
+      srPdfEnsure(ctx, lead);
+      doc.setFont('helvetica', o.style || 'normal'); doc.setFontSize(size);
+      doc.setTextColor(...(o.color || C.text));
+      ctx.y += lead - (lead - size) * 0.25;
+      doc.text(l, x, ctx.y);
+      ctx.y += (lead - size) * 0.25;
+    });
+    if (bi < blocks.length - 1) ctx.y += o.paraGap == null ? 8 : o.paraGap;
+  });
+  ctx.y += o.after == null ? 0 : o.after;
+}
+
+function srPdfLabel(ctx, text, o = {}) {
+  const { doc } = ctx, { M, C } = SR_PDF;
+  srPdfEnsure(ctx, o.keep || 70);
+  ctx.y += 12;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(o.size || 9);
+  doc.setTextColor(...(o.color || C.amber));
+  doc.text(srPdfSafe(text).toUpperCase(), M + (o.indent || 0), ctx.y, { charSpace: 1.3 });
+  ctx.y += o.after == null ? 6 : o.after;
+}
+
+// Work out a panel's wrapped lines and height before drawing it.
+function srPdfPanelSize(ctx, label, text, o = {}) {
+  const { doc } = ctx, { M, W } = SR_PDF;
+  const size = o.size || 11, lead = size * 1.5, pad = 12;
+  const inner = W - 2 * M - pad * 2 - 4;
+  doc.setFont('helvetica', o.style || 'normal'); doc.setFontSize(size);
+  const lines = doc.splitTextToSize(srPdfSafe(text), inner);
+  const h = pad * 2 + (label ? 16 : 0) + lines.length * lead - (lead - size) * 0.5;
+  return { lines, h, size, lead, pad };
+}
+
+// A shaded panel with a gold bar on the left, a small label, and wrapped text.
+function srPdfPanel(ctx, label, text, o = {}) {
+  const { doc } = ctx, { M, W, C } = SR_PDF;
+  const { lines, h, size, lead, pad } = srPdfPanelSize(ctx, label, text, o);
+  srPdfEnsure(ctx, h + 8);
+  doc.setFillColor(...(o.fill || C.panel)); doc.rect(M, ctx.y, W - 2 * M, h, 'F');
+  doc.setFillColor(...C.gold); doc.rect(M, ctx.y, 4, h, 'F');
+  let ty = ctx.y + pad;
+  if (label) {
+    ty += 8;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...C.amber);
+    doc.text(srPdfSafe(label).toUpperCase(), M + 4 + pad, ty, { charSpace: 1.3 });
+    ty += 8;
+  }
+  doc.setFont('helvetica', o.style || 'normal'); doc.setFontSize(size);
+  doc.setTextColor(...C.text);
+  lines.forEach((l, i) => { ty += (i === 0 ? size : lead); doc.text(l, M + 4 + pad, ty); });
+  ctx.y += h + (o.after == null ? 12 : o.after);
+}
+
+function srPdfFinish(ctx, filename) {
+  const { doc } = ctx, { M, W, H, C } = SR_PDF;
+  const n = doc.getNumberOfPages();
+  for (let i = 1; i <= n; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(210, 210, 210); doc.setLineWidth(0.6);
+    doc.line(M, H - 46, W - M, H - 46);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...C.gray);
+    doc.text('City Light Church  |  Vicksburg, Mississippi', M, H - 31);
+    doc.text('Page ' + i + ' of ' + n, W - M, H - 31, { align: 'right' });
+  }
+  return doc;
+}
+
+// ── DEVOTIONS ───────────────────────────────────────────────────────────────
+function srBuildDevotionsPdf(d) {
+  const ctx = srPdfNew('Devotions', d.title, d.byline);
+  const { M, W, C } = SR_PDF, { doc } = ctx;
+  const items = (d.devotions || []).filter(x => x && (x.title || x.body));
+  items.forEach((dv, i) => {
+    if (i > 0) {
+      // Start the next day on a fresh page only when little room is left
+      if (SR_PDF.BOTTOM - ctx.y < 260) srPdfNewPage(ctx);
+      else {
+        ctx.y += 10;
+        doc.setDrawColor(...C.gold); doc.setLineWidth(1.5); doc.line(M, ctx.y, W - M, ctx.y);
+        ctx.y += 8;
+      }
+    }
+    // Day label and title
+    srPdfLabel(ctx, 'Day ' + (dv.day || i + 1), { size: 10.5, after: 4 });
+    srPdfPara(ctx, dv.title || 'Devotion', { size: 18, style: 'bold', color: C.dark, lead: 23, after: 10 });
+    // Scripture reference with any verse the preacher read aloud
+    if (dv.scripture || dv.verse) {
+      const body = dv.verse ? '"' + String(dv.verse).replace(/^["']|["']$/g, '') + '"' : '';
+      const ref = dv.scripture ? (body ? '\n' : '') + dv.scripture : '';
+      srPdfPanel(ctx, 'Scripture', (body + ref).trim(), { style: body ? 'italic' : 'bold', fill: C.tint, after: 14 });
+    }
+    srPdfPara(ctx, dv.body || '', { size: 10.5, lead: 15.5, paraGap: 8, after: 12 });
+    const qSize = dv.question ? srPdfPanelSize(ctx, 'Reflect', dv.question, { size: 10.5 }) : { h: 0 };
+    const aSize = dv.action ? srPdfPanelSize(ctx, 'Act', dv.action, { size: 10.5 }) : { h: 0 };
+    srPdfEnsure(ctx, qSize.h + aSize.h + 20);
+    if (dv.question) srPdfPanel(ctx, 'Reflect', dv.question, { size: 10.5, after: 10 });
+    if (dv.action) srPdfPanel(ctx, 'Act', dv.action, { size: 10.5, after: 10 });
+  });
+  return srPdfFinish(ctx);
+}
+
+// ── DISCUSSION GUIDE ────────────────────────────────────────────────────────
+function srBuildGuidePdf(d) {
+  const ctx = srPdfNew('Discussion Guide', d.title, d.byline);
+  const { M, W, C } = SR_PDF, { doc } = ctx;
+  const g = d.guide || {};
+  if (g.bigIdea) srPdfPanel(ctx, 'Big idea', g.bigIdea, { fill: C.tint, after: 8 });
+  if (g.scriptures) {
+    srPdfLabel(ctx, 'Scripture');
+    srPdfPara(ctx, g.scriptures, { size: 11, style: 'bold', color: C.dark, after: 6 });
+  }
+  const points = (g.points || []).filter(p => p && (p.title || p.text));
+  if (points.length) {
+    srPdfLabel(ctx, 'Sermon points', { after: 8 });
+    points.forEach((p, i) => {
+      srPdfEnsure(ctx, 60);
+      srPdfPara(ctx, (i + 1) + '.  ' + (p.title || ''), { size: 11.5, style: 'bold', color: C.dark, lead: 16 });
+      if (p.reference) srPdfPara(ctx, p.reference, { size: 10, style: 'bold', color: C.amber, indent: 18, lead: 14 });
+      if (p.text) srPdfPara(ctx, p.text, { size: 10.5, indent: 18, lead: 15, after: 8 });
+    });
+  }
+  const qs = (g.questions || []).filter(q => q && q.trim());
+  if (qs.length) {
+    srPdfLabel(ctx, 'Discussion questions', { after: 8 });
+    qs.forEach((q, i) => {
+      srPdfEnsure(ctx, 40);
+      const top = ctx.y;
+      srPdfPara(ctx, q, { size: 11, lead: 16, indent: 22, after: 8 });
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...C.amber);
+      doc.text((i + 1) + '.', M, top + 12.5);
+    });
+  }
+  const apps = (g.applications || []).filter(a => a && a.trim());
+  if (apps.length) {
+    srPdfLabel(ctx, apps.length > 1 ? 'This week' : 'This week', { after: 8 });
+    apps.forEach(a => {
+      srPdfEnsure(ctx, 40);
+      const top = ctx.y;
+      srPdfPara(ctx, a, { size: 11, lead: 16, indent: 22, after: 8 });
+      doc.setDrawColor(...C.gray); doc.setLineWidth(1);
+      doc.rect(M + 1, top + 3, 10, 10);
+    });
+  }
+  if (g.prayer) {
+    ctx.y += 4;
+    srPdfEnsure(ctx, 90);
+    srPdfPanel(ctx, 'Closing prayer', g.prayer, { style: 'italic', fill: C.tint, after: 0 });
+  }
+  return srPdfFinish(ctx);
+}
+
+// ── DEVOTIONS AND DISCUSSION GUIDE ──────────────────────────────────────────
+// Two on-demand outputs. Both are editable in the app, saved with the History
+// record (extras column), and downloaded as a locked PDF for sharing.
+let currentDevotions = null;  // three entries {title, scripture, verse, body, question, action}; null = that day failed
+let currentGuide = null;      // {bigIdea, scriptures, points[], questions[], applications[], prayer}
+let extrasBusy = false;
+let extrasSaveTimer = null;
+let extrasNeedsDbReset = false;
+
+function resetExtras() { currentDevotions = null; currentGuide = null; extrasNeedsDbReset = true; }
+
+function srEsc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function srHasTranscript() {
+  return !!currentTranscript && currentTranscript.trim().length > 500 && !/^\s*\[No transcript available/i.test(currentTranscript);
+}
+function srSpeaker() {
+  return [document.getElementById('speakerTitle').value.trim(), document.getElementById('speakerFirst').value.trim(), document.getElementById('speakerLast').value.trim()].filter(Boolean).join(' ');
+}
+function srByline() {
+  const sp = srSpeaker();
+  const d = document.getElementById('sermonDate').value.trim() || today;
+  return (sp ? sp + '  |  ' : '') + d;
+}
+function srKeyIdeas() {
+  return (currentSlides || []).filter(s => /^IDEA_\d+$/.test(s.header)).map(s => s.fields['Key Idea'] || '').filter(Boolean);
+}
+function srScriptureRef() {
+  const s = (currentSlides || []).find(x => x.header === 'SCRIPTURE_SLIDE');
+  return s ? (s.fields['Scripture Reference'] || '') : '';
+}
+function srPayload(extra) {
+  return Object.assign({
+    sermonTitle,
+    speaker: srSpeaker(),
+    date: document.getElementById('sermonDate').value.trim(),
+    transcript: srHasTranscript() ? currentTranscript : '',
+    summary: currentSummary || '',
+    keyIdeas: srKeyIdeas(),
+    scriptureRef: srScriptureRef()
+  }, extra || {});
+}
+async function srPost(action, body) {
+  const r = await fetch('/api/analyze?action=' + action, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  let data = {};
+  try { data = await r.json(); } catch (e) { /* non-JSON error page, for example a timeout */ }
+  if (!r.ok) throw new Error(data.error || ('The request did not finish (' + r.status + '). Please try again.'));
+  return data;
+}
+function srStatus(id, msg, isErr) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('err', !!isErr);
+}
+function srSaveNote(text) {
+  ['devSaveNote', 'guideSaveNote'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = text || ''; });
+}
+function srAutosize(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight + 2) + 'px'; }
+function srAutosizeAll() {
+  document.querySelectorAll('.tab-content.active .ex-text').forEach(srAutosize);
+}
+
+// Shown only when the transcript is not in memory (a sermon reloaded from History)
+function srNoTranscriptHtml() {
+  if (srHasTranscript()) return '';
+  return '<div class="ex-warn"><strong>Built from the summary.</strong> The transcript is not saved with History, so it is not loaded. For fuller results, paste the transcript here before you generate.' +
+    '<textarea class="ex-text" rows="3" placeholder="YouTube: click more under the video, then Show transcript. Copy it all and paste it here." oninput="srPastedTranscript(this.value)"></textarea></div>';
+}
+function srPastedTranscript(v) {
+  currentTranscript = (v || '').trim();
+  if (srHasTranscript()) {
+    transcriptNeedsSave = true;
+    clearTimeout(transcriptSaveTimer);
+    transcriptSaveTimer = setTimeout(saveTranscriptNow, 1500);
+  }
+  if (srHasTranscript()) ['devNotice', 'guideNotice'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
+}
+
+// ── Saving the transcript to the History record ──
+async function saveTranscriptNow() {
+  if (!transcriptNeedsSave || !currentAnalysisId || !srHasTranscript()) return;
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) return;
+    const r = await fetch('/api/history?action=save-transcript', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
+      body: JSON.stringify({ analysisId: currentAnalysisId, transcript: currentTranscript })
+    });
+    if (r.ok) transcriptNeedsSave = false;
+  } catch (e) { /* quiet: the sermon still works this session */ }
+}
+
+// ── Saving edits to the History record ──
+function scheduleExtrasSave() {
+  clearTimeout(extrasSaveTimer);
+  srSaveNote('Saving...');
+  extrasSaveTimer = setTimeout(() => saveExtrasNow(false), 1200);
+}
+async function saveExtrasNow(quiet) {
+  if (!currentAnalysisId) { if (!quiet) srSaveNote('Not saved to History yet'); return; }
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) return;
+    const r = await fetch('/api/history?action=save-extras', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
+      body: JSON.stringify({ analysisId: currentAnalysisId, extras: { v: 1, devotions: currentDevotions, guide: currentGuide } })
+    });
+    if (r.ok) { if (!quiet) srSaveNote('Saved'); return; }
+    const d = await r.json().catch(() => ({}));
+    if (!quiet) srSaveNote(/extras/i.test(d.error || '') ? 'Could not save: the database needs one update. Ask Brian.' : 'Could not save these edits.');
+  } catch (e) {
+    if (!quiet) srSaveNote('Could not save these edits.');
+  }
+}
+
+function renderExtrasTabs() { renderDevotions(); renderGuide(); }
+
+// ── DEVOTIONS ──
+function devCardHtml(dv, i) {
+  if (!dv) {
+    return '<div class="ex-card"><div class="ex-card-head"><span class="ex-day">Day ' + (i + 1) + '</span>' +
+      '<button class="btn btn-sm" onclick="regenerateDevotion(' + i + ')">Try again</button></div>' +
+      '<div class="ex-note">This day did not generate.</div></div>';
+  }
+  return '<div class="ex-card" id="dev-card-' + i + '">' +
+    '<div class="ex-card-head"><span class="ex-day">Day ' + (i + 1) + '</span>' +
+    '<button class="btn btn-sm" id="dev-regen-' + i + '" onclick="regenerateDevotion(' + i + ')">Regenerate</button></div>' +
+    '<label class="ex-lab">Title</label><input class="ex-input" value="' + srEsc(dv.title) + '" oninput="devEdit(' + i + ',\'title\',this)">' +
+    '<label class="ex-lab">Scripture reference</label><input class="ex-input" value="' + srEsc(dv.scripture) + '" oninput="devEdit(' + i + ',\'scripture\',this)">' +
+    '<label class="ex-lab">Verse read in the sermon (optional)</label><textarea class="ex-text" rows="2" oninput="devEdit(' + i + ',\'verse\',this)">' + srEsc(dv.verse) + '</textarea>' +
+    '<label class="ex-lab"><span>Devotion</span><span class="ex-count" id="dev-count-' + i + '"></span></label><textarea class="ex-text ex-body" oninput="devEdit(' + i + ',\'body\',this)">' + srEsc(dv.body) + '</textarea>' +
+    '<label class="ex-lab">Reflect</label><textarea class="ex-text" rows="2" oninput="devEdit(' + i + ',\'question\',this)">' + srEsc(dv.question) + '</textarea>' +
+    '<label class="ex-lab">Act</label><textarea class="ex-text" rows="2" oninput="devEdit(' + i + ',\'action\',this)">' + srEsc(dv.action) + '</textarea>' +
+    '</div>';
+}
+function updateDevCount(i) {
+  const el = document.getElementById('dev-count-' + i);
+  if (!el || !currentDevotions || !currentDevotions[i]) return;
+  const n = (currentDevotions[i].body || '').split(/\s+/).filter(Boolean).length;
+  el.textContent = n + ' words, about ' + Math.max(1, Math.round(n / 150)) + ' min' + (n < 250 || n > 400 ? ' (goal: 250 to 400)' : '');
+  el.classList.toggle('warn', n < 250 || n > 400);
+}
+function devEdit(i, field, el) {
+  if (!currentDevotions || !currentDevotions[i]) return;
+  currentDevotions[i][field] = el.value;
+  if (field === 'body') updateDevCount(i);
+  if (el.tagName === 'TEXTAREA') srAutosize(el);
+  scheduleExtrasSave();
+}
+function renderDevotions() {
+  const box = document.getElementById('devotionsContainer');
+  if (!box) return;
+  const has = !!(currentDevotions && currentDevotions.some(Boolean));
+  box.innerHTML = has ? currentDevotions.map(devCardHtml).join('') : '';
+  document.getElementById('devActions').style.display = has ? 'flex' : 'none';
+  document.getElementById('devGenBtn').textContent = has ? '↻ Regenerate All' : '▶ Generate Devotions';
+  document.getElementById('devNotice').innerHTML = has ? '' : srNoTranscriptHtml();
+  srStatus('devStatus', '');
+  srSaveNote('');
+  if (has) currentDevotions.forEach((d, i) => updateDevCount(i));
+  setTimeout(srAutosizeAll, 0);
+}
+async function generateDevotions() {
+  if (extrasBusy) return;
+  if (!srHasTranscript() && !(currentSummary && currentSummary.trim())) { srStatus('devStatus', 'Run an analysis first.', true); return; }
+  if (currentDevotions && currentDevotions.some(Boolean) && !confirm('Regenerate all three devotions? Your edits will be replaced.')) return;
+  extrasBusy = true;
+  const btn = document.getElementById('devGenBtn'); btn.disabled = true;
+  srStatus('devStatus', 'Writing your 3 devotions. This takes about 20 to 40 seconds. Stay on this page.');
+  try {
+    const results = await Promise.allSettled([1, 2, 3].map(d => srPost('devotion', srPayload({ day: d }))));
+    const next = results.map(r => (r.status === 'fulfilled' ? r.value.devotion : null));
+    if (!next.some(Boolean)) {
+      const why = results.find(r => r.status === 'rejected');
+      srStatus('devStatus', (why && why.reason && why.reason.message) || 'The devotions did not generate. Please try again.', true);
+    } else {
+      currentDevotions = next;
+      renderDevotions();
+      if (next.some(x => !x)) srStatus('devStatus', 'One day did not generate. Click Try again on that day.', true);
+      scheduleExtrasSave();
+    }
+  } catch (e) {
+    srStatus('devStatus', e.message, true);
+  }
+  btn.disabled = false;
+  extrasBusy = false;
+}
+async function regenerateDevotion(i) {
+  if (extrasBusy) return;
+  const cur = currentDevotions && currentDevotions[i];
+  if (cur && !confirm('Regenerate Day ' + (i + 1) + '? Your edits to this day will be replaced.')) return;
+  extrasBusy = true;
+  const btn = document.getElementById('dev-regen-' + i); if (btn) { btn.disabled = true; btn.textContent = 'Writing...'; }
+  srStatus('devStatus', 'Writing a fresh Day ' + (i + 1) + '. This takes about 15 to 25 seconds.');
+  try {
+    const data = await srPost('devotion', srPayload({ day: i + 1, currentDevotion: cur || null }));
+    currentDevotions = currentDevotions || [null, null, null];
+    currentDevotions[i] = data.devotion;
+    renderDevotions();
+    scheduleExtrasSave();
+  } catch (e) {
+    srStatus('devStatus', e.message, true);
+    if (btn) { btn.disabled = false; btn.textContent = 'Regenerate'; }
+  }
+  extrasBusy = false;
+}
+
+// ── DISCUSSION GUIDE ──
+function guideField(label, html) { return '<label class="ex-lab">' + label + '</label>' + html; }
+function guideTextarea(value, handler, rows) {
+  return '<textarea class="ex-text" rows="' + (rows || 2) + '" oninput="' + handler + '">' + srEsc(value) + '</textarea>';
+}
+function renderGuide() {
+  const box = document.getElementById('guideContainer');
+  if (!box) return;
+  const g = currentGuide;
+  const has = !!(g && g.points);
+  if (has) {
+    let h = '<div class="ex-card">';
+    h += guideField('Big idea', guideTextarea(g.bigIdea, "guideSet('bigIdea',this)"));
+    h += guideField('Scripture references', '<input class="ex-input" value="' + srEsc(g.scriptures) + '" oninput="guideSet(\'scriptures\',this)">');
+    h += '</div><div class="ex-card"><div class="ex-day">Sermon points</div>';
+    (g.points || []).forEach((p, i) => {
+      h += '<div class="ex-sub">Point ' + (i + 1) + '</div>' +
+        '<input class="ex-input" value="' + srEsc(p.title) + '" oninput="guidePoint(' + i + ',\'title\',this)" placeholder="Point">' +
+        '<input class="ex-input" style="margin-top:6px;" value="' + srEsc(p.reference) + '" oninput="guidePoint(' + i + ',\'reference\',this)" placeholder="Scripture reference">' +
+        '<textarea class="ex-text" style="margin-top:6px;" rows="2" oninput="guidePoint(' + i + ',\'text\',this)">' + srEsc(p.text) + '</textarea>';
+    });
+    h += '</div><div class="ex-card"><div class="ex-day">Discussion questions</div>';
+    (g.questions || []).forEach((q, i) => {
+      h += '<label class="ex-lab">Question ' + (i + 1) + '</label>' + guideTextarea(q, "guideList('questions'," + i + ',this)');
+    });
+    h += '</div><div class="ex-card"><div class="ex-day">This week</div>';
+    (g.applications || []).forEach((a, i) => {
+      h += '<label class="ex-lab">Application ' + (i + 1) + (i > 0 ? ' (optional)' : '') + '</label>' + guideTextarea(a, "guideList('applications'," + i + ',this)');
+    });
+    h += '</div><div class="ex-card"><div class="ex-day">Closing prayer</div>' + guideTextarea(g.prayer, "guideSet('prayer',this)", 4) + '</div>';
+    box.innerHTML = h;
+  } else {
+    box.innerHTML = '';
+  }
+  document.getElementById('guideActions').style.display = has ? 'flex' : 'none';
+  document.getElementById('guideGenBtn').textContent = has ? '↻ Regenerate Guide' : '▶ Generate Discussion Guide';
+  document.getElementById('guideNotice').innerHTML = has ? '' : srNoTranscriptHtml();
+  srStatus('guideStatus', '');
+  srSaveNote('');
+  setTimeout(srAutosizeAll, 0);
+}
+function guideSet(field, el) {
+  if (!currentGuide) return;
+  currentGuide[field] = el.value;
+  if (el.tagName === 'TEXTAREA') srAutosize(el);
+  scheduleExtrasSave();
+}
+function guidePoint(i, field, el) {
+  if (!currentGuide || !currentGuide.points[i]) return;
+  currentGuide.points[i][field] = el.value;
+  if (el.tagName === 'TEXTAREA') srAutosize(el);
+  scheduleExtrasSave();
+}
+function guideList(kind, i, el) {
+  if (!currentGuide || !currentGuide[kind]) return;
+  currentGuide[kind][i] = el.value;
+  srAutosize(el);
+  scheduleExtrasSave();
+}
+async function generateGuide() {
+  if (extrasBusy) return;
+  if (!srHasTranscript() && !(currentSummary && currentSummary.trim())) { srStatus('guideStatus', 'Run an analysis first.', true); return; }
+  if (currentGuide && !confirm('Regenerate the discussion guide? Your edits will be replaced.')) return;
+  extrasBusy = true;
+  const btn = document.getElementById('guideGenBtn'); btn.disabled = true;
+  srStatus('guideStatus', 'Writing your discussion guide. This takes about 20 to 40 seconds. Stay on this page.');
+  try {
+    const data = await srPost('discussion-guide', srPayload());
+    currentGuide = data.guide;
+    renderGuide();
+    scheduleExtrasSave();
+  } catch (e) {
+    srStatus('guideStatus', e.message, true);
+  }
+  btn.disabled = false;
+  extrasBusy = false;
+}
+
+// ── PDF DOWNLOADS (locked) AND COPY ──
+function srPdfReady() {
+  if (window.jspdf && window.jspdf.jsPDF) return true;
+  alert('The PDF tool did not load. Check your connection, refresh the page, and try again.');
+  return false;
+}
+function downloadDevotionsPdf() {
+  if (!currentDevotions || !srPdfReady()) return;
+  const devs = currentDevotions.map((d, i) => (d ? Object.assign({ day: i + 1 }, d) : null)).filter(Boolean);
+  if (!devs.length) return;
+  const doc = srBuildDevotionsPdf({ title: sermonTitle, byline: srByline(), devotions: devs });
+  doc.save(slugify(sermonTitle) + '_devotions.pdf');
+}
+function downloadGuidePdf() {
+  if (!currentGuide || !srPdfReady()) return;
+  const doc = srBuildGuidePdf({ title: sermonTitle, byline: srByline(), guide: currentGuide });
+  doc.save(slugify(sermonTitle) + '_discussion_guide.pdf');
+}
+function copyDevotions() {
+  if (!currentDevotions) return;
+  let t = 'DEVOTIONS\n' + sermonTitle + '\n' + srByline() + '\n';
+  currentDevotions.forEach((d, i) => {
+    if (!d) return;
+    t += '\nDAY ' + (i + 1) + ': ' + d.title + '\n' + (d.scripture ? 'Scripture: ' + d.scripture + '\n' : '') + (d.verse ? '"' + d.verse + '"\n' : '') +
+      '\n' + d.body + '\n\nReflect: ' + d.question + '\nAct: ' + d.action + '\n';
+  });
+  navigator.clipboard.writeText(t).catch(() => {});
+}
+function copyGuide() {
+  const g = currentGuide;
+  if (!g) return;
+  let t = 'DISCUSSION GUIDE\n' + sermonTitle + '\n' + srByline() + '\n\nBig idea: ' + g.bigIdea + '\nScripture: ' + g.scriptures + '\n\nSERMON POINTS\n';
+  (g.points || []).forEach((p, i) => { t += (i + 1) + '. ' + p.title + (p.reference ? ' (' + p.reference + ')' : '') + '\n   ' + p.text + '\n'; });
+  t += '\nDISCUSSION QUESTIONS\n';
+  (g.questions || []).forEach((q, i) => { t += (i + 1) + '. ' + q + '\n'; });
+  t += '\nTHIS WEEK\n';
+  (g.applications || []).filter(Boolean).forEach(a => { t += '- ' + a + '\n'; });
+  t += '\nCLOSING PRAYER\n' + g.prayer + '\n';
+  navigator.clipboard.writeText(t).catch(() => {});
+}
+
 
 // -- SUPABASE AUTH --------------------------------------------------------
 // Supabase URL and anon key are read from meta tags injected by the server
@@ -1357,7 +2006,9 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 let currentQuestions = null;
-let currentTranscript = ''; // Session-only. Grounds caption regeneration.
+let currentTranscript = ''; // Grounds caption regeneration, devotions and the guide. Saved with the sermon in History.
+let transcriptNeedsSave = false;
+let transcriptSaveTimer = null;
                             // Never persisted - absent when reloading from History.
 let currentSlides = null;
 let currentSummary = '';
@@ -2139,12 +2790,12 @@ function switchTab(tab) {
   }
   // Desktop - update buttons and panels normally
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
-    b.classList.toggle('active',
-      (i===0&&tab==='summary')||(i===1&&tab==='notes')||(i===2&&tab==='clips'));
+    b.classList.toggle('active', TAB_IDS[i] === tab);
   });
-  ['summary','notes','clips'].forEach(t => {
+  TAB_IDS.forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
   });
+  setTimeout(srAutosizeAll, 0);
 }
 
 function toggleTranscript() {
@@ -2294,6 +2945,7 @@ async function analyzeSermon(skipDuplicateCheck = false) {
       const customQuestion = currentClipMode === 'custom' ? (document.getElementById('customQuestion').value.trim()) : '';
 
       currentTranscript = driveTranscript || '';
+      transcriptNeedsSave = true;
 
       const response = await fetch('/api/analyze', {
         method: 'POST',
@@ -2343,6 +2995,7 @@ async function analyzeSermon(skipDuplicateCheck = false) {
       rawSummary = rawSummary.replace(/^OUTPUT\s*3\s*[-:]?\s*/i, '').trim();
       currentSummary = rawSummary;
 
+      resetExtras();
       renderResults(currentQuestions, currentSlides, currentSummary);
       autoSaveAnalysis(currentUploadId, slideCount, 'upload');
 
@@ -2438,6 +3091,7 @@ async function analyzeSermon(skipDuplicateCheck = false) {
 
   try {
     currentTranscript = transcript || '';
+    transcriptNeedsSave = true;
 
     const response = await fetch('/api/analyze', {
       method: 'POST',
@@ -2490,6 +3144,7 @@ async function analyzeSermon(skipDuplicateCheck = false) {
     rawSummary = rawSummary.replace(/^(OUTPUT\s*3\s*[-:]\s*)?SERMON\s*SUMMARY\s*[-:]?\s*/i, '').trim();
     rawSummary = rawSummary.replace(/^OUTPUT\s*3\s*[-:]?\s*/i, '').trim();
     currentSummary = rawSummary;
+    resetExtras();
     renderResults(currentQuestions, currentSlides, currentSummary);
 
     // Auto-save to history
@@ -2524,6 +3179,9 @@ async function autoSaveAnalysis(videoId, slideCount, sourceType) {
   });
   if (data && data.id) {
     currentAnalysisId = data.id;
+    // A brand new analysis replaces any devotions saved on an older run of it
+    if (extrasNeedsDbReset) { extrasNeedsDbReset = false; saveExtrasNow(true); }
+    if (transcriptNeedsSave) saveTranscriptNow();
   }
 }
 
@@ -2624,6 +3282,9 @@ function renderResults(questions, slides, summary) {
 
   // Render Sermon Clips tab
   renderClipsTab(questions);
+
+  // Devotions and Discussion Guide tabs (empty until generated, or restored from History)
+  renderExtrasTabs();
 
   document.getElementById('resultsSection').classList.add('visible');
 
@@ -3808,9 +4469,10 @@ async function restoreAnalysis(a) {
   currentSummary = a.summary || '';
   currentCustomQ = a.custom_q || null;
 
-  // Transcript is never stored in the DB - clear it so caption regeneration
-  // falls back to its no-invention mode instead of using a stale transcript
-  currentTranscript = '';
+  // The transcript is saved with the sermon. Older sermons have none, so those
+  // fall back to the no-invention mode (summary only) until one is pasted.
+  currentTranscript = (typeof a.transcript === 'string' ? a.transcript : '').trim();
+  transcriptNeedsSave = false;
 
   // Restore source mode and uploadId for uploaded sermons
   if (a.source_type === 'upload') {
@@ -3851,6 +4513,11 @@ async function restoreAnalysis(a) {
   // Restore speaker and date fields
   if (a.sermon_date) document.getElementById('sermonDate').value = a.sermon_date;
   fillSpeakerFields(a.speaker);
+
+  // Devotions and Discussion Guide (with any edits) come back with the record
+  currentDevotions = (a.extras && a.extras.devotions) || null;
+  currentGuide = (a.extras && a.extras.guide) || null;
+  extrasNeedsDbReset = false;
 
   renderResults(currentQuestions, currentSlides, currentSummary);
   document.getElementById('resultsSection').classList.add('visible');
