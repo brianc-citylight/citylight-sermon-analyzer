@@ -91,7 +91,9 @@ export default async function handler(req, res) {
       const data = await dbGet(
         `sermon_analyses?user_id=eq.${userId}&order=created_at.desc&limit=10`
       );
-      return res.status(200).json({ analyses: data || [] });
+      // The transcript can be 50 KB per sermon. The list never needs it, so leave it out.
+      const list = (data || []).map(r => { const { transcript, ...rest } = r; return rest; });
+      return res.status(200).json({ analyses: list });
     }
 
     // ── GET ONE ────────────────────────────────────────────────────────────
@@ -172,6 +174,42 @@ export default async function handler(req, res) {
       }
 
       return res.status(200).json({ success: true, id: savedId });
+    }
+
+    // ── SAVE EXTRAS ────────────────────────────────────────────────────────
+    // Devotions and Discussion Guide (with the user's edits). Stored in one JSON
+    // column named "extras" so the main save above never has to change.
+    // Needs: alter table sermon_analyses add column if not exists extras jsonb;
+    if (req.method === 'POST' && action === 'save-extras') {
+      const { analysisId, extras } = req.body;
+      if (!analysisId) return res.status(400).json({ error: 'Missing analysisId' });
+      const updated = await dbPatch(
+        `sermon_analyses?id=eq.${encodeURIComponent(analysisId)}&user_id=eq.${userId}`,
+        { extras: extras || null }
+      );
+      if (!updated || updated.length === 0) {
+        return res.status(404).json({ error: 'Analysis not found' });
+      }
+      return res.status(200).json({ success: true });
+    }
+
+    // ── SAVE TRANSCRIPT ────────────────────────────────────────────────────
+    // The sermon's words, so devotions, the discussion guide and caption rewrites
+    // still work after a sermon is loaded from History. Own column and own action,
+    // so the main save above never has to change.
+    // Needs: alter table sermon_analyses add column if not exists transcript text;
+    if (req.method === 'POST' && action === 'save-transcript') {
+      const { analysisId, transcript } = req.body;
+      if (!analysisId) return res.status(400).json({ error: 'Missing analysisId' });
+      const text = typeof transcript === 'string' ? transcript.trim().slice(0, 400000) : '';
+      const updated = await dbPatch(
+        `sermon_analyses?id=eq.${encodeURIComponent(analysisId)}&user_id=eq.${userId}`,
+        { transcript: text || null }
+      );
+      if (!updated || updated.length === 0) {
+        return res.status(404).json({ error: 'Analysis not found' });
+      }
+      return res.status(200).json({ success: true });
     }
 
     // ── PUBLISH ────────────────────────────────────────────────────────────
